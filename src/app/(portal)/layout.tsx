@@ -1,0 +1,254 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  LayoutDashboard,
+  FilePlus2,
+  FolderOpen,
+  UserCircle2,
+  Bell,
+  Menu,
+  X,
+  LogOut,
+  GraduationCap,
+  ChevronRight,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
+
+const MOCK_USER = {
+  firstName: 'Juan',
+  lastName: 'Dela Cruz',
+  fullName: 'Juan Dela Cruz',
+  role: 'Student',
+  initials: 'VS',
+  unreadNotifications: 3,
+};
+
+const PAGE_TITLES: Record<string, string> = {
+  '/portal/dashboard': 'Dashboard',
+  '/portal/request': 'Request Document',
+  '/portal/requests': 'My Requests',
+  '/portal/profile': 'Profile',
+};
+
+const NAV_ITEMS = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/request', label: 'Request Document', icon: FilePlus2 },
+  { href: '/requests', label: 'My Requests', icon: FolderOpen },
+  { href: '/profile', label: 'Profile', icon: UserCircle2 },
+];
+
+function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
+  const pathname = usePathname();
+
+  return (
+    <div className='flex h-full min-w-0 flex-col'>
+      <div className='flex items-center gap-3 px-6 py-6'>
+        <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/30'>
+          <GraduationCap className='h-5 w-5 text-primary-foreground' />
+        </div>
+        <div className='flex flex-col'>
+          <span
+            className='text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground'
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            PSU Main Campus
+          </span>
+          <span
+            className='text-lg font-bold leading-tight tracking-tight text-foreground'
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            e-Docs
+          </span>
+        </div>
+      </div>
+
+      <Separator className='mx-4 mb-2 w-auto' />
+
+      <nav className='flex-1 space-y-0.5 px-3 py-2'>
+        <p
+          className='mb-3 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70'
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
+          Navigation
+        </p>
+        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              onClick={onNavClick}
+              className={cn(
+                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                active
+                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+              )}
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              <Icon
+                className={cn(
+                  'h-4 w-4 shrink-0 transition-transform duration-150',
+                  !active && 'group-hover:scale-110',
+                )}
+              />
+              <span className='flex-1'>{label}</span>
+              {active && <ChevronRight className='h-3.5 w-3.5 opacity-60' />}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <Separator className='mx-4 mb-3 w-auto' />
+
+      <div className='px-3 pb-5'>
+        <div className='mb-2 flex items-center gap-3 rounded-lg bg-muted/60 px-3 py-2.5'>
+          <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow'>
+            {MOCK_USER.initials}
+          </div>
+          <div className='min-w-0 flex-1'>
+            <p
+              className='truncate text-sm font-semibold text-foreground'
+              style={{ fontFamily: "'DM Sans', sans-serif" }}
+            >
+              {MOCK_USER.fullName}
+            </p>
+            <Badge
+              variant='secondary'
+              className='mt-0.5 h-4 rounded-sm px-1.5 text-[10px] font-medium'
+            >
+              {MOCK_USER.role}
+            </Badge>
+          </div>
+        </div>
+        <Button
+          variant='ghost'
+          size='sm'
+          className='w-full justify-start gap-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
+        >
+          <LogOut className='h-4 w-4' />
+          Log Out
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function MobileNav() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant='ghost' size='icon' className='lg:hidden'>
+          <Menu className='h-5 w-5' />
+          <span className='sr-only'>Open menu</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side='left' className='w-64 p-0'>
+        <SidebarContent onNavClick={() => setOpen(false)} />
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+export default function PortalLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const pageTitle = PAGE_TITLES[pathname] ?? 'e-Docs';
+
+  return (
+    <div className='min-h-screen bg-background' style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <aside className='fixed left-0 top-0 hidden h-screen w-64 border-r border-border bg-card lg:flex lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden'>
+        <SidebarContent />
+      </aside>
+
+      <div className='flex flex-col overflow-hidden lg:ml-64'>
+        <header className='sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-sm md:px-6'>
+          {/* Mobile menu */}
+          <MobileNav key={pathname} />
+
+          {/* Page title */}
+          <h1
+            className='flex-1 text-base font-semibold text-foreground'
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            {pageTitle}
+          </h1>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant='ghost' size='icon' className='relative'>
+                <Bell className='h-5 w-5' />
+                {MOCK_USER.unreadNotifications > 0 && (
+                  <span className='absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow'>
+                    {MOCK_USER.unreadNotifications}
+                  </span>
+                )}
+                <span className='sr-only'>Notifications</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end' className='w-72'>
+              <div className='px-3 py-2'>
+                <p className='text-xs font-semibold uppercase tracking-wider text-muted-foreground'>
+                  Notifications
+                </p>
+              </div>
+              <Separator />
+              {[
+                {
+                  title: 'Your TOR request is now In Process',
+                  time: '2 hours ago',
+                  unread: true,
+                },
+                {
+                  title: 'Library clearance cleared successfully',
+                  time: 'Yesterday',
+                  unread: true,
+                },
+                {
+                  title: 'Certificate of Enrollment is ready for release',
+                  time: '2 days ago',
+                  unread: true,
+                },
+              ].map((n, i) => (
+                <DropdownMenuItem key={i} className='flex flex-col items-start gap-0.5 py-2.5'>
+                  <div className='flex w-full items-start gap-2'>
+                    {n.unread && (
+                      <span className='mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary' />
+                    )}
+                    <span className={cn('text-sm', n.unread && 'font-medium')}>{n.title}</span>
+                  </div>
+                  <span className='pl-3.5 text-xs text-muted-foreground'>{n.time}</span>
+                </DropdownMenuItem>
+              ))}
+              <Separator />
+              <DropdownMenuItem className='justify-center text-xs font-medium text-primary'>
+                View all notifications
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow'>
+            {MOCK_USER.initials}
+          </div>
+        </header>
+
+        <main className='flex-1 overflow-y-auto p-4 md:p-6'>{children}</main>
+      </div>
+    </div>
+  );
+}
