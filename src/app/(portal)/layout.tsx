@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   FilePlus2,
@@ -10,7 +10,6 @@ import {
   UserCircle2,
   Bell,
   Menu,
-  X,
   LogOut,
   GraduationCap,
   ChevronRight,
@@ -26,32 +25,46 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { api } from '@/lib/axios';
 
 const MOCK_USER = {
   firstName: 'Juan',
   lastName: 'Dela Cruz',
   fullName: 'Juan Dela Cruz',
   role: 'Student',
-  initials: 'VS',
+  initials: 'JD',
   unreadNotifications: 3,
 };
 
 const PAGE_TITLES: Record<string, string> = {
-  '/portal/dashboard': 'Dashboard',
-  '/portal/request': 'Request Document',
-  '/portal/requests': 'My Requests',
-  '/portal/profile': 'Profile',
+  '/dashboard': 'Dashboard',
+  '/request/new': 'Request Document',
+  '/history': 'My Requests',
+  '/profile': 'Profile',
 };
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/request', label: 'Request Document', icon: FilePlus2 },
-  { href: '/requests', label: 'My Requests', icon: FolderOpen },
+  { href: '/request/new', label: 'Request Document', icon: FilePlus2 },
+  { href: '/history', label: 'My Requests', icon: FolderOpen },
   { href: '/profile', label: 'Profile', icon: UserCircle2 },
 ];
 
+function resolvePageTitle(pathname: string): string {
+  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (pathname.startsWith('/request/')) return 'Track Request';
+  return 'e-Docs';
+}
+
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleSignout() {
+    await api.post('/auth/signout');
+    router.push('/login');
+    router.refresh();
+  }
 
   return (
     <div className='flex h-full min-w-0 flex-col'>
@@ -85,7 +98,8 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           Navigation
         </p>
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href;
+          const active =
+            href === '/request/new' ? pathname.startsWith('/request/') : pathname === href;
           return (
             <Link
               key={href}
@@ -137,6 +151,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         <Button
           variant='ghost'
           size='sm'
+          onClick={handleSignout}
           className='w-full justify-start gap-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
           style={{ fontFamily: "'DM Sans', sans-serif" }}
         >
@@ -168,7 +183,7 @@ function MobileNav() {
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const pageTitle = PAGE_TITLES[pathname] ?? 'e-Docs';
+  const pageTitle = resolvePageTitle(pathname);
 
   return (
     <div className='min-h-screen bg-background' style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -178,10 +193,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
       <div className='flex flex-col overflow-hidden lg:ml-64'>
         <header className='sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-sm md:px-6'>
-          {/* Mobile menu */}
           <MobileNav key={pathname} />
 
-          {/* Page title */}
           <h1
             className='flex-1 text-base font-semibold text-foreground'
             style={{ fontFamily: "'Playfair Display', serif" }}

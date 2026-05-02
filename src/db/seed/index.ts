@@ -1,6 +1,7 @@
 import { seedFakeUsers } from './user.seed';
 
 export async function seedDatabase() {
+  console.log('DATABASE_URL:', process.env.DATABASE_URL);
   console.log('Starting database seeding...');
   await seedFakeUsers();
   console.log('Database seeding completed!');

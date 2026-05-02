@@ -11,14 +11,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 
-type LoginResponse = {
+type SigninResponse = {
   message: string;
   user: {
     email: string | null;
   } | null;
 };
 
-export default function LoginPage() {
+export default function SigninPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,13 +26,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.SyntheticEvent<HTMLFormElement>) => {
+  const handleSignin = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const response = await api.post<LoginResponse>('/auth/login', {
+      const response = await api.post<SigninResponse>('/auth/signin', {
         username,
         password,
       });
@@ -55,7 +55,7 @@ export default function LoginPage() {
 
   return (
     <div className='min-h-screen flex bg-background'>
-      {/* Left Side — Login Form */}
+      {/* Left Side — Signin Form */}
       <div className='w-full lg:w-[45%] flex flex-col justify-between p-8 lg:p-12'>
         {/* Top Logo */}
         <div className='flex items-center gap-3'>
@@ -86,7 +86,7 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleLogin} className='space-y-5'>
+          <form onSubmit={handleSignin} className='space-y-5'>
             {error && (
               <Alert variant='destructive' className='py-3'>
                 <AlertDescription className='text-sm'>{error}</AlertDescription>
