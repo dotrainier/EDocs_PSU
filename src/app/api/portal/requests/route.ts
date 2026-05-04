@@ -1,0 +1,128 @@
+import { NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
+import { z } from 'zod';
+import { db } from '@/db';
+import { generateTrackingNumber, calculateSlaDeadline } from '@/lib/generate';
+
+import {
+  document_requests,
+  document_types,
+  clearance_requirements,
+  clearance_tasks,
+} from '@/db/schema';
+import { getAccessTokenPayload } from '@/lib/auth';
+
+const createRequestSchema = z.object({
+  documentTypeId: z.number().int().positive(),
+  purpose: z.string().min(1).max(255),
+  copies: z.number().int().min(1).max(10),
+  releaseMode: z.enum(['digital', 'physical', 'both']),
+  additionalNotes: z.string().max(1000).optional(),
+});
+
+async function createClearanceTasks(requestId: string, documentTypeId: number): Promise<void> {
+  const requirements = await db
+    .select()
+    .from(clearance_requirements)
+    .where(eq(clearance_requirements.document_type_id, documentTypeId))
+    .orderBy(clearance_requirements.sequence_order);
+
+  if (requirements.length === 0) return;
+
+  const parallelReqs = requirements.filter((r) => r.sequence_order === null);
+  const sequentialReqs = requirements.filter((r) => r.sequence_order !== null);
+
+  if (parallelReqs.length > 0) {
+    await db.insert(clearance_tasks).values(
+      parallelReqs.map((r) => ({
+        request_id: requestId,
+        office_id: r.office_id,
+        status: 'pending',
+        sequence_order: null,
+      })),
+    );
+  }
+
+  const firstSequential = sequentialReqs.find((r) => r.sequence_order === 1);
+  if (firstSequential && parallelReqs.length === 0) {
+    await db.insert(clearance_tasks).values({
+      request_id: requestId,
+      office_id: firstSequential.office_id,
+      status: 'pending',
+      sequence_order: 1,
+    });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const session = await getAccessTokenPayload(request);
+    if (!session) {
+      return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
+    }
+
+    const frontUserRoles = ['Student', 'Faculty', 'NonTeachingStaff'];
+    if (!frontUserRoles.includes(session.role)) {
+      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const parsed = createRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ message: 'Invalid input' }, { status: 400 });
+    }
+
+    const { documentTypeId, purpose, copies, releaseMode, additionalNotes } = parsed.data;
+
+    const docTypeResult = await db
+      .select()
+      .from(document_types)
+      .where(eq(document_types.id, documentTypeId))
+      .limit(1);
+
+    const docType = docTypeResult[0];
+    if (!docType || !docType.is_active) {
+      return NextResponse.json({ message: 'Document type not found or inactive' }, { status: 404 });
+    }
+
+    const trackingNumber = await generateTrackingNumber();
+    const slaDeadline = calculateSlaDeadline(docType.sla_working_days);
+
+    // 6. Insert request row
+    const inserted = await db
+      .insert(document_requests)
+      .values({
+        tracking_number: trackingNumber,
+        user_id: session.userId,
+        document_type_id: documentTypeId,
+        purpose,
+        copies,
+        release_mode: releaseMode,
+        additional_notes: additionalNotes ?? null,
+        status: 'pending',
+        fee_amount: docType.fee_amount,
+        payment_status: docType.fee_amount && docType.fee_amount !== '0.00' ? 'Unpaid' : 'Paid', // free documents skip payment
+        sla_due_at: slaDeadline,
+      })
+      .returning({ id: document_requests.id });
+
+    const requestId = inserted[0].id;
+
+    if (docType.requires_clearance) {
+      await createClearanceTasks(requestId, documentTypeId);
+    }
+
+    return NextResponse.json(
+      {
+        message: 'Request submitted successfully',
+        trackingNumber,
+        feeAmount: docType.fee_amount ?? '0.00',
+        paymentStatus: docType.fee_amount && docType.fee_amount !== '0.00' ? 'Unpaid' : 'Paid',
+      },
+      { status: 201 },
+    );
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+    return NextResponse.json({ message }, { status: 500 });
+  }
+}

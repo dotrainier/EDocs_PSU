@@ -5,18 +5,13 @@ import {
   verifyAccessToken,
   type UserRole,
 } from '@/lib/auth';
+import { getDashboardByRole } from '@/lib/utils';
 
 const PUBLIC_PATHS = ['/', '/verify'];
-const AUTH_PATHS = ['/login', '/register'];
+const AUTH_PATHS = ['/signin', '/register'];
 
 const FRONT_USER_ROLES: UserRole[] = ['Student', 'Faculty', 'NonTeachingStaff'];
 const OFFICE_ROLES: UserRole[] = ['OfficeStaff', 'OfficeHead'];
-
-function getDashboardByRole(role: UserRole): string {
-  if (OFFICE_ROLES.includes(role)) return '/office/dashboard';
-  if (role === 'Admin') return '/admin/dashboard';
-  return '/dashboard';
-}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -44,19 +39,30 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 5. Access token missing or expired → check for refresh token
+  // 5. Access token missing or expired → only protect known routes
   if (!payload) {
+    const isProtectedPath =
+      pathname.startsWith('/dashboard') ||
+      pathname.startsWith('/request') ||
+      pathname.startsWith('/history') ||
+      pathname.startsWith('/profile') ||
+      pathname.startsWith('/office') ||
+      pathname.startsWith('/admin');
+
+    // Unknown path + no session → just pass through (will 404 normally)
+    if (!isProtectedPath) {
+      return NextResponse.next();
+    }
+
     const refreshToken = getRefreshTokenFromRequest(request);
 
     if (refreshToken) {
-      // Silent refresh — redirect to refresh endpoint, come back after
       const refreshUrl = new URL('/api/auth/refresh', request.url);
       refreshUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(refreshUrl);
     }
 
-    // No refresh token either → send to login
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL('/signin', request.url);
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);
   }

@@ -208,14 +208,6 @@ export default function TrackRequestPage() {
         <button
           type='button'
           className='hover:text-foreground transition-colors'
-          onClick={() => router.push('/dashboard')}
-        >
-          Dashboard
-        </button>
-        <ChevronRight className='h-3.5 w-3.5' />
-        <button
-          type='button'
-          className='hover:text-foreground transition-colors'
           onClick={() => router.push('/requests')}
         >
           My Requests

@@ -6,15 +6,12 @@ import { getRefreshToken, clearAuthCookies } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    // 1. Read refresh token from cookie
     const refreshToken = getRefreshToken(request);
 
-    // 2. Delete session row from DB if token exists
     if (refreshToken) {
       await db.delete(sessions).where(eq(sessions.token, refreshToken));
     }
 
-    // 3. Clear both cookies regardless
     await clearAuthCookies();
 
     return NextResponse.json({ message: 'Signed out successfully' }, { status: 200 });

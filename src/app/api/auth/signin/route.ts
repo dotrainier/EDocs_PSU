@@ -1,4 +1,3 @@
-// src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { eq, or } from 'drizzle-orm';
@@ -14,8 +13,8 @@ import {
 } from '@/lib/auth';
 
 const signinSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  password: z.string().min(1, 'Password is required'),
+  username: z.string().min(1, 'Username is required').trim(),
+  password: z.string().min(1, 'Password is required').trim(),
 });
 
 export async function POST(request: Request) {
@@ -28,6 +27,8 @@ export async function POST(request: Request) {
     }
 
     const { username, password } = parsed.data;
+
+    console.log('[signin] Attempting login for:', username);
 
     const result = await db
       .select({
@@ -49,11 +50,19 @@ export async function POST(request: Request) {
 
     const user = result[0];
 
+    console.log('[signin] User found:', user ? 'yes' : 'no');
+
     if (!user) {
+      console.log('[signin] No user matched school_id or email:', username);
       return NextResponse.json({ message: 'Invalid username or password' }, { status: 401 });
     }
 
+    console.log('[signin] User status:', user.status);
+    console.log('[signin] Role name:', user.role_name);
+    console.log('[signin] Hash from DB:', user.password_hash);
+
     if (user.status !== 'active') {
+      console.log('[signin] Account inactive');
       return NextResponse.json(
         { message: 'Your account has been deactivated. Please contact the administrator.' },
         { status: 403 },
@@ -62,6 +71,8 @@ export async function POST(request: Request) {
 
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
+    console.log('[signin] Password match:', passwordMatch);
+
     if (!passwordMatch) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
@@ -69,7 +80,7 @@ export async function POST(request: Request) {
     const accessToken = await signAccessToken({
       userId: user.id,
       role: user.role_name as UserRole,
-      officeId: String(user.office_id) ?? null,
+      officeId: user.office_id ? String(user.office_id) : null,
     });
 
     const refreshToken = generateRefreshToken();
@@ -83,14 +94,23 @@ export async function POST(request: Request) {
 
     await setAuthCookies(accessToken, refreshToken);
 
+    console.log('[signin] Login successful for:', user.full_name);
+
     return NextResponse.json(
       {
         message: 'Login successful',
+        user: {
+          id: user.id,
+          full_name: user.full_name,
+          email: user.email,
+          role: user.role_name,
+        },
       },
       { status: 200 },
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    console.error('[signin] Unexpected error:', errorMessage);
     return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }

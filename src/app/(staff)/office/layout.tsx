@@ -1,8 +1,8 @@
-import PortalLayoutClient from '@/app/(portal)/_components/PortalClient';
+import OfficeLayoutClient from './_components/OfficeLayoutClient';
 import { requireSession } from '@/lib/session';
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const user = await requireSession();
 
-  return <PortalLayoutClient user={user}>{children}</PortalLayoutClient>;
+  return <OfficeLayoutClient user={user}>{children}</OfficeLayoutClient>;
 }

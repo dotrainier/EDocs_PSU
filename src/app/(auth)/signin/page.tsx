@@ -10,13 +10,17 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { getDashboardByRole } from '@/lib/utils';
 
 type SigninResponse = {
   message: string;
   user: {
     email: string | null;
+    role: string;
   } | null;
 };
+
+type UserRole = 'Student' | 'Faculty' | 'NonTeachingStaff' | 'OfficeStaff' | 'OfficeHead' | 'Admin';
 
 export default function SigninPage() {
   const [username, setUsername] = useState('');
@@ -38,7 +42,10 @@ export default function SigninPage() {
       });
 
       if (response.user) {
-        router.push('/dashboard');
+        const role = response.user.role as UserRole;
+        const dashboardUrl = getDashboardByRole(role);
+        router.push(dashboardUrl);
+
         router.refresh();
       }
     } catch (err: unknown) {

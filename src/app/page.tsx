@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import {
   ArrowRight,
   ShieldCheck,
@@ -15,14 +16,14 @@ import {
   QrCode,
   Sparkles,
   ArrowUpRight,
+  LayoutDashboard,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-
-/* ----------------------------- Data --------------------------------- */
+import { verifyAccessToken, type UserRole } from '@/lib/auth';
 
 const offices = [
   {
@@ -108,12 +109,20 @@ const steps = [
   },
 ];
 
-/* ----------------------------- Page --------------------------------- */
+function getDashboardByRole(role: UserRole): string {
+  if (role === 'OfficeStaff' || role === 'OfficeHead') return '/office/dashboard';
+  if (role === 'Admin') return '/admin/dashboard';
+  return '/dashboard';
+}
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get('edocs_access')?.value ?? null;
+  const session = accessToken ? await verifyAccessToken(accessToken) : null;
+  const dashboardHref = session ? getDashboardByRole(session.role) : '/dashboard';
+
   return (
     <div className='min-h-screen bg-background text-foreground antialiased'>
-      {/* ============================ NAV ============================ */}
       <header className='sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-md supports-backdrop-filter:bg-background/60'>
         <div className='mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8'>
           <Link href='/' className='flex items-center gap-3'>
@@ -144,22 +153,33 @@ export default function LandingPage() {
           </nav>
 
           <div className='flex items-center gap-2'>
-            <Button variant='ghost' size='sm' asChild className='hidden sm:inline-flex'>
-              <Link href='/login'>Login</Link>
-            </Button>
-            <Button size='sm' asChild className='shadow-sm'>
-              <Link href='/register'>
-                Register
-                <ArrowRight className='ml-1.5 h-3.5 w-3.5' />
-              </Link>
-            </Button>
+            {session ? (
+              <Button size='sm' asChild className='shadow-sm'>
+                <Link href={dashboardHref}>
+                  <LayoutDashboard className='mr-1.5 h-3.5 w-3.5' />
+                  Go to Dashboard
+                </Link>
+              </Button>
+            ) : (
+              // Not signed in — show signin + register
+              <>
+                <Button variant='ghost' size='sm' asChild className='hidden sm:inline-flex'>
+                  <Link href='/signin'>Signin</Link>
+                </Button>
+                <Button size='sm' asChild className='shadow-sm'>
+                  <Link href='/register'>
+                    Register
+                    <ArrowRight className='ml-1.5 h-3.5 w-3.5' />
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
 
       {/* ============================ HERO ============================ */}
       <section className='relative overflow-hidden border-b border-border/60'>
-        {/* Decorative background */}
         <div
           aria-hidden
           className='absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,oklch(0.42_0.18_15/0.12),transparent_60%)]'
@@ -171,7 +191,6 @@ export default function LandingPage() {
 
         <div className='mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-32'>
           <div className='grid items-center gap-12 lg:grid-cols-12'>
-            {/* Hero copy */}
             <div className='lg:col-span-7'>
               <Badge
                 variant='outline'
@@ -199,15 +218,26 @@ export default function LandingPage() {
               </p>
 
               <div className='mt-8 flex flex-wrap items-center gap-3'>
-                <Button size='lg' asChild className='h-11 px-6 shadow-sm'>
-                  <Link href='/login'>
-                    Login
-                    <ArrowRight className='ml-2 h-4 w-4' />
-                  </Link>
-                </Button>
-                <Button size='lg' variant='outline' asChild className='h-11 px-6'>
-                  <Link href='/register'>Create an account</Link>
-                </Button>
+                {session ? (
+                  <Button size='lg' asChild className='h-11 px-6 shadow-sm'>
+                    <Link href={dashboardHref}>
+                      <LayoutDashboard className='mr-2 h-4 w-4' />
+                      Go to Dashboard
+                    </Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button size='lg' asChild className='h-11 px-6 shadow-sm'>
+                      <Link href='/signin'>
+                        Signin
+                        <ArrowRight className='ml-2 h-4 w-4' />
+                      </Link>
+                    </Button>
+                    <Button size='lg' variant='outline' asChild className='h-11 px-6'>
+                      <Link href='/register'>Create an account</Link>
+                    </Button>
+                  </>
+                )}
                 <Button
                   size='lg'
                   variant='ghost'
@@ -222,10 +252,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Hero visual: stylized request card */}
+            {/* Hero visual — unchanged */}
             <div className='lg:col-span-5'>
               <div className='relative'>
-                {/* Floating accent card */}
                 <div className='absolute -right-4 -top-4 hidden rotate-3 lg:block'>
                   <Card className='w-48 border-accent/30 bg-card shadow-lg'>
                     <CardContent className='p-3'>
@@ -244,9 +273,7 @@ export default function LandingPage() {
                   </Card>
                 </div>
 
-                {/* Main mock card */}
                 <Card className='relative overflow-hidden border-border/60 bg-card shadow-xl'>
-                  {/* Header bar */}
                   <div className='flex items-center justify-between border-b border-border/60 bg-muted/40 px-5 py-3'>
                     <div className='flex items-center gap-2'>
                       <div className='h-2.5 w-2.5 rounded-full bg-destructive/60' />
@@ -270,7 +297,6 @@ export default function LandingPage() {
 
                     <Separator />
 
-                    {/* Clearance progress */}
                     <div className='space-y-3'>
                       <div className='flex items-center justify-between'>
                         <span className='text-xs font-medium text-foreground'>
@@ -318,7 +344,6 @@ export default function LandingPage() {
 
                     <Separator />
 
-                    {/* SLA */}
                     <div className='flex items-center justify-between rounded-md bg-muted/50 px-3 py-2.5'>
                       <div className='flex items-center gap-2'>
                         <Clock className='h-4 w-4 text-primary' />
@@ -349,7 +374,6 @@ export default function LandingPage() {
           </div>
 
           <div className='grid gap-6 lg:grid-cols-3'>
-            {/* Students */}
             <Card className='group relative overflow-hidden border-border/60 transition-all hover:border-primary/30 hover:shadow-lg'>
               <div className='absolute right-0 top-0 h-32 w-32 -translate-y-12 translate-x-12 rounded-full bg-primary/5 transition-transform group-hover:scale-110' />
               <CardHeader className='relative'>
@@ -377,7 +401,6 @@ export default function LandingPage() {
               </CardContent>
             </Card>
 
-            {/* Faculty */}
             <Card className='group relative overflow-hidden border-border/60 transition-all hover:border-primary/30 hover:shadow-lg'>
               <div className='absolute right-0 top-0 h-32 w-32 -translate-y-12 translate-x-12 rounded-full bg-accent/10 transition-transform group-hover:scale-110' />
               <CardHeader className='relative'>
@@ -388,8 +411,8 @@ export default function LandingPage() {
                   For Faculty & Non-Teaching Staff
                 </CardTitle>
                 <CardDescription className='text-sm'>
-                  Pull HR records and employment certifications (service records, COE) directly from
-                  HRMO without paperwork. Includes all teaching and non-teaching staff.
+                  Pull HR records and employment certifications directly from HRMO without
+                  paperwork. Includes all teaching and non-teaching staff.
                 </CardDescription>
               </CardHeader>
               <CardContent className='relative'>
@@ -407,7 +430,6 @@ export default function LandingPage() {
               </CardContent>
             </Card>
 
-            {/* Verifiers */}
             <Card className='group relative overflow-hidden border-border/60 bg-linear-to-br from-card to-muted/40 transition-all hover:border-accent/40 hover:shadow-lg'>
               <div className='absolute right-0 top-0 h-32 w-32 -translate-y-12 translate-x-12 rounded-full bg-accent/15 transition-transform group-hover:scale-110' />
               <CardHeader className='relative'>
@@ -417,7 +439,7 @@ export default function LandingPage() {
                 <CardTitle className='font-heading text-xl'>For Verifiers</CardTitle>
                 <CardDescription className='text-sm'>
                   Employers, institutions, and government agencies can confirm any issued document's
-                  authenticity by scanning the QR code. No login required.
+                  authenticity by scanning the QR code. No signin required.
                 </CardDescription>
               </CardHeader>
               <CardContent className='relative'>
@@ -504,9 +526,8 @@ export default function LandingPage() {
                   Submit Document Requests Online
                 </CardTitle>
                 <CardDescription>
-                  Submit requests from any device at any time. System-generated documents
-                  (certificates, clearances) are available digitally; others may require physical
-                  pickup.
+                  Submit requests from any device at any time. System-generated documents are
+                  available digitally; others may require physical pickup.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -531,8 +552,8 @@ export default function LandingPage() {
                   Verify System-Generated Documents
                 </CardTitle>
                 <CardDescription>
-                  System-generated documents carry a QR code linking to a public verification page
-                  to confirm authenticity — no login required.
+                  Every system-generated document carries a QR code linking to a public verification
+                  page — no signin required.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -557,7 +578,6 @@ export default function LandingPage() {
               const Icon = s.icon;
               return (
                 <div key={s.n} className='relative'>
-                  {/* Connector line */}
                   {i < steps.length - 1 && (
                     <div
                       aria-hidden
@@ -585,7 +605,6 @@ export default function LandingPage() {
       <section className='border-b border-border/60'>
         <div className='mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8'>
           <Card className='relative overflow-hidden border-primary/20 bg-linear-to-br from-primary to-secondary text-primary-foreground'>
-            {/* Decorative pattern */}
             <div
               aria-hidden
               className='absolute inset-0 bg-[radial-gradient(circle_at_top_right,oklch(0.7_0.15_65/0.25),transparent_50%)]'
@@ -602,33 +621,50 @@ export default function LandingPage() {
             <CardContent className='relative grid items-center gap-8 p-10 md:grid-cols-2 md:p-14'>
               <div>
                 <h3 className='font-heading text-3xl font-semibold leading-tight tracking-tight md:text-4xl'>
-                  Get started with e-Docs
+                  {session ? 'Welcome back to e-Docs' : 'Get started with e-Docs'}
                 </h3>
                 <p className='mt-4 max-w-lg text-primary-foreground/80'>
-                  Create an account with your school credentials and submit your first document
-                  request.
+                  {session
+                    ? 'You are signed in. Head to your dashboard to submit or track a request.'
+                    : 'Create an account with your school credentials and submit your first document request.'}
                 </p>
               </div>
               <div className='flex flex-wrap gap-3 md:justify-end'>
-                <Button
-                  size='lg'
-                  variant='secondary'
-                  asChild
-                  className='h-11 bg-background px-6 text-foreground shadow-md hover:bg-background/90'
-                >
-                  <Link href='/register'>
-                    Register now
-                    <ArrowRight className='ml-2 h-4 w-4' />
-                  </Link>
-                </Button>
-                <Button
-                  size='lg'
-                  variant='outline'
-                  asChild
-                  className='h-11 border-primary-foreground/30 bg-transparent px-6 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground'
-                >
-                  <Link href='/login'>I already have an account</Link>
-                </Button>
+                {session ? (
+                  <Button
+                    size='lg'
+                    variant='secondary'
+                    asChild
+                    className='h-11 bg-background px-6 text-foreground shadow-md hover:bg-background/90'
+                  >
+                    <Link href={dashboardHref}>
+                      <LayoutDashboard className='mr-2 h-4 w-4' />
+                      Go to Dashboard
+                    </Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      size='lg'
+                      variant='secondary'
+                      asChild
+                      className='h-11 bg-background px-6 text-foreground shadow-md hover:bg-background/90'
+                    >
+                      <Link href='/register'>
+                        Register now
+                        <ArrowRight className='ml-2 h-4 w-4' />
+                      </Link>
+                    </Button>
+                    <Button
+                      size='lg'
+                      variant='outline'
+                      asChild
+                      className='h-11 border-primary-foreground/30 bg-transparent px-6 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground'
+                    >
+                      <Link href='/signin'>I already have an account</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -665,8 +701,8 @@ export default function LandingPage() {
                 </div>
                 <ul className='space-y-2 text-sm text-muted-foreground'>
                   <li>
-                    <Link href='/login' className='hover:text-foreground'>
-                      Login
+                    <Link href='/signin' className='hover:text-foreground'>
+                      Signin
                     </Link>
                   </li>
                   <li>

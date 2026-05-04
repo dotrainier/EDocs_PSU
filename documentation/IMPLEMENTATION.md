@@ -9,6 +9,13 @@ This document describes every file that needs to be created or replaced as part 
 ### Remove
 
 ```
+@supabase/ssr
+@supabase/supabase-js
+```
+
+### Add
+
+```
 bcryptjs          — password hashing (cost factor 12)
 @types/bcryptjs   — TypeScript types (devDependency)
 jose              — JWT signing and verification (session tokens)
@@ -18,6 +25,11 @@ qrcode            — QR code generation as base64 data URLs for PDF embedding
 @types/qrcode     — TypeScript types (devDependency)
 nodemailer        — SMTP email notifications
 @types/nodemailer — TypeScript types (devDependency)
+```
+
+### Keep
+
+```
 drizzle-orm
 drizzle-kit
 postgres
@@ -30,7 +42,11 @@ lucide-react
 shadcn / radix-ui
 ```
 
+---
+
 ## 2. Environment Variables
+
+Replace `.env` with the following. Remove all `SUPABASE_*` keys.
 
 ```env
 # Database
@@ -58,6 +74,12 @@ AI_API_URL=
 ---
 
 ## 3. Database Schema
+
+### Delete
+
+```
+src/db/schema/profiles.schema.ts
+```
 
 ### Create — `src/db/schema/`
 
@@ -238,17 +260,269 @@ Purpose: Automated clearance task creation — the routing engine.
 
 Exports:
 
-- `createClearanceTasks(params: { requestId: string; documentTypeId: string; db: DrizzleDB }): Promise<void>`
-
-Logic:
-
-1. Query `clearance_requirements` for the given `documentTypeId`, ordered by `sequence_order ASC NULLS FIRST`.
-2. If all requirements have `sequence_order = null` → insert all `clearance_tasks` with status `Pending` at once (parallel).
-3. If any have numbered `sequence_order` → insert only `sequence_order = 1` now; subsequent tasks are created by `advanceRouting()` when the previous task is `Cleared`.
-
-- `advanceRouting(params: { requestId: string; completedSequenceOrder: number; db: DrizzleDB }): Promise<void>` — called by the clearance action handler after a task is marked Cleared.
+- `createClearanceTasks(requestId, documentTypeId)` — called on submission, creates initial clearance tasks
+- `advanceRouting(requestId, documentTypeId)` — called after every clearance action, decides what happens next
 
 Libraries used: `drizzle-orm`
+
+---
+
+## Routing Engine — How `sequence_order` Works
+
+`sequence_order` in `clearance_requirements` controls **when a task is created**, not just its order.
+
+| Value  | Meaning                | When task is created              |
+| ------ | ---------------------- | --------------------------------- |
+| `null` | Parallel task          | Immediately on request submission |
+| `1`    | First sequential step  | After ALL null tasks are Cleared  |
+| `2`    | Second sequential step | After sequence_order 1 is Cleared |
+| `3`    | Third sequential step  | After sequence_order 2 is Cleared |
+
+**Important:** `sequence_order = 1` does NOT mean "created first". It means "first in the sequential chain". It is always created AFTER all parallel (null) tasks are done.
+
+### createClearanceTasks() logic
+
+```
+On submission:
+  1. Read clearance_requirements for documentTypeId
+  2. Separate into:
+       parallelReqs  = rows where sequence_order IS NULL
+       sequentialReqs = rows where sequence_order IS NOT NULL
+  3. Insert ALL parallelReqs as clearance_tasks immediately
+  4. If parallelReqs is empty → insert sequence_order = 1 immediately
+     If parallelReqs is NOT empty → do NOT insert any sequential tasks yet
+                                     wait for advanceRouting()
+```
+
+### advanceRouting() logic
+
+```
+Called after every task is marked Cleared:
+  1. Get all existing clearance_tasks for this request
+  2. Count pending parallel tasks (sequence_order = null AND status = Pending)
+  3. If pendingParallel > 0 → do nothing, still waiting
+  4. If pendingParallel = 0 → all parallel done
+       Find highest completed sequential number (lastCompleted)
+       Look for clearance_requirement where sequence_order = lastCompleted + 1
+       If found → insert next sequential clearance_task
+       If not found → no more tasks → update request status to Ready for Release
+```
+
+---
+
+## Full Process Flow — From Submission to Download
+
+This is the complete end-to-end flow for a **TOR request** as an example. All document types follow this same flow — only the number of offices involved changes.
+
+### Actors
+
+- **Juan** — Student (requestor)
+- **Ana** — Cashier staff (UCF)
+- **Clara** — Library staff (LIB)
+- **Diego** — Property staff (PSO)
+- **Elena** — OSAS staff
+- **Francis** — Registrar / OUR Head
+
+---
+
+### Phase 1 — Submission (Portal)
+
+```
+Juan logs in → /request/new
+  Step 1: Selects "Transcript of Records"
+  Step 2: Purpose = Employment, Copies = 2, Release = Digital
+  Step 3: Agrees to Data Privacy Notice
+  Step 4: Reviews and clicks Submit
+
+POST /api/portal/requests
+  → generateTrackingNumber()     → EDOC-2026-000124
+  → calculateSlaDeadline(7)      → 7 working days from today
+  → INSERT document_requests:
+       tracking_number = EDOC-2026-000124
+       status          = Pending
+       fee_amount      = 150.00
+       payment_status  = Unpaid
+  → createClearanceTasks():
+       INSERT clearance_tasks:
+         LIB  → Pending (null)
+         UCF  → Pending (null)
+         PSO  → Pending (null)
+         OSAS → Pending (null)
+         OUR  → NOT CREATED YET
+  → logAudit(REQUEST_SUBMITTED)
+
+Response to Juan:
+  trackingNumber = EDOC-2026-000124
+  feeAmount      = 150.00
+
+Juan sees success modal → clicks View My Request
+→ redirected to /request/EDOC-2026-000124
+```
+
+---
+
+### Phase 2 — Payment (Portal)
+
+```
+Juan is on /request/EDOC-2026-000124
+  Status: Pending
+  Payment: Unpaid ← highlighted warning
+
+Juan pays ₱150 via GCash
+Juan uploads screenshot on the request page
+
+PATCH /api/portal/requests/[id]/payment
+  → document_requests updated:
+       payment_proof_path = /uploads/proofs/req-abc.jpg
+       payment_status     = Pending Verification
+  → logAudit(PAYMENT_PROOF_UPLOADED)
+```
+
+---
+
+### Phase 3 — Parallel Clearance (Office)
+
+All 4 offices (LIB, UCF, PSO, OSAS) work independently at the same time. Order does not matter.
+
+```
+Ana (UCF) logs in → /office/queue
+  Sees: EDOC-2026-000124 | TOR | Juan Dela Cruz | Pending
+  Clicks View → verifies payment proof → marks Cleared
+
+PATCH /api/office/clearance/[taskId]
+  → clearance_tasks: UCF → Cleared, cleared_by = Ana
+  → advanceRouting():
+       pendingParallel = [LIB, PSO, OSAS]  ← still 3 left
+       → do nothing
+
+Clara (LIB) marks Cleared
+  → advanceRouting():
+       pendingParallel = [PSO, OSAS]  ← still 2 left
+       → do nothing
+
+Diego (PSO) marks Cleared
+  → advanceRouting():
+       pendingParallel = [OSAS]  ← still 1 left
+       → do nothing
+
+OSAS staff marks Cleared  ← last parallel task
+  → advanceRouting():
+       pendingParallel = []  ← ALL DONE
+       lastCompleted = 0
+       nextReq = OUR (sequence_order = 1)
+       → INSERT clearance_task: OUR → Pending (sequence_order = 1)
+       → document_requests: status = In Process
+  → logAudit(CLEARANCE_CLEARED) for each
+```
+
+---
+
+### Phase 4 — Registrar Processing (Office)
+
+```
+Francis (OUR Head) logs in → /office/queue
+  Sees: EDOC-2026-000124 | TOR | Juan Dela Cruz | Pending
+  All 4 clearances are done ✓
+  Francis processes the physical TOR document
+  Francis scans it and uploads the PDF
+
+POST /api/office/documents/upload
+  → document_attachments:
+       file_path = /uploads/scans/tor-req-abc-nanoid.pdf
+  → logAudit(DOCUMENT_UPLOADED)
+
+Francis marks OUR clearance task as Cleared
+
+PATCH /api/office/clearance/[taskId]
+  → clearance_tasks: OUR → Cleared
+  → advanceRouting():
+       pendingParallel = []
+       lastCompleted = 1
+       nextReq = none  ← no sequence_order = 2 exists
+       → NO MORE TASKS
+       → document_requests: status = Ready for Release
+  → logAudit(CLEARANCE_CLEARED)
+  → notify Juan via email: Your TOR is ready for release
+```
+
+---
+
+### Phase 5 — Release (Portal)
+
+```
+Juan receives email notification
+Juan logs in → /request/EDOC-2026-000124
+  Status: Ready for Release
+  Clearance Progress:
+    Library    ✓ Cleared
+    Cashier    ✓ Cleared
+    Property   ✓ Cleared
+    OSAS       ✓ Cleared
+    Registrar  ✓ Cleared
+
+Juan clicks Download
+
+GET /api/portal/documents/download/[id]
+  → verify session
+  → fetch file from storage
+  → verifyDocument(buffer, storedHash)  ← tamper check
+       if hash mismatch → ERROR: document has been tampered
+       if hash matches  → stream file to browser
+  → document_requests: status = Released
+  → logAudit(DOCUMENT_DOWNLOADED)
+  → logAudit(STATUS_UPDATED → Released)
+```
+
+---
+
+### Phase 6 — Verification (Public, no login)
+
+```
+Juan's employer scans the QR code on the TOR PDF
+
+GET /verify/[token]  ← public route, no login required
+  → look up generated_documents by verification_token
+  → INSERT document_verifications:
+       scanned_at  = now
+       ip_address  = employer's IP
+       user_agent  = employer's browser
+  → logAudit(VERIFICATION_SCANNED, userId = null)
+  → return public verification page:
+       Document: Transcript of Records
+       Issued by: Office of the University Registrar
+       Issued to: J*** D*** C***  ← masked name
+       Date issued: May 4, 2026
+       Status: VALID ✓
+```
+
+---
+
+### Summary Timeline
+
+```
+Day 1  Juan submits            → 4 parallel tasks created (LIB, UCF, PSO, OSAS)
+Day 1  Juan uploads payment    → payment_status = Pending Verification
+Day 2  Cashier verifies + clears → 3 parallel still pending
+Day 2  Library clears          → 2 parallel still pending
+Day 3  Property clears         → 1 parallel still pending
+Day 3  OSAS clears             → ALL parallel done → OUR task created
+Day 4  Registrar uploads + clears → no more tasks → Ready for Release
+Day 4  Juan downloads TOR      → status = Released
+Day 5  Employer scans QR       → verification log recorded
+```
+
+---
+
+### Tables touched per phase
+
+| Phase        | Tables written                                          |
+| ------------ | ------------------------------------------------------- |
+| Submission   | `document_requests`, `clearance_tasks`, `audit_log`     |
+| Payment      | `document_requests`, `audit_log`                        |
+| Clearance    | `clearance_tasks`, `document_requests`, `audit_log`     |
+| Upload       | `document_attachments`, `audit_log`                     |
+| Download     | `document_requests`, `generated_documents`, `audit_log` |
+| Verification | `document_verifications`, `audit_log`                   |
 
 #### `src/lib/mailer.ts`
 

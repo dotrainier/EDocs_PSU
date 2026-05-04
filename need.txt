@@ -1,0 +1,32 @@
+Here's a clean, copy-ready version of your client's requirements:
+
+---
+
+# Client Requirements — e-Docs PSU
+
+## 1. Document Security & Integrity
+- Every document issued by the system must have a **tamper-evident security trail** — any alteration to the document after issuance must be detectable
+- Documents must be **encrypted** at rest and in transit
+- Physical dry seals and stamps are **replaced by QR codes** embedded in every issued document
+- Scanning the QR code opens a public verification page confirming the document's authenticity, issuing office, and current validity — no login required
+
+## 2. Audit Trail
+- Every action taken on a document — creation, routing, clearance, approval, release, download, scan — must be **permanently recorded and cannot be deleted**
+- The trail must show who did what, when, and from which workstation
+- Example: a Certificate of Grades (COG) request must show the complete history from submission to release
+
+## 3. Automated Document Routing
+- When a document request is submitted, the system must **automatically route it** to the correct offices for clearance — no manual assignment by staff
+- The routing sequence is defined per document type (e.g. TOR requires Library → Cashier → Property → OSAS → Registrar)
+- The Registrar's Office is the **primary issuing authority** and pilots all document release processes
+
+## 4. Flexible Routing Configuration
+- The routing chain for any document type must be **configurable by the administrator** without code changes
+- Offices can be **added to or removed from** a document type's clearance chain at any time through the admin interface
+- Think of offices as **pluggable nodes** in a network — the system re-routes automatically when a node is added or removed (similar to how packet routing adjusts in a network topology)
+- New document types with custom routing chains can be created entirely within the system
+
+## 5. Deployment
+- The system is intended for deployment on a **state university server**
+- Security must meet the standards expected of a government institution handling official academic and employment records
+- The system must handle all registrar processes end-to-end — from request submission to document release

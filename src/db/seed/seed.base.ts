@@ -22,7 +22,7 @@ const officeData = [
   { name: 'HRMO', code: 'HRMO' },
 ];
 
-export async function seedFakeUsers() {
+export async function seedBase() {
   // ─── 1. Roles ───────────────────────────────────────────────────────────────
   console.log('Seeding roles...');
 

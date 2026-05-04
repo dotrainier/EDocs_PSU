@@ -5,6 +5,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+const AUTH_CONFIG = {
+  accessTokenExpiry: '20m',
+  refreshTokenExpiryMs: 7 * 24 * 60 * 60 * 1000, // 7 days
+  refreshTokenExpirySeconds: 7 * 24 * 60 * 60, // 7 days
+  accessTokenExpirySeconds: 60 * 20, // 20 minutes
+  accessCookieName: 'edocs_access',
+  refreshCookieName: 'edocs_refresh',
+} as const;
+
 export type UserRole =
   | 'Student'
   | 'Faculty'
@@ -21,11 +30,6 @@ export type AccessTokenPayload = {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const ACCESS_COOKIE = 'edocs_access';
-const REFRESH_COOKIE = 'edocs_refresh';
-const ACCESS_EXPIRY = '20m';
-const REFRESH_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
-
 function getJwtSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
   if (!secret) throw new Error('JWT_SECRET is not set');
@@ -38,7 +42,7 @@ export async function signAccessToken(payload: AccessTokenPayload): Promise<stri
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime(ACCESS_EXPIRY)
+    .setExpirationTime(AUTH_CONFIG.accessTokenExpiry)
     .sign(getJwtSecret());
 }
 
@@ -58,7 +62,7 @@ export function generateRefreshToken(): string {
 }
 
 export function getRefreshTokenExpiry(): Date {
-  return new Date(Date.now() + REFRESH_EXPIRY_MS);
+  return new Date(Date.now() + AUTH_CONFIG.refreshTokenExpiryMs);
 }
 
 // ─── Cookie Helpers ──────────────────────────────────────────────────────────
@@ -67,28 +71,28 @@ export function getRefreshTokenExpiry(): Date {
 export async function setAuthCookies(accessToken: string, refreshToken: string): Promise<void> {
   const cookieStore = await cookies();
 
-  cookieStore.set(ACCESS_COOKIE, accessToken, {
+  cookieStore.set(AUTH_CONFIG.accessCookieName, accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     path: '/',
-    maxAge: 60 * 20, // 20 minutes in seconds
+    maxAge: AUTH_CONFIG.accessTokenExpirySeconds,
   });
 
-  cookieStore.set(REFRESH_COOKIE, refreshToken, {
+  cookieStore.set(AUTH_CONFIG.refreshCookieName, refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     path: '/',
-    maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
+    maxAge: AUTH_CONFIG.refreshTokenExpirySeconds,
   });
 }
 
 // Used in API routes for logout
 export async function clearAuthCookies(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(ACCESS_COOKIE);
-  cookieStore.delete(REFRESH_COOKIE);
+  cookieStore.delete(AUTH_CONFIG.accessCookieName);
+  cookieStore.delete(AUTH_CONFIG.refreshCookieName);
 }
 
 // ─── Read Helpers (for API routes — Node.js runtime) ─────────────────────────
@@ -97,7 +101,7 @@ export async function clearAuthCookies(): Promise<void> {
 // Use this in protected API routes to get the current user
 export async function getAccessTokenPayload(request: Request): Promise<AccessTokenPayload | null> {
   const cookieHeader = request.headers.get('cookie') ?? '';
-  const token = parseCookieValue(cookieHeader, ACCESS_COOKIE);
+  const token = parseCookieValue(cookieHeader, AUTH_CONFIG.accessCookieName);
   if (!token) return null;
   return verifyAccessToken(token);
 }
@@ -106,18 +110,18 @@ export async function getAccessTokenPayload(request: Request): Promise<AccessTok
 // Use this only in /api/auth/refresh and /api/auth/signout
 export function getRefreshToken(request: Request): string | null {
   const cookieHeader = request.headers.get('cookie') ?? '';
-  return parseCookieValue(cookieHeader, REFRESH_COOKIE);
+  return parseCookieValue(cookieHeader, AUTH_CONFIG.refreshCookieName);
 }
 
 // ─── Read Helpers (for proxy.ts — Edge runtime) ───────────────────────────────
 
 // Used only in proxy.ts — reads from NextRequest cookies
 export function getAccessTokenFromRequest(request: NextRequest): string | null {
-  return request.cookies.get(ACCESS_COOKIE)?.value ?? null;
+  return request.cookies.get(AUTH_CONFIG.accessCookieName)?.value ?? null;
 }
 
 export function getRefreshTokenFromRequest(request: NextRequest): string | null {
-  return request.cookies.get(REFRESH_COOKIE)?.value ?? null;
+  return request.cookies.get(AUTH_CONFIG.refreshCookieName)?.value ?? null;
 }
 
 // ─── Response Cookie Helpers (for proxy.ts redirect responses) ───────────────
@@ -130,26 +134,26 @@ export function setAuthCookiesOnResponse(
 ): void {
   const isProduction = process.env.NODE_ENV === 'production';
 
-  response.cookies.set(ACCESS_COOKIE, accessToken, {
+  response.cookies.set(AUTH_CONFIG.accessCookieName, accessToken, {
     httpOnly: true,
     secure: isProduction,
     sameSite: 'strict',
     path: '/',
-    maxAge: 60 * 20,
+    maxAge: AUTH_CONFIG.accessTokenExpirySeconds,
   });
 
-  response.cookies.set(REFRESH_COOKIE, refreshToken, {
+  response.cookies.set(AUTH_CONFIG.refreshCookieName, refreshToken, {
     httpOnly: true,
     secure: isProduction,
     sameSite: 'strict',
     path: '/',
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: AUTH_CONFIG.refreshTokenExpirySeconds,
   });
 }
 
 export function clearAuthCookiesOnResponse(response: NextResponse): void {
-  response.cookies.delete(ACCESS_COOKIE);
-  response.cookies.delete(REFRESH_COOKIE);
+  response.cookies.delete(AUTH_CONFIG.accessCookieName);
+  response.cookies.delete(AUTH_CONFIG.refreshCookieName);
 }
 
 // ─── Internal helper ─────────────────────────────────────────────────────────
