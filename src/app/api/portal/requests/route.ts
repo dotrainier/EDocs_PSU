@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/db';
 import { generateTrackingNumber, calculateSlaDeadline } from '@/lib/generate';
+import { logAudit } from '@/lib/audit';
 
 import {
   document_requests,
@@ -112,6 +113,13 @@ export async function POST(request: Request) {
       await createClearanceTasks(requestId, documentTypeId);
     }
 
+    await logAudit({
+      userId: session.userId,
+      action: 'REQUEST_SUBMITTED',
+      details: { requestId, trackingNumber, documentTypeId, purpose },
+      ipAddress: request.headers.get('x-forwarded-for') ?? 'unknown',
+    });
+
     return NextResponse.json(
       {
         message: 'Request submitted successfully',
@@ -125,4 +133,34 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : 'An unexpected error occurred';
     return NextResponse.json({ message }, { status: 500 });
   }
+}
+
+export async function GET(request: Request) {
+  const session = await getAccessTokenPayload(request);
+  if (!session) {
+    return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
+  }
+
+  const requests = await db
+    .select({
+      tracking_number: document_requests.tracking_number,
+      document_type: document_types.name,
+      created_at: document_requests.created_at,
+      purpose: document_requests.purpose,
+      status: document_requests.status,
+    })
+    .from(document_requests)
+    .innerJoin(document_types, eq(document_requests.document_type_id, document_types.id))
+    .where(eq(document_requests.user_id, session.userId))
+    .orderBy(desc(document_requests.created_at));
+
+  return NextResponse.json(
+    {
+      requests: requests.map((r) => ({
+        ...r,
+        has_download: true,
+      })),
+    },
+    { status: 200 },
+  );
 }

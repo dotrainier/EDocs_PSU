@@ -1,4 +1,4 @@
-import { pgTable, varchar, serial, boolean, uuid, integer, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, serial, boolean, uuid, integer, timestamp } from 'drizzle-orm/pg-core';
 import { users, offices } from './index';
 
 export const office_staff = pgTable('office_staff', {

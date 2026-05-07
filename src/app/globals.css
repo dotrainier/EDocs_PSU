@@ -50,7 +50,7 @@
 
 :root {
   /* DHV University Light Theme - Modern Vibrant Maroon */
-  --background: oklch(0.99 0 0); /* Clean white background */
+  --background: rgb(252, 252, 252); /* Clean white background */
   --foreground: oklch(0.25 0 0); /* Dark gray text #1f2937 */
 
   --card: oklch(1 0 0); /* Pure white cards */
@@ -59,7 +59,7 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.25 0 0);
 
-  --primary: oklch(0.42 0.18 15); /* Modern DHV Maroon #8E1E2C */
+  --primary: rgb(150, 0, 43); /* Modern DHV Maroon #8E1E2C */
   --primary-foreground: oklch(1 0 0); /* White text on maroon */
 
   --secondary: oklch(0.52 0.16 15); /* Lighter maroon accent */

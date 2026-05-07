@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   CheckCircle2,
@@ -14,9 +15,10 @@ import {
   Calendar,
   Copy,
   Printer,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -33,18 +35,19 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
+import { useFetch } from '@/hooks/useFetch';
+import {
+  calculateDaysBetween,
+  calculateElapsedDays,
+  formatDate,
+  formatDateTime,
+  type ClearanceStatus,
+  normalizeClearanceStatus,
+  normalizeRequestStatus,
+  type RequestStatus,
+} from '@/lib/utils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-type RequestStatus =
-  | 'Pending'
-  | 'In Process'
-  | 'Action Required'
-  | 'Ready for Release'
-  | 'Released'
-  | 'Cancelled';
-
-type ClearanceStatus = 'Pending' | 'Cleared' | 'Rejected';
 
 interface ClearanceOffice {
   name: string;
@@ -73,7 +76,7 @@ interface DocumentRequest {
   releaseMode: 'digital' | 'physical' | 'both';
   slaDays: number;
   elapsedDays: number;
-  fee: number | null;
+  fee: string | null;
   clearanceOffices: ClearanceOffice[];
   timeline: TimelineEntry[];
   actionRequiredReason?: string;
@@ -85,59 +88,96 @@ interface DocumentRequest {
   isCancellable: boolean;
 }
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
+interface RequestResponse {
+  request: {
+    tracking_number: string;
+    document_type: string;
+    handling_pattern: string;
+    issuing_office: string;
+    purpose: string;
+    copies: number;
+    release_mode: 'digital' | 'physical' | 'both';
+    additional_notes: string | null;
+    status: string;
+    fee_amount: string | null;
+    payment_status: string;
+    payment_proof_path: string | null;
+    sla_due_at: string | null;
+    sla_status: 'OnTrack' | 'AtRisk' | 'Breached';
+    created_at: string;
+    clearance_tasks: Array<{
+      office_name: string;
+      status: string;
+      sequence_order: number | null;
+      remarks: string | null;
+      cleared_at: string | null;
+      cleared_by: string | null;
+    }>;
+    documents: Array<unknown>;
+  };
+}
 
-const MOCK_REQUEST: DocumentRequest = {
-  id: 'EDOC-2026-000123',
-  trackingNumber: 'EDOC-2026-000123',
-  status: 'In Process',
-  documentType: 'Transcript of Records',
-  issuingOffice: "Registrar's Office",
-  dateFiled: 'April 25, 2026',
-  copies: 2,
-  purpose: 'Employment',
-  releaseMode: 'digital',
-  slaDays: 7,
-  elapsedDays: 3,
-  fee: 300,
-  clearanceOffices: [
-    { name: 'Accounting Office', status: 'Cleared', clearedAt: 'April 26, 2026' },
-    { name: 'Library', status: 'Cleared', clearedAt: 'April 27, 2026' },
-    { name: 'Student Affairs', status: 'Pending' },
-  ],
-  timeline: [
-    {
-      id: 't3',
-      status: 'In Process',
-      timestamp: 'April 27, 2026 · 10:14 AM',
-      office: "Registrar's Office",
-      remark: 'Document is now being processed by the issuing office.',
-    },
-    {
-      id: 't2',
-      status: 'In Process',
-      timestamp: 'April 26, 2026 · 2:00 PM',
-      office: 'Accounting Office',
-      remark: 'Fee payment verified. Clearance granted.',
-    },
-    {
-      id: 't1',
-      status: 'Pending',
-      timestamp: 'April 25, 2026 · 9:30 AM',
-      office: 'System',
-      remark: 'Request received and queued for clearance processing.',
-    },
-  ],
-  isCancellable: false,
-};
+// ── Loading & error UI ───────────────────────────────────────────────────────
 
-// Alternative mock for different statuses — swap as needed
-// const MOCK_REQUEST_ACTION_REQUIRED: Partial<DocumentRequest> = {
-//   status: "Action Required",
-//   actionRequiredReason: "Outstanding balance of ₱150.00 not yet settled.",
-//   actionRequiredInstruction: "Please proceed to the Accounting Office to settle your balance and present your OR.",
-//   isCancellable: false,
-// };
+function RequestSkeleton() {
+  return (
+    <div className='space-y-6'>
+      <div className='h-4 w-36 rounded bg-muted animate-pulse' />
+      <div className='space-y-2'>
+        <div className='h-6 w-64 rounded bg-muted animate-pulse' />
+        <div className='h-4 w-40 rounded bg-muted animate-pulse' />
+      </div>
+      <Card>
+        <CardContent className='pt-5 pb-5'>
+          <div className='grid gap-6 sm:grid-cols-2'>
+            <div className='space-y-3'>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={`skeleton-detail-${i}`}
+                  className='h-4 w-full rounded bg-muted animate-pulse'
+                />
+              ))}
+            </div>
+            <div className='rounded-lg bg-muted/40 p-4 space-y-3'>
+              <div className='h-4 w-28 rounded bg-muted animate-pulse' />
+              <div className='h-7 w-32 rounded bg-muted animate-pulse' />
+              <div className='h-2 w-full rounded bg-muted animate-pulse' />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className='pb-3'>
+          <div className='h-4 w-36 rounded bg-muted animate-pulse' />
+        </CardHeader>
+        <CardContent className='pt-0 space-y-3'>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={`skeleton-clearance-${i}`}
+              className='h-4 w-full rounded bg-muted animate-pulse'
+            />
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function RequestError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className='flex flex-col items-center justify-center rounded-xl border border-destructive/20 bg-destructive/5 px-6 py-14 text-center'>
+      <div className='flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-4'>
+        <AlertCircle className='h-6 w-6 text-destructive' />
+      </div>
+      <p className='text-sm font-semibold text-foreground'>Failed to load request</p>
+      <p className='mt-1 text-xs text-muted-foreground max-w-xs'>{message}</p>
+      <Button variant='outline' size='sm' className='mt-5 gap-2' onClick={onRetry}>
+        <RefreshCw className='h-3.5 w-3.5' />
+        Try again
+      </Button>
+    </div>
+  );
+}
 
 // ── Status helpers ────────────────────────────────────────────────────────────
 
@@ -184,10 +224,57 @@ export default function TrackRequestPage() {
   const router = useRouter();
   const requestId = (params?.id as string) ?? 'EDOC-2026-000123';
 
-  // In production, fetch from API using requestId
-  const request = MOCK_REQUEST;
+  const { data, loading, error, refetch } = useFetch<RequestResponse>(
+    `/portal/requests/${requestId}`,
+  );
 
-  const slaPercent = Math.min((request.elapsedDays / request.slaDays) * 100, 100);
+  const request = useMemo<DocumentRequest | null>(() => {
+    if (!data?.request) return null;
+
+    const apiRequest = data.request;
+    const status = normalizeRequestStatus(apiRequest.status);
+    const slaDays = calculateDaysBetween(apiRequest.created_at, apiRequest.sla_due_at);
+    const elapsedDays = calculateElapsedDays(apiRequest.created_at);
+
+    return {
+      id: apiRequest.tracking_number,
+      trackingNumber: apiRequest.tracking_number,
+      status,
+      documentType: apiRequest.document_type,
+      issuingOffice: apiRequest.issuing_office,
+      dateFiled: formatDate(apiRequest.created_at),
+      copies: apiRequest.copies,
+      purpose: apiRequest.purpose,
+      releaseMode: apiRequest.release_mode,
+      slaDays: slaDays || 1,
+      elapsedDays,
+      fee: apiRequest.fee_amount,
+      clearanceOffices: apiRequest.clearance_tasks.map((task) => ({
+        name: task.office_name,
+        status: normalizeClearanceStatus(task.status),
+        remark: task.remarks ?? undefined,
+        clearedAt: task.cleared_at ? formatDate(task.cleared_at) : undefined,
+      })),
+      timeline: apiRequest.clearance_tasks.map((task, index) => ({
+        id: `${apiRequest.tracking_number}-${index}`,
+        status,
+        timestamp: task.cleared_at
+          ? formatDateTime(task.cleared_at)
+          : formatDateTime(apiRequest.created_at),
+        office: task.office_name,
+        remark: task.remarks ?? undefined,
+      })),
+      actionRequiredReason: undefined,
+      actionRequiredInstruction: undefined,
+      downloadUrl: apiRequest.payment_proof_path ?? undefined,
+      pickupLocation: undefined,
+      pickupSchedule: undefined,
+      pickupBringItems: undefined,
+      isCancellable: status === 'Pending' || status === 'In Process',
+    };
+  }, [data]);
+
+  const slaPercent = request ? Math.min((request.elapsedDays / request.slaDays) * 100, 100) : 0;
   const slaColor =
     slaPercent < 50 ? 'text-emerald-600' : slaPercent < 85 ? 'text-amber-600' : 'text-red-600';
   const slaBarColor =
@@ -197,9 +284,34 @@ export default function TrackRequestPage() {
         ? '[&>div]:bg-amber-500'
         : '[&>div]:bg-red-500';
 
-  const hasClearance = request.clearanceOffices.length > 0;
-  const isReadyOrReleased = request.status === 'Ready for Release' || request.status === 'Released';
-  const isActionRequired = request.status === 'Action Required';
+  const hasClearance = (request?.clearanceOffices.length ?? 0) > 0;
+  const isReadyOrReleased =
+    request?.status === 'Ready for Release' || request?.status === 'Released';
+  const isActionRequired = request?.status === 'Action Required';
+
+  if (loading) {
+    return (
+      <div className='mx-auto max-w-3xl px-4 py-8 space-y-6'>
+        <RequestSkeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className='mx-auto max-w-3xl px-4 py-8 space-y-6'>
+        <RequestError message={error} onRetry={refetch} />
+      </div>
+    );
+  }
+
+  if (!request) {
+    return (
+      <div className='mx-auto max-w-3xl px-4 py-8 space-y-6'>
+        <RequestError message='Request not found.' onRetry={refetch} />
+      </div>
+    );
+  }
 
   return (
     <div className='mx-auto max-w-3xl px-4 py-8 space-y-6'>

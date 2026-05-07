@@ -9,16 +9,15 @@ import {
   Eye,
   Download,
   X,
-  ChevronRight,
   Clock,
   AlertCircle,
   PackageCheck,
   CheckCircle2,
   XCircle,
   Hourglass,
+  RefreshCw,
 } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -37,93 +36,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { cn } from '@/lib/utils';
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-type RequestStatus =
-  | 'Pending'
-  | 'In Process'
-  | 'Action Required'
-  | 'Ready for Release'
-  | 'Released'
-  | 'Cancelled';
+import { cn, formatDate, type RequestStatus } from '@/lib/utils';
+import { useFetch } from '@/hooks/useFetch';
 
 interface RequestRecord {
-  trackingNo: string;
-  documentType: string;
-  dateFiled: string;
-  status: RequestStatus;
-  copies: number;
+  tracking_number: string;
+  document_type: string;
+  created_at: string;
   purpose: string;
-  issuingOffice: string;
-  hasDownload: boolean;
+  status: RequestStatus;
+  has_download: boolean;
 }
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-
-const MOCK_REQUESTS: RequestRecord[] = [
-  {
-    trackingNo: 'EDOC-2026-000123',
-    documentType: 'Transcript of Records',
-    dateFiled: 'April 25, 2026',
-    status: 'In Process',
-    copies: 2,
-    purpose: 'Employment',
-    issuingOffice: "Registrar's Office",
-    hasDownload: false,
-  },
-  {
-    trackingNo: 'EDOC-2026-000115',
-    documentType: 'Certificate of Enrollment',
-    dateFiled: 'April 18, 2026',
-    status: 'Released',
-    copies: 1,
-    purpose: 'Scholarship Application',
-    issuingOffice: "Registrar's Office",
-    hasDownload: true,
-  },
-  {
-    trackingNo: 'EDOC-2026-000098',
-    documentType: 'Certificate of Good Moral',
-    dateFiled: 'April 10, 2026',
-    status: 'Action Required',
-    copies: 1,
-    purpose: 'Government Requirement',
-    issuingOffice: 'Student Affairs Office',
-    hasDownload: false,
-  },
-  {
-    trackingNo: 'EDOC-2026-000082',
-    documentType: 'Certificate of Grades',
-    dateFiled: 'March 28, 2026',
-    status: 'Ready for Release',
-    copies: 2,
-    purpose: 'Board Examination',
-    issuingOffice: "Registrar's Office",
-    hasDownload: true,
-  },
-  {
-    trackingNo: 'EDOC-2026-000071',
-    documentType: 'Certificate of Enrollment',
-    dateFiled: 'March 15, 2026',
-    status: 'Released',
-    copies: 1,
-    purpose: 'Loan Application',
-    issuingOffice: "Registrar's Office",
-    hasDownload: true,
-  },
-  {
-    trackingNo: 'EDOC-2026-000054',
-    documentType: 'Transcript of Records',
-    dateFiled: 'February 20, 2026',
-    status: 'Cancelled',
-    copies: 1,
-    purpose: 'Personal Record',
-    issuingOffice: "Registrar's Office",
-    hasDownload: false,
-  },
-];
 
 const ALL_STATUSES: RequestStatus[] = [
   'Pending',
@@ -216,23 +139,90 @@ function EmptyState({ hasFilters, onClear }: { hasFilters: boolean; onClear: () 
   );
 }
 
+function RequestListError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className='flex flex-col items-center justify-center rounded-xl border border-destructive/20 bg-destructive/5 px-6 py-14 text-center'>
+      <div className='flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-4'>
+        <AlertCircle className='h-6 w-6 text-destructive' />
+      </div>
+      <p className='text-sm font-semibold text-foreground'>Failed to load requests</p>
+      <p className='mt-1 text-xs text-muted-foreground max-w-xs'>{message}</p>
+      <Button variant='outline' size='sm' className='mt-5 gap-2' onClick={onRetry}>
+        <RefreshCw className='h-3.5 w-3.5' />
+        Try again
+      </Button>
+    </div>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <TableRow key={`skeleton-${index}`}>
+          <TableCell className='py-4'>
+            <div className='h-3 w-20 rounded bg-muted animate-pulse' />
+          </TableCell>
+          <TableCell>
+            <div className='h-3 w-40 rounded bg-muted animate-pulse' />
+          </TableCell>
+          <TableCell>
+            <div className='h-3 w-24 rounded bg-muted animate-pulse' />
+          </TableCell>
+          <TableCell>
+            <div className='h-3 w-44 rounded bg-muted animate-pulse' />
+          </TableCell>
+          <TableCell>
+            <div className='h-5 w-24 rounded-full bg-muted animate-pulse' />
+          </TableCell>
+          <TableCell>
+            <div className='h-8 w-24 rounded-md bg-muted animate-pulse' />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+function CardSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 4 }).map((_, index) => (
+        <Card key={`card-skeleton-${index}`} className='p-4'>
+          <div className='space-y-2'>
+            <div className='h-4 w-40 rounded bg-muted animate-pulse' />
+            <div className='h-3 w-28 rounded bg-muted animate-pulse' />
+            <div className='h-3 w-52 rounded bg-muted animate-pulse' />
+            <div className='h-5 w-24 rounded-full bg-muted animate-pulse' />
+          </div>
+        </Card>
+      ))}
+    </>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function HistoryPage() {
+export default function RequestPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  const { data, loading, error, refetch } = useFetch<{ requests: RequestRecord[] }>(
+    '/portal/requests',
+  );
+  const requests = useMemo(() => data?.requests ?? [], [data?.requests]);
+
   const filtered = useMemo(() => {
-    return MOCK_REQUESTS.filter((r) => {
+    return requests.filter((r) => {
       const matchesSearch =
         search === '' ||
-        r.trackingNo.toLowerCase().includes(search.toLowerCase()) ||
-        r.documentType.toLowerCase().includes(search.toLowerCase()) ||
+        r.tracking_number.toLowerCase().includes(search.toLowerCase()) ||
+        r.document_type.toLowerCase().includes(search.toLowerCase()) ||
         r.purpose.toLowerCase().includes(search.toLowerCase());
       const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [search, statusFilter]);
+  }, [requests, search, statusFilter]);
 
   const hasActiveFilters = search !== '' || statusFilter !== 'all';
 
@@ -300,10 +290,10 @@ export default function HistoryPage() {
       </div>
 
       {/* Results count */}
-      {MOCK_REQUESTS.length > 0 && (
+      {!loading && !error && requests.length > 0 && (
         <p className='text-xs text-muted-foreground'>
           Showing <span className='font-medium text-foreground'>{filtered.length}</span> of{' '}
-          <span className='font-medium text-foreground'>{MOCK_REQUESTS.length}</span> requests
+          <span className='font-medium text-foreground'>{requests.length}</span> requests
         </p>
       )}
 
@@ -325,7 +315,15 @@ export default function HistoryPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <TableSkeleton />
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={6}>
+                  <RequestListError message={error} onRetry={refetch} />
+                </TableCell>
+              </TableRow>
+            ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6}>
                   <EmptyState hasFilters={hasActiveFilters} onClear={clearFilters} />
@@ -333,14 +331,16 @@ export default function HistoryPage() {
               </TableRow>
             ) : (
               filtered.map((req) => (
-                <TableRow key={req.trackingNo}>
+                <TableRow key={req.tracking_number}>
                   <TableCell className='font-mono text-xs text-muted-foreground'>
-                    {req.trackingNo}
+                    {req.tracking_number}
                   </TableCell>
                   <TableCell className='text-sm font-medium text-foreground'>
-                    {req.documentType}
+                    {req.document_type}
                   </TableCell>
-                  <TableCell className='text-sm text-muted-foreground'>{req.dateFiled}</TableCell>
+                  <TableCell className='text-sm text-muted-foreground'>
+                    {formatDate(req.created_at)}
+                  </TableCell>
                   <TableCell className='text-sm text-muted-foreground'>{req.purpose}</TableCell>
                   <TableCell>
                     <StatusBadge status={req.status} />
@@ -349,12 +349,12 @@ export default function HistoryPage() {
                   <TableCell>
                     <div className='flex items-center gap-1'>
                       <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' asChild>
-                        <Link href={`/requests/${req.trackingNo}`}>
+                        <Link href={`/requests/${req.tracking_number}`}>
                           <Eye className='h-3.5 w-3.5' />
                           View
                         </Link>
                       </Button>
-                      {req.hasDownload && (
+                      {req.has_download && (
                         <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' asChild>
                           <a href='#' download>
                             <Download className='h-3.5 w-3.5' />
@@ -373,31 +373,35 @@ export default function HistoryPage() {
 
       {/* Card list — mobile */}
       <div className='space-y-3 md:hidden'>
-        {filtered.length === 0 ? (
+        {loading ? (
+          <CardSkeleton />
+        ) : error ? (
+          <RequestListError message={error} onRetry={refetch} />
+        ) : filtered.length === 0 ? (
           <EmptyState hasFilters={hasActiveFilters} onClear={clearFilters} />
         ) : (
           filtered.map((req) => (
-            <Card key={req.trackingNo} className='p-4'>
+            <Card key={req.tracking_number} className='p-4'>
               <div className='flex items-start justify-between gap-3'>
                 <div className='min-w-0 flex-1 space-y-1.5'>
                   <p className='text-sm font-semibold text-foreground leading-tight'>
-                    {req.documentType}
+                    {req.document_type}
                   </p>
-                  <p className='font-mono text-xs text-muted-foreground'>{req.trackingNo}</p>
+                  <p className='font-mono text-xs text-muted-foreground'>{req.tracking_number}</p>
                   <p className='text-xs text-muted-foreground'>
-                    {req.dateFiled} · {req.purpose}
+                    {formatDate(req.created_at)} · {req.purpose}
                   </p>
                   <StatusBadge status={req.status} />
                 </div>
                 {/* Actions — always visible on mobile */}
                 <div className='flex shrink-0 flex-col items-end gap-1.5'>
                   <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' asChild>
-                    <Link href={`/requests/${req.trackingNo}`}>
+                    <Link href={`/requests/${req.tracking_number}`}>
                       <Eye className='h-3.5 w-3.5' />
                       View
                     </Link>
                   </Button>
-                  {req.hasDownload && (
+                  {req.has_download && (
                     <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' asChild>
                       <a href='#' download>
                         <Download className='h-3.5 w-3.5' />

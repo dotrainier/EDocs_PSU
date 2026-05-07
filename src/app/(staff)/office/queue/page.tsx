@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -30,87 +30,36 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import {
+  cn,
+  formatDateOptional,
+  formatSLAStatus,
+  type ApiSLAStatus,
+  type PaymentStatus,
+  type SLAStatus,
+} from '@/lib/utils';
+import { useFetch } from '@/hooks/useFetch';
 
-// ---------------------------------------------------------------------------
-// Types & mock data
-// ---------------------------------------------------------------------------
-
-type SLAStatus = 'On Track' | 'At Risk' | 'Breached';
-type PaymentStatus = 'Paid' | 'Unpaid' | 'Pending Verification';
-
-interface QueueTask {
-  id: string;
-  trackingNumber: string;
-  documentType: string;
-  requestorName: string;
-  dateSubmitted: string;
-  slaDeadline: string;
-  slaStatus: SLAStatus;
-  paymentStatus: PaymentStatus;
+interface QueueApiTask {
+  request_id: string;
+  tracking_number: string;
+  document_type: string;
+  requestor_name: string;
+  created_at: string;
+  sla_due_at: string | null;
+  sla_status: ApiSLAStatus;
+  payment_status: PaymentStatus;
 }
 
-const MOCK_TASKS: QueueTask[] = [
-  {
-    id: 'req-001',
-    trackingNumber: 'REQ-2025-00435',
-    documentType: 'Transcript of Records',
-    requestorName: 'Juan Dela Cruz',
-    dateSubmitted: 'May 2, 2025',
-    slaDeadline: 'May 7, 2025',
-    slaStatus: 'On Track',
-    paymentStatus: 'Paid',
-  },
-  {
-    id: 'req-002',
-    trackingNumber: 'REQ-2025-00430',
-    documentType: 'Certificate of Enrollment',
-    requestorName: 'Ana Reyes',
-    dateSubmitted: 'May 1, 2025',
-    slaDeadline: 'May 5, 2025',
-    slaStatus: 'At Risk',
-    paymentStatus: 'Pending Verification',
-  },
-  {
-    id: 'req-003',
-    trackingNumber: 'REQ-2025-00421',
-    documentType: 'Diploma',
-    requestorName: 'Pedro Bautista',
-    dateSubmitted: 'Apr 29, 2025',
-    slaDeadline: 'May 4, 2025',
-    slaStatus: 'Breached',
-    paymentStatus: 'Paid',
-  },
-  {
-    id: 'req-004',
-    trackingNumber: 'REQ-2025-00418',
-    documentType: 'Certificate of Graduation',
-    requestorName: 'Rosa Santos',
-    dateSubmitted: 'Apr 30, 2025',
-    slaDeadline: 'May 6, 2025',
-    slaStatus: 'On Track',
-    paymentStatus: 'Unpaid',
-  },
-  {
-    id: 'req-005',
-    trackingNumber: 'REQ-2025-00409',
-    documentType: 'Transcript of Records',
-    requestorName: 'Carlo Mendoza',
-    dateSubmitted: 'Apr 28, 2025',
-    slaDeadline: 'May 3, 2025',
-    slaStatus: 'Breached',
-    paymentStatus: 'Paid',
-  },
-];
-
-const DOCUMENT_TYPES = [
-  'All Types',
-  'Transcript of Records',
-  'Certificate of Enrollment',
-  'Certificate of Graduation',
-  'Diploma',
-  'Good Moral Certificate',
-];
+interface QueueApiResponse {
+  tasks: QueueApiTask[];
+  stats: {
+    total_pending: number;
+    on_track: number;
+    at_risk: number;
+    breached: number;
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -179,14 +128,25 @@ export default function OfficeQueuePage() {
   const [docType, setDocType] = useState('All Types');
   const [slaFilter, setSlaFilter] = useState('All');
 
-  const filtered = MOCK_TASKS.filter((t) => {
-    const matchSearch =
-      t.trackingNumber.toLowerCase().includes(search.toLowerCase()) ||
-      t.requestorName.toLowerCase().includes(search.toLowerCase());
-    const matchDoc = docType === 'All Types' || t.documentType === docType;
-    const matchSla = slaFilter === 'All' || t.slaStatus === slaFilter;
-    return matchSearch && matchDoc && matchSla;
-  });
+  const { data, loading, error, refetch } = useFetch<QueueApiResponse>('/office/queue');
+  const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks]);
+
+  const documentTypes = useMemo(() => {
+    const unique = Array.from(new Set(tasks.map((task) => task.document_type))).sort();
+    return ['All Types', ...unique];
+  }, [tasks]);
+
+  const filtered = useMemo(() => {
+    return tasks.filter((t) => {
+      const matchSearch =
+        t.tracking_number.toLowerCase().includes(search.toLowerCase()) ||
+        t.requestor_name.toLowerCase().includes(search.toLowerCase());
+      const matchDoc = docType === 'All Types' || t.document_type === docType;
+      const matchSla =
+        slaFilter === 'All' || formatSLAStatus(t.sla_status) === (slaFilter as SLAStatus);
+      return matchSearch && matchDoc && matchSla;
+    });
+  }, [tasks, search, docType, slaFilter]);
 
   return (
     <div className='space-y-6 p-6 lg:p-8'>
@@ -196,7 +156,7 @@ export default function OfficeQueuePage() {
           Request Queue
         </h1>
         <p className='font-sans mt-1 text-sm text-muted-foreground'>
-          {MOCK_TASKS.length} pending tasks · act on requests by opening them below.
+          {data?.stats?.total_pending ?? 0} pending tasks · act on requests by opening them below.
         </p>
       </div>
 
@@ -219,7 +179,7 @@ export default function OfficeQueuePage() {
                 <SelectValue placeholder='Document type' />
               </SelectTrigger>
               <SelectContent>
-                {DOCUMENT_TYPES.map((t) => (
+                {documentTypes.map((t) => (
                   <SelectItem key={t} value={t} className='font-sans'>
                     {t}
                   </SelectItem>
@@ -247,7 +207,30 @@ export default function OfficeQueuePage() {
       {/* Table */}
       <Card>
         <CardContent className='p-0'>
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className='flex flex-col items-center justify-center gap-3 py-20 text-center'>
+              <div className='flex h-14 w-14 items-center justify-center rounded-full bg-muted'>
+                <ClipboardList className='h-7 w-7 text-muted-foreground' />
+              </div>
+              <div>
+                <p className='font-sans text-sm font-medium text-foreground'>Loading tasks...</p>
+                <p className='font-sans mt-1 text-xs text-muted-foreground'>Please wait.</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className='flex flex-col items-center justify-center gap-3 py-20 text-center'>
+              <div className='flex h-14 w-14 items-center justify-center rounded-full bg-muted'>
+                <AlertTriangle className='h-7 w-7 text-muted-foreground' />
+              </div>
+              <div>
+                <p className='font-sans text-sm font-medium text-foreground'>Failed to load</p>
+                <p className='font-sans mt-1 text-xs text-muted-foreground'>{error}</p>
+                <Button variant='outline' size='sm' onClick={refetch} className='mt-4 gap-1.5'>
+                  Try again
+                </Button>
+              </div>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className='flex flex-col items-center justify-center gap-3 py-20 text-center'>
               <div className='flex h-14 w-14 items-center justify-center rounded-full bg-muted'>
                 <ClipboardList className='h-7 w-7 text-muted-foreground' />
@@ -289,39 +272,41 @@ export default function OfficeQueuePage() {
               </TableHeader>
               <TableBody>
                 {filtered.map((task) => (
-                  <TableRow key={task.id} className='border-border'>
+                  <TableRow key={task.request_id} className='border-border'>
                     <TableCell className='pl-6'>
                       <span className='font-mono text-xs font-medium text-foreground'>
-                        {task.trackingNumber}
+                        {task.tracking_number}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className='font-sans text-sm text-foreground'>{task.documentType}</span>
+                      <span className='font-sans text-sm text-foreground'>
+                        {task.document_type}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <span className='font-sans text-sm text-foreground'>
-                        {task.requestorName}
+                        {task.requestor_name}
                       </span>
                     </TableCell>
                     <TableCell>
                       <span className='font-sans text-sm text-muted-foreground'>
-                        {task.dateSubmitted}
+                        {formatDateOptional(task.created_at, '—')}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className='flex flex-col gap-1'>
                         <span className='font-sans text-xs text-muted-foreground'>
-                          {task.slaDeadline}
+                          {formatDateOptional(task.sla_due_at, '—')}
                         </span>
-                        <SLABadge status={task.slaStatus} />
+                        <SLABadge status={formatSLAStatus(task.sla_status)} />
                       </div>
                     </TableCell>
                     <TableCell>
-                      <PaymentBadge status={task.paymentStatus} />
+                      <PaymentBadge status={task.payment_status} />
                     </TableCell>
                     <TableCell className='pr-6'>
                       <Button asChild size='sm' variant='outline' className='gap-1.5'>
-                        <Link href={`/office/request/${task.id}`}>
+                        <Link href={`/office/requests/${task.request_id}`}>
                           View
                           <ArrowRight className='h-3.5 w-3.5' />
                         </Link>

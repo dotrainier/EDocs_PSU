@@ -1,8 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search, CheckSquare, ArrowRight, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import {
+  Search,
+  CheckSquare,
+  ArrowRight,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ClipboardList,
+  AlertTriangle,
+} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,7 +30,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn, formatDateOptional, formatDateTime } from '@/lib/utils';
+import { useFetch } from '@/hooks/useFetch';
 
 // ---------------------------------------------------------------------------
 // Types & mock data
@@ -30,92 +40,25 @@ import { cn } from '@/lib/utils';
 type ActionTaken = 'Cleared' | 'Rejected';
 
 interface ClearedTask {
-  id: string;
-  trackingNumber: string;
-  documentType: string;
-  requestorName: string;
-  dateSubmitted: string;
-  actionTaken: ActionTaken;
-  actedAt: string;
-  remarks?: string;
+  task_id: string;
+  task_status: ActionTaken;
+  remarks: string | null;
+  cleared_at: string | null;
+  cleared_by_name: string | null;
+  request_id: string;
+  tracking_number: string;
+  status: string;
+  purpose: string;
+  sla_due_at: string | null;
+  created_at: string;
+  document_type: string;
+  requestor_name: string;
+  requestor_school_id: string;
 }
 
-const MOCK_CLEARED: ClearedTask[] = [
-  {
-    id: 'req-021',
-    trackingNumber: 'REQ-2025-00421',
-    documentType: 'Transcript of Records',
-    requestorName: 'Juan Dela Cruz',
-    dateSubmitted: 'May 2, 2025',
-    actionTaken: 'Cleared',
-    actedAt: 'May 4, 2025 · 10:34 AM',
-  },
-  {
-    id: 'req-018',
-    trackingNumber: 'REQ-2025-00418',
-    documentType: 'Certificate of Enrollment',
-    requestorName: 'Ana Reyes',
-    dateSubmitted: 'May 1, 2025',
-    actionTaken: 'Cleared',
-    actedAt: 'May 4, 2025 · 9:51 AM',
-  },
-  {
-    id: 'req-015',
-    trackingNumber: 'REQ-2025-00415',
-    documentType: 'Diploma',
-    requestorName: 'Pedro Bautista',
-    dateSubmitted: 'Apr 30, 2025',
-    actionTaken: 'Rejected',
-    actedAt: 'May 4, 2025 · 9:22 AM',
-    remarks: 'Incomplete supporting documents submitted.',
-  },
-  {
-    id: 'req-409',
-    trackingNumber: 'REQ-2025-00409',
-    documentType: 'Certificate of Graduation',
-    requestorName: 'Rosa Santos',
-    dateSubmitted: 'Apr 29, 2025',
-    actionTaken: 'Cleared',
-    actedAt: 'May 3, 2025 · 4:10 PM',
-  },
-  {
-    id: 'req-401',
-    trackingNumber: 'REQ-2025-00401',
-    documentType: 'Transcript of Records',
-    requestorName: 'Carlo Mendoza',
-    dateSubmitted: 'Apr 28, 2025',
-    actionTaken: 'Cleared',
-    actedAt: 'May 3, 2025 · 2:55 PM',
-  },
-  {
-    id: 'req-395',
-    trackingNumber: 'REQ-2025-00395',
-    documentType: 'Good Moral Certificate',
-    requestorName: 'Liza Flores',
-    dateSubmitted: 'Apr 27, 2025',
-    actionTaken: 'Rejected',
-    actedAt: 'May 2, 2025 · 11:08 AM',
-    remarks: 'Student has an existing academic case under review.',
-  },
-  {
-    id: 'req-388',
-    trackingNumber: 'REQ-2025-00388',
-    documentType: 'Certificate of Enrollment',
-    requestorName: 'Marco Villanueva',
-    dateSubmitted: 'Apr 26, 2025',
-    actionTaken: 'Cleared',
-    actedAt: 'May 2, 2025 · 9:40 AM',
-  },
-];
-
-const DOCUMENT_TYPES = [
-  'All Types',
-  'Transcript of Records',
-  'Certificate of Enrollment',
-  'Certificate of Graduation',
-  'Diploma',
-  'Good Moral Certificate',
-];
+interface ClearedApiResponse {
+  tasks: ClearedTask[];
+}
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -150,14 +93,24 @@ export default function OfficeClearedPage() {
   const [docType, setDocType] = useState('All Types');
   const [actionFilter, setActionFilter] = useState('All');
 
-  const filtered = MOCK_CLEARED.filter((t) => {
-    const matchSearch =
-      t.trackingNumber.toLowerCase().includes(search.toLowerCase()) ||
-      t.requestorName.toLowerCase().includes(search.toLowerCase());
-    const matchDoc = docType === 'All Types' || t.documentType === docType;
-    const matchAction = actionFilter === 'All' || t.actionTaken === actionFilter;
-    return matchSearch && matchDoc && matchAction;
-  });
+  const { data, loading, error, refetch } = useFetch<ClearedApiResponse>('/office/cleared');
+  const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks]);
+
+  const documentTypes = useMemo(() => {
+    const unique = Array.from(new Set(tasks.map((task) => task.document_type))).sort();
+    return ['All Types', ...unique];
+  }, [tasks]);
+
+  const filtered = useMemo(() => {
+    return tasks.filter((t) => {
+      const matchSearch =
+        t.tracking_number.toLowerCase().includes(search.toLowerCase()) ||
+        t.requestor_name.toLowerCase().includes(search.toLowerCase());
+      const matchDoc = docType === 'All Types' || t.document_type === docType;
+      const matchAction = actionFilter === 'All' || t.task_status === actionFilter;
+      return matchSearch && matchDoc && matchAction;
+    });
+  }, [tasks, search, docType, actionFilter]);
 
   return (
     <div className='space-y-6 p-6 lg:p-8'>
@@ -189,7 +142,7 @@ export default function OfficeClearedPage() {
                 <SelectValue placeholder='Document type' />
               </SelectTrigger>
               <SelectContent>
-                {DOCUMENT_TYPES.map((t) => (
+                {documentTypes.map((t) => (
                   <SelectItem key={t} value={t} className='font-sans'>
                     {t}
                   </SelectItem>
@@ -216,7 +169,30 @@ export default function OfficeClearedPage() {
       {/* Table */}
       <Card>
         <CardContent className='p-0'>
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className='flex flex-col items-center justify-center gap-3 py-20 text-center'>
+              <div className='flex h-14 w-14 items-center justify-center rounded-full bg-muted'>
+                <ClipboardList className='h-7 w-7 text-muted-foreground' />
+              </div>
+              <div>
+                <p className='font-sans text-sm font-medium text-foreground'>Loading tasks...</p>
+                <p className='font-sans mt-1 text-xs text-muted-foreground'>Please wait.</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className='flex flex-col items-center justify-center gap-3 py-20 text-center'>
+              <div className='flex h-14 w-14 items-center justify-center rounded-full bg-muted'>
+                <AlertTriangle className='h-7 w-7 text-muted-foreground' />
+              </div>
+              <div>
+                <p className='font-sans text-sm font-medium text-foreground'>Failed to load</p>
+                <p className='font-sans mt-1 text-xs text-muted-foreground'>{error}</p>
+                <Button variant='outline' size='sm' onClick={refetch} className='mt-4 gap-1.5'>
+                  Try again
+                </Button>
+              </div>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className='flex flex-col items-center justify-center gap-3 py-20 text-center'>
               <div className='flex h-14 w-14 items-center justify-center rounded-full bg-muted'>
                 <CheckSquare className='h-7 w-7 text-muted-foreground' />
@@ -224,7 +200,9 @@ export default function OfficeClearedPage() {
               <div>
                 <p className='font-sans text-sm font-medium text-foreground'>No results found</p>
                 <p className='font-sans mt-1 text-xs text-muted-foreground'>
-                  Try adjusting your search or filters.
+                  {search || docType !== 'All Types' || actionFilter !== 'All'
+                    ? 'Try adjusting your search or filters.'
+                    : 'No cleared or rejected tasks yet.'}
                 </p>
               </div>
             </div>
@@ -256,47 +234,49 @@ export default function OfficeClearedPage() {
               </TableHeader>
               <TableBody>
                 {filtered.map((task) => (
-                  <TableRow key={task.id} className='border-border'>
+                  <TableRow key={task.task_id} className='border-border'>
                     <TableCell className='pl-6'>
                       <span className='font-mono text-xs font-medium text-foreground'>
-                        {task.trackingNumber}
+                        {task.tracking_number}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className='font-sans text-sm text-foreground'>{task.documentType}</span>
+                      <span className='font-sans text-sm text-foreground'>
+                        {task.document_type}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <span className='font-sans text-sm text-foreground'>
-                        {task.requestorName}
+                        {task.requestor_name}
                       </span>
                     </TableCell>
                     <TableCell>
                       <span className='font-sans text-sm text-muted-foreground'>
-                        {task.dateSubmitted}
+                        {formatDateOptional(task.created_at, '—')}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className='flex flex-col gap-1'>
-                        <ActionBadge action={task.actionTaken} />
-                        {task.remarks && (
+                        <ActionBadge action={task.task_status} />
+                        {task.remarks ? (
                           <p
                             className='font-sans max-w-[200px] truncate text-[11px] text-muted-foreground'
                             title={task.remarks}
                           >
                             {task.remarks}
                           </p>
-                        )}
+                        ) : null}
                       </div>
                     </TableCell>
                     <TableCell>
                       <span className='flex items-center gap-1 text-xs text-muted-foreground'>
                         <Clock className='h-3 w-3 shrink-0' />
-                        {task.actedAt}
+                        {task.cleared_at ? formatDateTime(task.cleared_at) : '—'}
                       </span>
                     </TableCell>
                     <TableCell className='pr-6'>
                       <Button asChild size='sm' variant='outline' className='gap-1.5'>
-                        <Link href={`/office/request/${task.id}`}>
+                        <Link href=''>
                           View
                           <ArrowRight className='h-3.5 w-3.5' />
                         </Link>
