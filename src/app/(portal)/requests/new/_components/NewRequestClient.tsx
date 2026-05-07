@@ -25,6 +25,7 @@ import Step1SelectDocument from './Step1SelectDocument';
 import Step2RequestDetails from './Step2RequestDetails';
 import Step3PrivacyNotice from './Step3PrivacyNotice';
 import Step4Review from './Step4Review';
+import AIReasoning from './AIReasoning';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,9 +50,20 @@ interface RequestFormData {
   agreedToPrivacy: boolean;
 }
 
+interface AIValidationResult {
+  selected_type: string;
+  ai_suggestion: string;
+  confidence: number;
+  reasoning: string;
+  matches: boolean;
+  ai_failed: boolean;
+  skip_validation?: boolean;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const STEP_LABELS = ['Document Type', 'Request Details', 'Data Privacy', 'Review & Confirm'];
+const AI_CONFIDENCE_THRESHOLD = 0.8;
 
 // ── Loading skeleton ──────────────────────────────────────────────────────────
 
@@ -192,6 +204,8 @@ export default function NewRequestClient() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [submittedTracking, setSubmittedTracking] = useState('');
   const [submittedFee, setSubmittedFee] = useState('');
+  const [aiValidation, setAiValidation] = useState<AIValidationResult | null>(null);
+  const [aiChecking, setAiChecking] = useState(false);
 
   const { data, loading, error, refetch } = useFetch<{ docs: DocumentType[] }>(
     '/portal/document-types',
@@ -211,6 +225,9 @@ export default function NewRequestClient() {
 
   function handleFieldChange(field: keyof RequestFormData, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === 'purpose' || field === 'documentTypeId') {
+      setAiValidation(null);
+    }
   }
 
   function canProceed(): boolean {
@@ -220,8 +237,37 @@ export default function NewRequestClient() {
     return true;
   }
 
-  function handleNext() {
-    if (currentStep < 4) setCurrentStep((s) => s + 1);
+  async function handleNext() {
+    if (currentStep !== 2) {
+      if (currentStep < 4) setCurrentStep((s) => s + 1);
+      return;
+    }
+
+    if (!canProceed()) return;
+
+    try {
+      setAiChecking(true);
+      const result = await api.post<AIValidationResult>('/ai/validate-classification', {
+        documentTypeId: Number(formData.documentTypeId),
+        purpose: formData.purpose,
+      });
+
+      setAiValidation(result);
+
+      if (result.ai_failed || result.skip_validation) {
+        setCurrentStep(3);
+        return;
+      }
+
+      const lowConfidence = result.confidence < AI_CONFIDENCE_THRESHOLD;
+      if (result.matches && !lowConfidence) {
+        setCurrentStep(3);
+      }
+    } catch (err: unknown) {
+      setCurrentStep(3);
+    } finally {
+      setAiChecking(false);
+    }
   }
 
   function handleBack() {
@@ -259,6 +305,14 @@ export default function NewRequestClient() {
   }
 
   const progressValue = ((currentStep - 1) / (STEP_LABELS.length - 1)) * 100;
+  const showAiReasoning =
+    currentStep === 2 &&
+    aiValidation &&
+    !aiValidation.ai_failed &&
+    (!aiValidation.matches || aiValidation.confidence < AI_CONFIDENCE_THRESHOLD);
+  const suggestedDoc = aiValidation
+    ? DOCUMENT_TYPES.find((d) => d.code === aiValidation.ai_suggestion)
+    : undefined;
 
   return (
     <>
@@ -332,7 +386,25 @@ export default function NewRequestClient() {
             </>
           )}
           {currentStep === 2 && (
-            <Step2RequestDetails formData={formData} onChange={handleFieldChange} />
+            <div className='space-y-4'>
+              <Step2RequestDetails formData={formData} onChange={handleFieldChange} />
+              {showAiReasoning && (
+                <AIReasoning
+                  open={showAiReasoning}
+                  onDismiss={() => setAiValidation(null)}
+                  onOverride={() => {
+                    setAiValidation(null);
+                    setCurrentStep(3);
+                  }}
+                  selectedName={selectedDoc?.name ?? ''}
+                  suggestedName={suggestedDoc?.name ?? aiValidation.ai_suggestion}
+                  confidence={aiValidation.confidence}
+                  reasoning={aiValidation.reasoning}
+                  threshold={AI_CONFIDENCE_THRESHOLD}
+                  matches={aiValidation.matches}
+                />
+              )}
+            </div>
           )}
           {currentStep === 3 && (
             <Step3PrivacyNotice
@@ -383,9 +455,16 @@ export default function NewRequestClient() {
               {currentStep < 4 ? (
                 <Button
                   onClick={handleNext}
-                  disabled={!canProceed() || (currentStep === 1 && loading)}
+                  disabled={!canProceed() || (currentStep === 1 && loading) || aiChecking}
                 >
-                  Continue
+                  {aiChecking && currentStep === 2 ? (
+                    <>
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                      Checking...
+                    </>
+                  ) : (
+                    'Continue'
+                  )}
                 </Button>
               ) : (
                 <Button

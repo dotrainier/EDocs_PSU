@@ -306,7 +306,7 @@ export default function OfficeQueuePage() {
                     </TableCell>
                     <TableCell className='pr-6'>
                       <Button asChild size='sm' variant='outline' className='gap-1.5'>
-                        <Link href={`/office/requests/${task.request_id}`}>
+                        <Link href={`/office/requests/${task.tracking_number}`}>
                           View
                           <ArrowRight className='h-3.5 w-3.5' />
                         </Link>

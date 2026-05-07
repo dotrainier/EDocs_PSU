@@ -39,6 +39,10 @@ const PURPOSES = [
 ];
 
 export default function Step2RequestDetails({ formData, onChange }: Step2Props) {
+  const isKnownPurpose = PURPOSES.includes(formData.purpose);
+  const purposeSelectValue = isKnownPurpose ? formData.purpose : 'Other';
+  const otherPurposeValue = isKnownPurpose ? '' : formData.purpose;
+
   return (
     <div className='space-y-6'>
       <div>
@@ -53,7 +57,10 @@ export default function Step2RequestDetails({ formData, onChange }: Step2Props) 
           <Label htmlFor='purpose'>
             Purpose <span className='text-destructive'>*</span>
           </Label>
-          <Select value={formData.purpose} onValueChange={(v) => onChange('purpose', v)}>
+          <Select
+            value={purposeSelectValue}
+            onValueChange={(v) => onChange('purpose', v === 'Other' ? 'Other' : v)}
+          >
             <SelectTrigger id='purpose'>
               <SelectValue placeholder='Select a purpose…' />
             </SelectTrigger>
@@ -65,6 +72,14 @@ export default function Step2RequestDetails({ formData, onChange }: Step2Props) 
               ))}
             </SelectContent>
           </Select>
+          {purposeSelectValue === 'Other' ? (
+            <Input
+              id='purpose-other'
+              value={otherPurposeValue}
+              onChange={(e) => onChange('purpose', e.target.value)}
+              placeholder='Enter your purpose…'
+            />
+          ) : null}
         </div>
 
         <div className='space-y-2'>

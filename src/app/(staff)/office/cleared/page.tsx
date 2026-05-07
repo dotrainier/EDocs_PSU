@@ -138,7 +138,7 @@ export default function OfficeClearedPage() {
           </div>
           <div className='flex shrink-0 gap-2'>
             <Select value={docType} onValueChange={setDocType}>
-              <SelectTrigger className='font-sans w-[200px]'>
+              <SelectTrigger className='font-sans w-50'>
                 <SelectValue placeholder='Document type' />
               </SelectTrigger>
               <SelectContent>
@@ -276,7 +276,7 @@ export default function OfficeClearedPage() {
                     </TableCell>
                     <TableCell className='pr-6'>
                       <Button asChild size='sm' variant='outline' className='gap-1.5'>
-                        <Link href=''>
+                        <Link href={`/office/requests/${task.tracking_number}`}>
                           View
                           <ArrowRight className='h-3.5 w-3.5' />
                         </Link>
