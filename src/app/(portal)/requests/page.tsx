@@ -208,6 +208,24 @@ export default function RequestPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  const getDownloadUrl = (trackingNumber: string) =>
+    `/api/portal/documents/download/${trackingNumber}`;
+
+  const openPdfPreview = async (trackingNumber: string) => {
+    try {
+      const response = await fetch(getDownloadUrl(trackingNumber));
+      if (!response.ok) {
+        throw new Error('Failed to fetch PDF');
+      }
+      const pdfBlob = await response.blob();
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const { data, loading, error, refetch } = useFetch<{ requests: RequestRecord[] }>(
     '/portal/requests',
   );
@@ -361,12 +379,10 @@ export default function RequestPage() {
                             variant='outline'
                             size='sm'
                             className='h-8 gap-1.5 text-xs'
-                            asChild
+                            onClick={() => openPdfPreview(req.tracking_number)}
                           >
-                            <a href='#' download>
-                              <Download className='h-3.5 w-3.5' />
-                              Download
-                            </a>
+                            <Download className='h-3.5 w-3.5' />
+                            Download
                           </Button>
                         )}
                     </div>
@@ -410,11 +426,14 @@ export default function RequestPage() {
                   </Button>
                   {req.has_download &&
                     (req.status === 'Ready for Release' || req.status === 'Released') && (
-                      <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' asChild>
-                        <a href='#' download>
-                          <Download className='h-3.5 w-3.5' />
-                          Download
-                        </a>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        className='h-8 gap-1.5 text-xs'
+                        onClick={() => openPdfPreview(req.tracking_number)}
+                      >
+                        <Download className='h-3.5 w-3.5' />
+                        Download
                       </Button>
                     )}
                 </div>
