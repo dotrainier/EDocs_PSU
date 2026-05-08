@@ -36,8 +36,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { cn, formatDate, type RequestStatus } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
+import { RequestStatus } from '@/types/document.type';
 
 interface RequestRecord {
   tracking_number: string;
@@ -354,14 +355,20 @@ export default function RequestPage() {
                           View
                         </Link>
                       </Button>
-                      {req.has_download && (
-                        <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' asChild>
-                          <a href='#' download>
-                            <Download className='h-3.5 w-3.5' />
-                            Download
-                          </a>
-                        </Button>
-                      )}
+                      {req.has_download &&
+                        (req.status === 'Ready for Release' || req.status === 'Released') && (
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            className='h-8 gap-1.5 text-xs'
+                            asChild
+                          >
+                            <a href='#' download>
+                              <Download className='h-3.5 w-3.5' />
+                              Download
+                            </a>
+                          </Button>
+                        )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -401,14 +408,15 @@ export default function RequestPage() {
                       View
                     </Link>
                   </Button>
-                  {req.has_download && (
-                    <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' asChild>
-                      <a href='#' download>
-                        <Download className='h-3.5 w-3.5' />
-                        Download
-                      </a>
-                    </Button>
-                  )}
+                  {req.has_download &&
+                    (req.status === 'Ready for Release' || req.status === 'Released') && (
+                      <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' asChild>
+                        <a href='#' download>
+                          <Download className='h-3.5 w-3.5' />
+                          Download
+                        </a>
+                      </Button>
+                    )}
                 </div>
               </div>
             </Card>

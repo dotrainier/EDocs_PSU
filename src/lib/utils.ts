@@ -1,22 +1,9 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { RequestStatus, ClearanceStatus, ApiSLAStatus, SLAStatus } from '@/types/document.type';
 
 type UserRole = 'Student' | 'Faculty' | 'NonTeachingStaff' | 'OfficeStaff' | 'OfficeHead' | 'Admin';
 const OFFICE_ROLES: UserRole[] = ['OfficeStaff', 'OfficeHead'];
-
-export type RequestStatus =
-  | 'Pending'
-  | 'In Process'
-  | 'Action Required'
-  | 'Ready for Release'
-  | 'Released'
-  | 'Cancelled';
-
-export type ClearanceStatus = 'Pending' | 'Cleared' | 'Rejected';
-
-export type SLAStatus = 'On Track' | 'At Risk' | 'Breached';
-export type ApiSLAStatus = 'OnTrack' | 'AtRisk' | 'Breached';
-export type PaymentStatus = 'Paid' | 'Unpaid' | 'Pending Verification';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

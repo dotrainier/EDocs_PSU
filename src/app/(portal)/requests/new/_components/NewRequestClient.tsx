@@ -263,7 +263,7 @@ export default function NewRequestClient() {
       if (result.matches && !lowConfidence) {
         setCurrentStep(3);
       }
-    } catch (err: unknown) {
+    } catch {
       setCurrentStep(3);
     } finally {
       setAiChecking(false);
