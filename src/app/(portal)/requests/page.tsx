@@ -45,7 +45,7 @@ interface RequestRecord {
   document_type: string;
   created_at: string;
   purpose: string;
-  status: RequestStatus;
+  status: string;
   has_download: boolean;
 }
 
@@ -98,8 +98,29 @@ const STATUS_CONFIG = {
   },
 } satisfies Record<RequestStatus, { color: string; icon: React.ElementType; dot: string }>;
 
-function StatusBadge({ status }: { status: RequestStatus }) {
-  const cfg = STATUS_CONFIG[status];
+const UNKNOWN_STATUS = {
+  icon: AlertCircle,
+  color:
+    'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900',
+  dot: 'bg-amber-500',
+};
+
+function normalizeStatus(status: string): RequestStatus | null {
+  const normalized = status.trim().toLowerCase();
+  const map: Record<string, RequestStatus> = {
+    pending: 'Pending',
+    'in process': 'In Process',
+    'action required': 'Action Required',
+    'ready for release': 'Ready for Release',
+    released: 'Released',
+    cancelled: 'Cancelled',
+  };
+  return map[normalized] ?? null;
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const normalized = normalizeStatus(status);
+  const cfg = (normalized ? STATUS_CONFIG[normalized] : undefined) ?? UNKNOWN_STATUS;
   const Icon = cfg.icon;
   return (
     <span
@@ -109,7 +130,7 @@ function StatusBadge({ status }: { status: RequestStatus }) {
       )}
     >
       <Icon className='h-3 w-3' />
-      {status}
+      {normalized ?? status}
     </span>
   );
 }
@@ -238,7 +259,7 @@ export default function RequestPage() {
         r.tracking_number.toLowerCase().includes(search.toLowerCase()) ||
         r.document_type.toLowerCase().includes(search.toLowerCase()) ||
         r.purpose.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+      const matchesStatus = statusFilter === 'all' || normalizeStatus(r.status) === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [requests, search, statusFilter]);

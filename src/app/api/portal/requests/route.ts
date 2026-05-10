@@ -38,7 +38,7 @@ async function createClearanceTasks(requestId: string, documentTypeId: number): 
       parallelReqs.map((r) => ({
         request_id: requestId,
         office_id: r.office_id,
-        status: 'pending',
+        status: 'Pending',
         sequence_order: null,
       })),
     );
@@ -49,7 +49,7 @@ async function createClearanceTasks(requestId: string, documentTypeId: number): 
     await db.insert(clearance_tasks).values({
       request_id: requestId,
       office_id: firstSequential.office_id,
-      status: 'pending',
+      status: 'Pending',
       sequence_order: 1,
     });
   }
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
         copies,
         release_mode: releaseMode,
         additional_notes: additionalNotes ?? null,
-        status: 'pending',
+        status: 'Pending',
         fee_amount: docType.fee_amount,
         payment_status: docType.fee_amount && docType.fee_amount !== '0.00' ? 'Unpaid' : 'Paid', // free documents skip payment
         sla_due_at: slaDeadline,
