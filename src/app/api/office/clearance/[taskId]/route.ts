@@ -77,21 +77,7 @@ export async function PATCH(
       return NextResponse.json({ message: 'Request not found' }, { status: 404 });
     }
 
-    // 4. Get Requestor info
-    const requestor = await db
-      .select({
-        name: users.full_name,
-        email: users.email,
-      })
-      .from(users)
-      .where(eq(users.id, docRequest.user_id))
-      .limit(1);
-
-    if (!requestor[0] || !requestor[0].email) {
-      return NextResponse.json({ message: 'Requestor email not found' }, { status: 500 });
-    }
-
-    // 5. Update clearance task
+    // 4. Update clearance task
     const newStatus = action === 'cleared' ? 'Cleared' : 'Rejected';
 
     await db
@@ -120,55 +106,7 @@ export async function PATCH(
         .where(eq(document_requests.id, task.request_id));
     }
 
-    // 8. Get Office name
-    const officeResult = await db
-      .select({ name: offices.name })
-      .from(offices)
-      .where(eq(offices.id, task.office_id))
-      .limit(1);
-
-    const officeName = officeResult[0]?.name || 'Office';
-
-    const emailHtml = await render(
-      ClearanceApprovedEmail({
-        userName: requestor[0].name,
-        documentType: docRequest.document_name,
-        trackingUrl: `${process.env.NEXT_PUBLIC_APP_URL}/requests/${docRequest.tracking_number}`,
-        officeName: officeName,
-      }),
-    );
-
-    await createNotification({
-      userId: docRequest.user_id,
-      title: `Your ${docRequest.document_name} request has been ${newStatus.toLowerCase()} by ${officeName}`,
-      message: `Your request for ${docRequest.document_name} has been ${newStatus.toLowerCase()} by ${officeName}. Please check the system for details.`,
-      type: newStatus === 'Cleared' ? 'clearance_cleared' : 'clearance_rejected',
-      requestId: task.request_id,
-      relatedId: task.id.toString(),
-    });
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        documentId: task.request_id,
-        userId: docRequest.user_id,
-        status: newStatus,
-        message: `Your request for ${docRequest.document_name} has been ${newStatus.toLowerCase()} by ${officeName}. Please check the system for details.`,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Failed to send real-time notification');
-    }
-
-    await sendMail({
-      to: requestor[0].email,
-      subject: `Your ${docRequest.document_name} request has been ${newStatus.toLowerCase()} by ${officeName}`,
-      html: emailHtml,
-    });
-
-    // 9. Log audit
+    // 8. Log audit
     await logAudit({
       userId: session.userId,
       action: action === 'cleared' ? 'CLEARANCE_CLEARED' : 'CLEARANCE_REJECTED',
@@ -180,6 +118,65 @@ export async function PATCH(
       },
       ipAddress: request.headers.get('x-forwarded-for') ?? 'unknown',
     });
+
+    // Fire-and-forget: notifications + email don't block the response
+    void (async () => {
+      try {
+        const [requestor, officeResult] = await Promise.all([
+          db
+            .select({ name: users.full_name, email: users.email })
+            .from(users)
+            .where(eq(users.id, docRequest.user_id))
+            .limit(1),
+          db
+            .select({ name: offices.name })
+            .from(offices)
+            .where(eq(offices.id, task.office_id))
+            .limit(1),
+        ]);
+
+        if (!requestor[0]) return;
+        const officeName = officeResult[0]?.name || 'Office';
+
+        await createNotification({
+          userId: docRequest.user_id,
+          title: `Your ${docRequest.document_name} request has been ${newStatus.toLowerCase()} by ${officeName}`,
+          message: `Your request for ${docRequest.document_name} has been ${newStatus.toLowerCase()} by ${officeName}. Please check the system for details.`,
+          type: newStatus === 'Cleared' ? 'clearance_cleared' : 'clearance_rejected',
+          requestId: task.request_id,
+          relatedId: task.id.toString(),
+        });
+
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            documentId: task.request_id,
+            userId: docRequest.user_id,
+            status: newStatus,
+            message: `Your request for ${docRequest.document_name} has been ${newStatus.toLowerCase()} by ${officeName}. Please check the system for details.`,
+          }),
+        }).catch(() => {});
+
+        if (requestor[0].email) {
+          const emailHtml = await render(
+            ClearanceApprovedEmail({
+              userName: requestor[0].name,
+              documentType: docRequest.document_name,
+              trackingUrl: `${process.env.NEXT_PUBLIC_APP_URL}/requests/${docRequest.tracking_number}`,
+              officeName,
+            }),
+          );
+          await sendMail({
+            to: requestor[0].email,
+            subject: `Your ${docRequest.document_name} request has been ${newStatus.toLowerCase()} by ${officeName}`,
+            html: emailHtml,
+          });
+        }
+      } catch {
+        // notification/email errors are non-critical
+      }
+    })();
 
     return NextResponse.json(
       {

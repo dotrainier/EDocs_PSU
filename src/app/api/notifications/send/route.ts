@@ -37,8 +37,12 @@ export async function POST(request: NextRequest) {
       backendStatus: string,
     ): 'pending' | 'processing' | 'completed' | 'rejected' => {
       const statusMap: Record<string, 'pending' | 'processing' | 'completed' | 'rejected'> = {
+        // Portal / clearance statuses
         Cleared: 'completed',
         Rejected: 'rejected',
+        Pending: 'pending',
+        'Action Required': 'processing',
+        // Generic
         pending: 'pending',
         processing: 'processing',
         completed: 'completed',

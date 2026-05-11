@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/axios';
+import { NotificationBell } from '@/components/shared/NotificationBell';
 
 interface User {
   fullName: string;
@@ -159,16 +160,20 @@ export default function OfficeLayoutClient({
 
       {/* Main content */}
       <div className='flex flex-1 flex-col overflow-hidden'>
-        {/* Mobile top bar */}
-        <header className='flex h-14 items-center gap-3 border-b border-border bg-card px-4 lg:hidden'>
+        <header className='sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-sm'>
           <MobileNav user={user} />
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-2 lg:hidden'>
             <div className='flex h-7 w-7 items-center justify-center rounded-lg bg-primary'>
               <GraduationCap className='h-4 w-4 text-primary-foreground' />
             </div>
             <span className='font-heading text-base font-bold tracking-tight text-foreground'>
               e-Docs
             </span>
+          </div>
+          <div className='flex-1' />
+          <NotificationBell />
+          <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow'>
+            {user.initials}
           </div>
         </header>
 

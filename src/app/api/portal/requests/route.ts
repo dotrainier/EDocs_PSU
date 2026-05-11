@@ -1,15 +1,17 @@
 import { NextResponse } from 'next/server';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/db';
 import { generateTrackingNumber, calculateSlaDeadline } from '@/lib/generate';
 import { logAudit } from '@/lib/audit';
+import { createNotification } from '@/lib/notification';
 
 import {
   document_requests,
   document_types,
   clearance_requirements,
   clearance_tasks,
+  office_staff,
 } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
 
@@ -119,6 +121,69 @@ export async function POST(request: Request) {
       details: { requestId, trackingNumber, documentTypeId, purpose },
       ipAddress: request.headers.get('x-forwarded-for') ?? 'unknown',
     });
+
+    // Fire-and-forget: notifications don't block the response
+    void (async () => {
+      try {
+        // Notify portal user
+        await createNotification({
+          userId: session.userId,
+          title: `Request submitted: ${docType.name}`,
+          message: `Your request has been submitted successfully. Tracking number: ${trackingNumber}.`,
+          type: 'document_submitted',
+          requestId,
+        });
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            documentId: requestId,
+            userId: session.userId,
+            status: 'Pending',
+            message: `Your request has been submitted successfully. Tracking number: ${trackingNumber}.`,
+          }),
+        }).catch(() => {});
+
+        // Notify all staff in involved offices (issuing + clearance)
+        const involvedOfficeIds = new Set<number>([docType.issuing_office_id]);
+        if (docType.requires_clearance) {
+          const tasks = await db
+            .select({ office_id: clearance_tasks.office_id })
+            .from(clearance_tasks)
+            .where(eq(clearance_tasks.request_id, requestId));
+          tasks.forEach((t) => involvedOfficeIds.add(t.office_id));
+        }
+
+        const staffRows = await db
+          .select({ user_id: office_staff.user_id })
+          .from(office_staff)
+          .where(inArray(office_staff.office_id, [...involvedOfficeIds]));
+
+        await Promise.all(
+          staffRows.map(async ({ user_id }) => {
+            await createNotification({
+              userId: user_id,
+              title: `New ${docType.name} request`,
+              message: `A new request has been submitted. Tracking: ${trackingNumber}.`,
+              type: 'document_submitted',
+              requestId,
+            });
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/send`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                documentId: requestId,
+                userId: user_id,
+                status: 'Pending',
+                message: `A new ${docType.name} request has been submitted. Tracking: ${trackingNumber}.`,
+              }),
+            }).catch(() => {});
+          }),
+        );
+      } catch {
+        // notification errors are non-critical
+      }
+    })();
 
     return NextResponse.json(
       {

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Bell, Check, Clock } from 'lucide-react';
 import {
@@ -8,10 +9,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-
-interface NotificationBellProps {
-  userId: string | undefined;
-}
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   completed: {
@@ -43,7 +40,16 @@ function formatTime(dateStr: string) {
   return date.toLocaleDateString();
 }
 
-export function NotificationBell({ userId }: NotificationBellProps) {
+export function NotificationBell() {
+  const [userId, setUserId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data?.id && setUserId(data.id))
+      .catch(() => {});
+  }, []);
+
   const { notifications, unreadCount, markAsRead } = useNotifications(userId);
 
   if (!userId) return null;

@@ -35,12 +35,13 @@ const PURPOSES = [
   'Personal Record',
   'Board Examination',
   'Visa / Travel Abroad',
-  'Other',
 ];
+
+const PURPOSE_OPTIONS = [...PURPOSES, 'Other'];
 
 export default function Step2RequestDetails({ formData, onChange }: Step2Props) {
   const isKnownPurpose = PURPOSES.includes(formData.purpose);
-  const purposeSelectValue = isKnownPurpose ? formData.purpose : 'Other';
+  const purposeSelectValue = isKnownPurpose ? formData.purpose : formData.purpose === '' ? '' : 'Other';
   const otherPurposeValue = isKnownPurpose ? '' : formData.purpose;
 
   return (
@@ -65,7 +66,7 @@ export default function Step2RequestDetails({ formData, onChange }: Step2Props) 
               <SelectValue placeholder='Select a purpose…' />
             </SelectTrigger>
             <SelectContent>
-              {PURPOSES.map((p) => (
+              {PURPOSE_OPTIONS.map((p) => (
                 <SelectItem key={p} value={p}>
                   {p}
                 </SelectItem>

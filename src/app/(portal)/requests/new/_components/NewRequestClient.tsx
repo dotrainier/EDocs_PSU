@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Loader2, AlertCircle, RefreshCw, FileText } from 'lucide-react';
+import { CheckCircle2, Loader2, AlertCircle, RefreshCw, FileText, ExternalLink } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -173,18 +173,17 @@ function SuccessModal({
           )}
         </div>
 
-        {hasFee && (
-          <div className='flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 px-3.5 py-3'>
-            <AlertCircle className='h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5' />
-            <p className='text-xs text-amber-800 dark:text-amber-300 leading-relaxed'>
-              Please pay via GCash or bank transfer and upload your proof of payment in your request
-              page to proceed with processing.
-            </p>
-          </div>
-        )}
-
-        <AlertDialogFooter className='mt-2'>
-          <AlertDialogAction onClick={onViewRequest} className='w-full h-10'>
+        <AlertDialogFooter className='mt-2 flex-col gap-2 sm:flex-col'>
+          {hasFee && (
+            <button
+              onClick={() => window.open(`/pay/${trackingNumber}`, '_blank')}
+              className='inline-flex items-center justify-center w-full h-10 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors'
+            >
+              <ExternalLink className='mr-2 h-4 w-4' />
+              Complete Payment — ₱{feeAmount}
+            </button>
+          )}
+          <AlertDialogAction onClick={onViewRequest} className='w-full h-10' variant={hasFee ? 'outline' : undefined}>
             <FileText className='mr-2 h-4 w-4' />
             View My Request
           </AlertDialogAction>
@@ -202,6 +201,7 @@ export default function NewRequestClient() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
   const [submittedTracking, setSubmittedTracking] = useState('');
   const [submittedFee, setSubmittedFee] = useState('');
   const [aiValidation, setAiValidation] = useState<AIValidationResult | null>(null);

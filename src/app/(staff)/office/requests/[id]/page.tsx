@@ -17,6 +17,7 @@ import {
   Building2,
   ImageIcon,
   ClipboardList,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -392,7 +393,11 @@ export default function OfficeRequestDetailPage() {
                     disabled={isSubmitting}
                     className='gap-2 bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600'
                   >
-                    <CheckCircle2 className='h-4 w-4' />
+                    {isSubmitting ? (
+                      <Loader2 className='h-4 w-4 animate-spin' />
+                    ) : (
+                      <CheckCircle2 className='h-4 w-4' />
+                    )}
                     {isSubmitting ? 'Processing...' : 'Clear'}
                   </Button>
                   <Button
@@ -401,7 +406,11 @@ export default function OfficeRequestDetailPage() {
                     className='gap-2'
                     disabled={!remarks.trim() || isSubmitting}
                   >
-                    <XCircle className='h-4 w-4' />
+                    {isSubmitting ? (
+                      <Loader2 className='h-4 w-4 animate-spin' />
+                    ) : (
+                      <XCircle className='h-4 w-4' />
+                    )}
                     {isSubmitting ? 'Processing...' : 'Reject'}
                   </Button>
                 </div>

@@ -27,7 +27,6 @@ interface User {
   schoolId: string;
   role: string;
   initials: string;
-  id?: string;
 }
 
 const PAGE_TITLES: Record<string, string> = {
@@ -185,7 +184,7 @@ export default function PortalLayoutClient({
             {pageTitle}
           </h1>
 
-          <NotificationBell userId={user.id} />
+          <NotificationBell />
 
           <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow'>
             {user.initials}

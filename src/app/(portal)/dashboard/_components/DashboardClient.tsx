@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
   FilePlus2,
@@ -16,21 +17,7 @@ import {
   TrendingUp,
   Zap,
 } from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-} from 'recharts';
+import { ApexOptions } from 'apexcharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,6 +32,8 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
+
+const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface DashboardClientProps {
   user: {
@@ -92,7 +81,15 @@ interface PortalDashboardResponse {
   }>;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const CHART_COLORS = {
+  primary: '#6366F1',
+  emerald: '#10B981',
+  amber: '#F59E0B',
+  blue: '#3B82F6',
+  violet: '#8B5CF6',
+};
 
 const STATUS_CONFIG: Record<
   RequestStatus,
@@ -136,7 +133,33 @@ const STATUS_CONFIG: Record<
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function baseOptions(): ApexOptions {
+  return {
+    chart: {
+      background: 'transparent',
+      toolbar: { show: false },
+      fontFamily: 'inherit',
+      animations: { enabled: true, speed: 400 },
+    },
+    theme: { mode: 'light' },
+    grid: {
+      borderColor: '#F3F4F6',
+      strokeDashArray: 4,
+    },
+    tooltip: { theme: 'light' },
+  };
+}
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
 
 interface StatCardProps {
   title: string;
@@ -178,17 +201,21 @@ function StatCard({ title, value, icon: Icon, accent, description }: StatCardPro
   );
 }
 
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
+// ─── Chart placeholder ────────────────────────────────────────────────────────
+
+function EmptyChart({ message }: { message: string }) {
+  return (
+    <div className='flex h-[220px] items-center justify-center text-sm text-muted-foreground'>
+      {message}
+    </div>
+  );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export default function DashboardClient({ user }: DashboardClientProps) {
   const greeting = getGreeting();
+  const base = baseOptions();
 
   const { data, loading, error, refetch } = useFetch<PortalDashboardResponse>('/portal/dashboard');
 
@@ -204,36 +231,142 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     [data?.stats],
   );
 
-  const statusDistribution = useMemo(() => {
-    const total = stats.total;
-    return [
-      {
-        name: 'Pending',
-        value: stats.pending,
-        pct: total > 0 ? Math.round((stats.pending / total) * 100) : 0,
-        fill: 'hsl(44, 100%, 50%)',
+  // ── Area chart ──
+  const areaOptions: ApexOptions = useMemo(
+    () => ({
+      ...base,
+      chart: { ...base.chart, type: 'area', id: 'trend' },
+      colors: [CHART_COLORS.primary, CHART_COLORS.emerald],
+      stroke: { curve: 'smooth', width: 2 },
+      fill: {
+        type: 'gradient',
+        gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 100] },
       },
-      {
-        name: 'In Process',
-        value: stats.inProcess,
-        pct: total > 0 ? Math.round((stats.inProcess / total) * 100) : 0,
-        fill: 'hsl(200, 100%, 50%)',
+      xaxis: {
+        categories: data?.requestTrend?.map((d) => d.month) ?? [],
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+        labels: { style: { fontSize: '11px' } },
       },
-      {
-        name: 'Ready',
-        value: stats.readyForRelease,
-        pct: total > 0 ? Math.round((stats.readyForRelease / total) * 100) : 0,
-        fill: 'hsl(150, 100%, 40%)',
-      },
-      {
-        name: 'Completed',
-        value: stats.completed,
-        pct: total > 0 ? Math.round((stats.completed / total) * 100) : 0,
-        fill: 'hsl(150, 80%, 35%)',
-      },
-    ];
-  }, [stats]);
+      yaxis: { labels: { style: { fontSize: '11px' } } },
+      dataLabels: { enabled: false },
+      legend: { position: 'top', horizontalAlign: 'right', fontSize: '12px' },
+      markers: { size: 3, hover: { size: 5 } },
+    }),
+    [base, data?.requestTrend],
+  );
 
+  const areaSeries = useMemo(
+    () => [
+      { name: 'Filed', data: data?.requestTrend?.map((d) => d.requests) ?? [] },
+      { name: 'Completed', data: data?.requestTrend?.map((d) => d.completed) ?? [] },
+    ],
+    [data?.requestTrend],
+  );
+
+  // ── Donut chart ──
+  const donutOptions: ApexOptions = useMemo(
+    () => ({
+      ...base,
+      chart: { ...base.chart, type: 'donut', id: 'status' },
+      colors: [CHART_COLORS.amber, CHART_COLORS.blue, CHART_COLORS.emerald, CHART_COLORS.violet],
+      labels: ['Pending', 'In Process', 'Ready', 'Completed'],
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '68%',
+            labels: {
+              show: true,
+              total: {
+                show: true,
+                label: 'Total',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#374151',
+                formatter: () => String(stats.total),
+              },
+            },
+          },
+        },
+      },
+      dataLabels: { enabled: false },
+      legend: { position: 'bottom', fontSize: '12px', itemMargin: { horizontal: 8 } },
+      stroke: { width: 0 },
+    }),
+    [base, stats.total],
+  );
+
+  const donutSeries = useMemo(
+    () => [stats.pending, stats.inProcess, stats.readyForRelease, stats.completed],
+    [stats],
+  );
+
+  // ── Bar chart: document types ──
+  const docTypeOptions: ApexOptions = useMemo(
+    () => ({
+      ...base,
+      chart: { ...base.chart, type: 'bar', id: 'doctype' },
+      colors: [
+        CHART_COLORS.primary,
+        CHART_COLORS.emerald,
+        CHART_COLORS.amber,
+        CHART_COLORS.blue,
+        CHART_COLORS.violet,
+      ],
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          borderRadius: 5,
+          barHeight: '55%',
+          distributed: true,
+        },
+      },
+      xaxis: {
+        categories: data?.documentTypeBreakdown?.map((d) => d.name) ?? [],
+        labels: { style: { fontSize: '11px' } },
+      },
+      yaxis: { labels: { style: { fontSize: '11px' }, maxWidth: 130 } },
+      dataLabels: { enabled: false },
+      legend: { show: false },
+    }),
+    [base, data?.documentTypeBreakdown],
+  );
+
+  const docTypeSeries = useMemo(
+    () => [{ name: 'Requests', data: data?.documentTypeBreakdown?.map((d) => d.value) ?? [] }],
+    [data?.documentTypeBreakdown],
+  );
+
+  // ── Bar chart: avg processing time ──
+  const avgTimeOptions: ApexOptions = useMemo(
+    () => ({
+      ...base,
+      chart: { ...base.chart, type: 'bar', id: 'avgtime' },
+      colors: [CHART_COLORS.violet],
+      plotOptions: {
+        bar: { borderRadius: 5, columnWidth: '50%' },
+      },
+      xaxis: {
+        categories: data?.avgProcessingTime?.map((d) => d.docType) ?? [],
+        labels: { style: { fontSize: '11px' }, rotate: -30 },
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+      },
+      yaxis: {
+        labels: { style: { fontSize: '11px' }, formatter: (v) => `${v}d` },
+      },
+      dataLabels: { enabled: false },
+      legend: { show: false },
+    }),
+    [base, data?.avgProcessingTime],
+  );
+
+  const avgTimeSeries = useMemo(
+    () => [{ name: 'Avg Days', data: data?.avgProcessingTime?.map((d) => d.avgDays) ?? [] }],
+    [data?.avgProcessingTime],
+  );
+
+  // ── Loading / error ──
   if (loading) {
     return (
       <div className='mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8'>
@@ -268,10 +401,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   }
 
   return (
-    <div
-      className='mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8'
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
-    >
+    <div className='mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8'>
       {/* Hero Banner */}
       <div className='relative overflow-hidden rounded-2xl bg-primary px-6 py-7 shadow-lg shadow-primary/20 sm:px-8 sm:py-10'>
         <div className='pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/5' />
@@ -281,10 +411,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         <div className='relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
           <div>
             <p className='text-sm font-medium text-primary-foreground/70'>{greeting},</p>
-            <h2
-              className='mt-0.5 text-2xl font-bold text-primary-foreground sm:text-3xl'
-              style={{ fontFamily: "'Playfair Display', serif" }}
-            >
+            <h2 className='font-heading mt-0.5 text-2xl font-bold text-primary-foreground sm:text-3xl'>
               {user.firstName}!
             </h2>
             <div className='mt-2 flex flex-wrap items-center gap-2'>
@@ -311,7 +438,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         </div>
       </div>
 
-      {/* Top Stat Cards */}
+      {/* Stat Cards */}
       <div className='grid grid-cols-2 gap-3 sm:grid-cols-4'>
         <StatCard
           title='Total Requests'
@@ -342,134 +469,50 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
       {/* Charts Row 1 */}
       <div className='grid gap-6 lg:grid-cols-2'>
-        {/* Request Trend */}
         <Card>
           <CardHeader className='pb-3'>
             <CardTitle className='font-sans flex items-center gap-2 text-base font-semibold'>
               <TrendingUp className='h-4 w-4 text-primary' />
               Request Trend
             </CardTitle>
-            <p className='font-sans text-xs text-muted-foreground mt-1'>
+            <p className='font-sans mt-1 text-xs text-muted-foreground'>
               Requests filed vs completed over time
             </p>
           </CardHeader>
           <CardContent className='pt-0'>
             {(data?.requestTrend?.length ?? 0) > 0 ? (
-              <ResponsiveContainer width='100%' height={220}>
-                <AreaChart data={data?.requestTrend || []}>
-                  <defs>
-                    <linearGradient id='colorFiled' x1='0' y1='0' x2='0' y2='1'>
-                      <stop offset='5%' stopColor='hsl(15, 100%, 29%)' stopOpacity={0.3} />
-                      <stop offset='95%' stopColor='hsl(15, 100%, 29%)' stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id='colorCompleted' x1='0' y1='0' x2='0' y2='1'>
-                      <stop offset='5%' stopColor='hsl(150, 100%, 40%)' stopOpacity={0.3} />
-                      <stop offset='95%' stopColor='hsl(150, 100%, 40%)' stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border)' />
-                  <XAxis
-                    dataKey='month'
-                    stroke='var(--color-muted-foreground)'
-                    style={{ fontSize: '12px' }}
-                  />
-                  <YAxis stroke='var(--color-muted-foreground)' style={{ fontSize: '12px' }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--color-card)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '0.5rem',
-                    }}
-                    labelStyle={{ color: 'var(--color-foreground)' }}
-                  />
-                  <Legend />
-                  <Area
-                    type='monotone'
-                    dataKey='requests'
-                    stroke='hsl(15, 100%, 29%)'
-                    fillOpacity={1}
-                    fill='url(#colorFiled)'
-                    name='Filed'
-                  />
-                  <Area
-                    type='monotone'
-                    dataKey='completed'
-                    stroke='hsl(150, 100%, 40%)'
-                    fillOpacity={1}
-                    fill='url(#colorCompleted)'
-                    name='Completed'
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <ReactApexChart
+                type='area'
+                height={220}
+                options={areaOptions}
+                series={areaSeries}
+              />
             ) : (
-              <div className='h-[220px] flex items-center justify-center text-muted-foreground'>
-                No data available
-              </div>
+              <EmptyChart message='No data available' />
             )}
           </CardContent>
         </Card>
 
-        {/* Status Distribution */}
         <Card>
           <CardHeader className='pb-3'>
             <CardTitle className='font-sans flex items-center gap-2 text-base font-semibold'>
               <Zap className='h-4 w-4 text-primary' />
               Your Requests Status
             </CardTitle>
-            <p className='font-sans text-xs text-muted-foreground mt-1'>
+            <p className='font-sans mt-1 text-xs text-muted-foreground'>
               Current breakdown of all {stats.total} requests
             </p>
           </CardHeader>
           <CardContent className='pt-0'>
             {stats.total > 0 ? (
-              <>
-                <ResponsiveContainer width='100%' height={220}>
-                  <PieChart>
-                    <Pie
-                      data={statusDistribution}
-                      cx='50%'
-                      cy='50%'
-                      labelLine={false}
-                      label={({ name, pct }: { name: string; pct: number }) => `${name} ${pct}%`}
-                      outerRadius={75}
-                      fill='#8884d8'
-                      dataKey='value'
-                    >
-                      {statusDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'var(--color-card)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: '0.5rem',
-                      }}
-                      labelStyle={{ color: 'var(--color-foreground)' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className='mt-4 space-y-2'>
-                  {statusDistribution.map((stat) => (
-                    <div key={stat.name} className='flex items-center justify-between text-sm'>
-                      <div className='flex items-center gap-2'>
-                        <div
-                          className='h-3 w-3 rounded-full'
-                          style={{ backgroundColor: stat.fill }}
-                        />
-                        <span className='font-sans text-muted-foreground'>{stat.name}</span>
-                      </div>
-                      <span className='font-sans font-semibold'>
-                        {stat.value} ({stat.pct}%)
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
+              <ReactApexChart
+                type='donut'
+                height={260}
+                options={donutOptions}
+                series={donutSeries}
+              />
             ) : (
-              <div className='h-[220px] flex items-center justify-center text-muted-foreground'>
-                No requests yet
-              </div>
+              <EmptyChart message='No requests yet' />
             )}
           </CardContent>
         </Card>
@@ -477,80 +520,46 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
       {/* Charts Row 2 */}
       <div className='grid gap-6 lg:grid-cols-2'>
-        {/* Document Type Breakdown */}
         <Card>
           <CardHeader className='pb-3'>
             <CardTitle className='font-sans text-base font-semibold'>Documents Requested</CardTitle>
-            <p className='font-sans text-xs text-muted-foreground mt-1'>
+            <p className='font-sans mt-1 text-xs text-muted-foreground'>
               Your document request distribution
             </p>
           </CardHeader>
           <CardContent className='pt-0'>
             {(data?.documentTypeBreakdown?.length ?? 0) > 0 ? (
-              <ResponsiveContainer width='100%' height={220}>
-                <BarChart data={data?.documentTypeBreakdown || []}>
-                  <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border)' />
-                  <XAxis
-                    dataKey='name'
-                    stroke='var(--color-muted-foreground)'
-                    style={{ fontSize: '12px' }}
-                  />
-                  <YAxis stroke='var(--color-muted-foreground)' style={{ fontSize: '12px' }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--color-card)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '0.5rem',
-                    }}
-                    labelStyle={{ color: 'var(--color-foreground)' }}
-                  />
-                  <Bar dataKey='value' radius={[8, 8, 0, 0]} fill='hsl(15, 100%, 29%)' />
-                </BarChart>
-              </ResponsiveContainer>
+              <ReactApexChart
+                type='bar'
+                height={220}
+                options={docTypeOptions}
+                series={docTypeSeries}
+              />
             ) : (
-              <div className='h-[220px] flex items-center justify-center text-muted-foreground'>
-                No data available
-              </div>
+              <EmptyChart message='No data available' />
             )}
           </CardContent>
         </Card>
 
-        {/* Average Processing Time */}
         <Card>
           <CardHeader className='pb-3'>
             <CardTitle className='font-sans text-base font-semibold'>
               Avg. Processing Time
             </CardTitle>
-            <p className='font-sans text-xs text-muted-foreground mt-1'>
+            <p className='font-sans mt-1 text-xs text-muted-foreground'>
               By document type (working days)
             </p>
           </CardHeader>
           <CardContent className='pt-0'>
             {(data?.avgProcessingTime?.length ?? 0) > 0 ? (
-              <ResponsiveContainer width='100%' height={220}>
-                <BarChart data={data?.avgProcessingTime || []}>
-                  <CartesianGrid strokeDasharray='3 3' stroke='var(--color-border)' />
-                  <XAxis
-                    dataKey='docType'
-                    stroke='var(--color-muted-foreground)'
-                    style={{ fontSize: '12px' }}
-                  />
-                  <YAxis stroke='var(--color-muted-foreground)' style={{ fontSize: '12px' }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--color-card)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '0.5rem',
-                    }}
-                    labelStyle={{ color: 'var(--color-foreground)' }}
-                  />
-                  <Bar dataKey='avgDays' fill='hsl(15, 100%, 29%)' radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <ReactApexChart
+                type='bar'
+                height={220}
+                options={avgTimeOptions}
+                series={avgTimeSeries}
+              />
             ) : (
-              <div className='h-[220px] flex items-center justify-center text-muted-foreground'>
-                No completed requests yet
-              </div>
+              <EmptyChart message='No completed requests yet' />
             )}
           </CardContent>
         </Card>
@@ -633,7 +642,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           </Table>
         </div>
 
-        {/* Mobile view */}
         <div className='space-y-3 p-5 md:hidden'>
           {(data?.recentRequests ?? []).map((req) => {
             const statusCfg = STATUS_CONFIG[req.status];
