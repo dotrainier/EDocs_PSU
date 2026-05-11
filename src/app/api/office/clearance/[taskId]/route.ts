@@ -8,6 +8,7 @@ import { logAudit } from '@/lib/audit';
 import { sendMail } from '@/lib/lib-mailer';
 import { ClearanceApprovedEmail } from '@/email-templates/ClearanceApproved';
 import { render } from 'react-email';
+import { createNotification } from '@/lib/notification';
 
 export async function PATCH(
   request: NextRequest,
@@ -136,6 +137,30 @@ export async function PATCH(
         officeName: officeName,
       }),
     );
+
+    await createNotification({
+      userId: docRequest.user_id,
+      title: `Your ${docRequest.document_name} request has been ${newStatus.toLowerCase()} by ${officeName}`,
+      message: `Your request for ${docRequest.document_name} has been ${newStatus.toLowerCase()} by ${officeName}. Please check the system for details.`,
+      type: newStatus === 'Cleared' ? 'clearance_cleared' : 'clearance_rejected',
+      requestId: task.request_id,
+      relatedId: task.id.toString(),
+    });
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        documentId: task.request_id,
+        userId: docRequest.user_id,
+        status: newStatus,
+        message: `Your request for ${docRequest.document_name} has been ${newStatus.toLowerCase()} by ${officeName}. Please check the system for details.`,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to send real-time notification');
+    }
 
     await sendMail({
       to: requestor[0].email,

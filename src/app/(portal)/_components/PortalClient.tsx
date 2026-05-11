@@ -9,7 +9,6 @@ import {
   FilePlus2,
   FolderOpen,
   UserCircle2,
-  Bell,
   Menu,
   LogOut,
   GraduationCap,
@@ -19,20 +18,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/axios';
+import { NotificationBell } from '@/components/shared/NotificationBell';
 
 interface User {
   fullName: string;
   schoolId: string;
   role: string;
   initials: string;
+  id?: string;
 }
 
 const PAGE_TITLES: Record<string, string> = {
@@ -190,26 +185,7 @@ export default function PortalLayoutClient({
             {pageTitle}
           </h1>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant='ghost' size='icon' className='relative'>
-                <Bell className='h-5 w-5' />
-                {/* notifications wired up later */}
-                <span className='sr-only'>Notifications</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align='end' className='w-72'>
-              <div className='px-3 py-2'>
-                <p className='text-xs font-semibold uppercase tracking-wider text-muted-foreground'>
-                  Notifications
-                </p>
-              </div>
-              <Separator />
-              <DropdownMenuItem className='justify-center text-xs text-muted-foreground'>
-                No notifications yet
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <NotificationBell userId={user.id} />
 
           <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow'>
             {user.initials}
