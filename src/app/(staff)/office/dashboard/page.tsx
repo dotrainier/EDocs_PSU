@@ -393,12 +393,12 @@ export default function OfficeDashboardPage() {
             </p>
           </CardHeader>
           <CardContent className='pt-0'>
-            {stats.total_pending > 0 ? (
+            {stats.total_pending > 0 && (stats.on_track > 0 || stats.at_risk > 0 || stats.breached > 0) ? (
               <>
                 <ResponsiveContainer width='100%' height={250}>
                   <PieChart>
                     <Pie
-                      data={queueStats.filter((s) => s.value > 0)}
+                      data={queueStats}
                       cx='50%'
                       cy='50%'
                       labelLine={true}
@@ -447,7 +447,10 @@ export default function OfficeDashboardPage() {
               </>
             ) : (
               <div className='h-[250px] flex items-center justify-center text-muted-foreground'>
-                No pending tasks
+                <div className='text-center'>
+                  <p className='font-medium'>No status data available</p>
+                  <p className='text-xs mt-1'>Pending tasks are being processed</p>
+                </div>
               </div>
             )}
           </CardContent>

@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '@/db';
-import { clearance_tasks, document_requests } from '@/db/schema';
+import { clearance_tasks, document_requests, users, offices, document_types } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
 import { advanceRouting } from '@/lib/routing';
 import { logAudit } from '@/lib/audit';
+import { sendMail } from '@/lib/lib-mailer';
+import { ClearanceApprovedEmail } from '@/email-templates/ClearanceApproved';
+import { render } from 'react-email';
 
 export async function PATCH(
   request: NextRequest,
@@ -52,9 +55,20 @@ export async function PATCH(
 
     // 3. Get the request to access documentTypeId
     const requestResult = await db
-      .select()
+      .select({
+        user_id: document_requests.user_id,
+        document_type_id: document_requests.document_type_id,
+        tracking_number: document_requests.tracking_number,
+        document_name: document_types.name,
+      })
       .from(document_requests)
-      .where(eq(document_requests.id, task.request_id))
+      .innerJoin(document_types, eq(document_requests.document_type_id, document_types.id))
+      .where(
+        and(
+          eq(document_requests.id, task.request_id),
+          eq(document_types.id, document_requests.document_type_id),
+        ),
+      )
       .limit(1);
 
     const docRequest = requestResult[0];
@@ -62,7 +76,21 @@ export async function PATCH(
       return NextResponse.json({ message: 'Request not found' }, { status: 404 });
     }
 
-    // 4. Update clearance task
+    // 4. Get Requestor info
+    const requestor = await db
+      .select({
+        name: users.full_name,
+        email: users.email,
+      })
+      .from(users)
+      .where(eq(users.id, docRequest.user_id))
+      .limit(1);
+
+    if (!requestor[0] || !requestor[0].email) {
+      return NextResponse.json({ message: 'Requestor email not found' }, { status: 500 });
+    }
+
+    // 5. Update clearance task
     const newStatus = action === 'cleared' ? 'Cleared' : 'Rejected';
 
     await db
@@ -74,19 +102,6 @@ export async function PATCH(
         cleared_at: new Date(),
       })
       .where(eq(clearance_tasks.id, taskId));
-
-    // 5. Log audit
-    await logAudit({
-      userId: session.userId,
-      action: action === 'cleared' ? 'CLEARANCE_CLEARED' : 'CLEARANCE_REJECTED',
-      details: {
-        taskId: taskId,
-        requestId: task.request_id,
-        officeId: session.officeId,
-        remarks,
-      },
-      ipAddress: request.headers.get('x-forwarded-for') ?? 'unknown',
-    });
 
     // 6. If CLEARED, advance routing
     if (action === 'cleared') {
@@ -103,6 +118,43 @@ export async function PATCH(
         })
         .where(eq(document_requests.id, task.request_id));
     }
+
+    // 8. Get Office name
+    const officeResult = await db
+      .select({ name: offices.name })
+      .from(offices)
+      .where(eq(offices.id, task.office_id))
+      .limit(1);
+
+    const officeName = officeResult[0]?.name || 'Office';
+
+    const emailHtml = await render(
+      ClearanceApprovedEmail({
+        userName: requestor[0].name,
+        documentType: docRequest.document_name,
+        trackingUrl: `${process.env.NEXT_PUBLIC_APP_URL}/requests/${docRequest.tracking_number}`,
+        officeName: officeName,
+      }),
+    );
+
+    await sendMail({
+      to: requestor[0].email,
+      subject: `Your ${docRequest.document_name} request has been ${newStatus.toLowerCase()} by ${officeName}`,
+      html: emailHtml,
+    });
+
+    // 9. Log audit
+    await logAudit({
+      userId: session.userId,
+      action: action === 'cleared' ? 'CLEARANCE_CLEARED' : 'CLEARANCE_REJECTED',
+      details: {
+        taskId: taskId,
+        requestId: task.request_id,
+        officeId: session.officeId,
+        remarks,
+      },
+      ipAddress: request.headers.get('x-forwarded-for') ?? 'unknown',
+    });
 
     return NextResponse.json(
       {

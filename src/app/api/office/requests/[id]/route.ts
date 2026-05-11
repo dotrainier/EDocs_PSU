@@ -120,7 +120,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         })),
     ]
       .filter((event) => !!event.at)
-      .sort((a, b) => toTimestamp(a.at) - toTimestamp(b.at));
+      .sort((a, b) => toTimestamp(b.at) - toTimestamp(a.at));
 
     const auditEvents = await db
       .select({
@@ -176,7 +176,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         at: event.timestamp,
         subtitle: event.actor ? `By ${event.actor}` : null,
       };
-    });
+    }).reverse();
 
     const timeline = auditTimeline.length ? auditTimeline : fallbackTimeline;
 

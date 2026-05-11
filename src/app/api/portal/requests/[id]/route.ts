@@ -2,7 +2,14 @@
 import { NextResponse } from 'next/server';
 import { eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { audit_log, document_requests, document_types, offices, clearance_tasks, users } from '@/db/schema';
+import {
+  audit_log,
+  document_requests,
+  document_types,
+  offices,
+  clearance_tasks,
+  users,
+} from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
 import { getSlaStatus } from '@/lib/server_utils';
 
@@ -86,7 +93,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         })),
     ]
       .filter((event) => !!event.at)
-      .sort((a, b) => toTimestamp(a.at) - toTimestamp(b.at));
+      .sort((a, b) => toTimestamp(b.at) - toTimestamp(a.at));
 
     const auditEvents = await db
       .select({
@@ -142,7 +149,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         at: event.timestamp,
         subtitle: event.actor ? `By ${event.actor}` : null,
       };
-    });
+    }).reverse();
 
     const timeline = auditTimeline.length ? auditTimeline : fallbackTimeline;
 
