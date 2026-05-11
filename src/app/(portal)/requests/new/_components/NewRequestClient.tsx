@@ -208,7 +208,7 @@ export default function NewRequestClient() {
   const [aiChecking, setAiChecking] = useState(false);
 
   const { data, loading, error, refetch } = useFetch<{ docs: DocumentType[] }>(
-    '/portal/document-types',
+    '/shared/document-types',
   );
   const DOCUMENT_TYPES = data?.docs ?? [];
 

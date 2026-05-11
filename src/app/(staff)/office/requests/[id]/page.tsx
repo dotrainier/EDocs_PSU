@@ -28,16 +28,9 @@ import {
   formatDateTime,
   formatSLAStatus,
   normalizeClearanceStatus,
-  type ApiSLAStatus,
-  type ClearanceStatus,
-  type PaymentStatus,
-  type SLAStatus,
 } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
-
-// ---------------------------------------------------------------------------
-// Types & mock data
-// ---------------------------------------------------------------------------
+import { ApiSLAStatus, ClearanceStatus, PaymentStatus, SLAStatus } from '@/types/document.type';
 
 interface ClearanceTask {
   task_id: string;
@@ -48,6 +41,13 @@ interface ClearanceTask {
   remarks: string | null;
   cleared_at: string | null;
   cleared_by: string | null;
+}
+
+interface TimelineEvent {
+  id: string;
+  title: string;
+  at: string;
+  subtitle?: string | null;
 }
 
 interface RequestDetailApiResponse {
@@ -72,12 +72,9 @@ interface RequestDetailApiResponse {
     requestor_email: string;
     clearance_tasks: ClearanceTask[];
     my_task: ClearanceTask | null;
+    timeline: TimelineEvent[];
   };
 }
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
 
 const SLA_CONFIG: Record<SLAStatus, { icon: React.ElementType; classes: string }> = {
   'On Track': {
@@ -134,6 +131,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 export default function OfficeRequestDetailPage() {
   const [remarks, setRemarks] = useState('');
   const [actionTaken, setActionTaken] = useState<'Cleared' | 'Rejected' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const params = useParams<{ id: string }>();
   const requestId = params?.id ?? '';
@@ -148,16 +146,48 @@ export default function OfficeRequestDetailPage() {
 
   const officeName = req?.my_task?.office_name ?? '';
   const isCashier = officeName.toLowerCase().includes('cashier');
+  const myTaskStatus = req?.my_task?.status ?? null;
+  const isTaskPending = myTaskStatus === 'Pending';
+  const displayStatus = actionTaken ?? (!isTaskPending ? myTaskStatus : null);
+  const displayBy = req?.my_task?.cleared_by ?? null;
+  const displayAt = req?.my_task?.cleared_at ?? null;
 
-  function handleClear() {
-    // TODO: POST /api/office/clearance/:taskId/clear with { remarks }
-    setActionTaken('Cleared');
+  async function handleClear() {
+    if (!req?.my_task?.task_id) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/office/clearance/${req.my_task.task_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cleared', remarks: remarks || null }),
+      });
+      if (!res.ok) throw new Error('Failed to clear request');
+      setActionTaken('Cleared');
+      setTimeout(() => refetch(), 500);
+    } catch (err) {
+      console.error('Clear error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  function handleReject() {
-    if (!remarks.trim()) return; // remarks required for rejection
-    // TODO: POST /api/office/clearance/:taskId/reject with { remarks }
-    setActionTaken('Rejected');
+  async function handleReject() {
+    if (!remarks.trim() || !req?.my_task?.task_id) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/office/clearance/${req.my_task.task_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'rejected', remarks }),
+      });
+      if (!res.ok) throw new Error('Failed to reject request');
+      setActionTaken('Rejected');
+      setTimeout(() => refetch(), 500);
+    } catch (err) {
+      console.error('Reject error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   if (loading) {
@@ -335,7 +365,7 @@ export default function OfficeRequestDetailPage() {
           </Card>
 
           {/* Action section — only for own office task */}
-          {!actionTaken ? (
+          {isTaskPending && !actionTaken ? (
             <Card className='border-primary/20 bg-primary/5'>
               <CardHeader className='pb-3'>
                 <CardTitle className='font-sans flex items-center gap-2 text-sm font-semibold text-primary'>
@@ -362,19 +392,20 @@ export default function OfficeRequestDetailPage() {
                 <div className='flex gap-2'>
                   <Button
                     onClick={handleClear}
+                    disabled={isSubmitting}
                     className='gap-2 bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600'
                   >
                     <CheckCircle2 className='h-4 w-4' />
-                    Clear
+                    {isSubmitting ? 'Processing...' : 'Clear'}
                   </Button>
                   <Button
                     onClick={handleReject}
                     variant='destructive'
                     className='gap-2'
-                    disabled={!remarks.trim()}
+                    disabled={!remarks.trim() || isSubmitting}
                   >
                     <XCircle className='h-4 w-4' />
-                    Reject
+                    {isSubmitting ? 'Processing...' : 'Reject'}
                   </Button>
                 </div>
                 {!remarks.trim() && (
@@ -384,17 +415,17 @@ export default function OfficeRequestDetailPage() {
                 )}
               </CardContent>
             </Card>
-          ) : (
+          ) : displayStatus ? (
             <Card
               className={cn(
                 'border',
-                actionTaken === 'Cleared'
+                displayStatus === 'Cleared'
                   ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/20'
                   : 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/20',
               )}
             >
               <CardContent className='flex items-center gap-3 px-5 py-4'>
-                {actionTaken === 'Cleared' ? (
+                {displayStatus === 'Cleared' ? (
                   <CheckCircle2 className='h-5 w-5 text-emerald-600' />
                 ) : (
                   <XCircle className='h-5 w-5 text-red-600' />
@@ -403,16 +434,26 @@ export default function OfficeRequestDetailPage() {
                   <p
                     className={cn(
                       'font-sans text-sm font-semibold',
-                      actionTaken === 'Cleared' ? 'text-emerald-700' : 'text-red-700',
+                      displayStatus === 'Cleared' ? 'text-emerald-700' : 'text-red-700',
                     )}
                   >
-                    Request {actionTaken}
+                    Request {displayStatus}
                   </p>
-                  {remarks && <p className='mt-0.5 text-xs text-muted-foreground'>{remarks}</p>}
+                  {(remarks || req.my_task?.remarks) && (
+                    <p className='mt-0.5 text-xs text-muted-foreground'>
+                      {remarks || req.my_task?.remarks}
+                    </p>
+                  )}
+                  {(displayBy || displayAt) && (
+                    <p className='mt-0.5 text-[11px] text-muted-foreground'>
+                      {displayBy ? `By ${displayBy}` : ''}
+                      {displayAt ? `${displayBy ? ' - ' : ''}${formatDateTime(displayAt)}` : ''}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
-          )}
+          ) : null}
         </div>
 
         {/* Right column */}
@@ -497,11 +538,36 @@ export default function OfficeRequestDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className='flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-8 text-center'>
-                <Activity className='h-5 w-5 text-muted-foreground' />
-                <p className='font-sans text-sm font-medium text-foreground'>No timeline yet</p>
-                <p className='font-sans text-xs text-muted-foreground'>Events will appear here.</p>
-              </div>
+              {req.timeline?.length ? (
+                <div className='space-y-4'>
+                  {req.timeline.map((event) => (
+                    <div key={event.id} className='flex items-start gap-3'>
+                      <div className='mt-1 h-2 w-2 rounded-full bg-primary' />
+                      <div className='space-y-0.5'>
+                        <p className='font-sans text-sm font-medium text-foreground'>
+                          {event.title}
+                        </p>
+                        {event.subtitle && (
+                          <p className='font-sans text-xs text-muted-foreground'>
+                            {event.subtitle}
+                          </p>
+                        )}
+                        <p className='font-sans text-[11px] text-muted-foreground'>
+                          {formatDateTime(event.at)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className='flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-8 text-center'>
+                  <Activity className='h-5 w-5 text-muted-foreground' />
+                  <p className='font-sans text-sm font-medium text-foreground'>No timeline yet</p>
+                  <p className='font-sans text-xs text-muted-foreground'>
+                    Events will appear here.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -1,8 +1,8 @@
 // src/app/api/portal/requests/[id]/route.ts
 import { NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { document_requests, document_types, offices, clearance_tasks, users } from '@/db/schema';
+import { audit_log, document_requests, document_types, offices, clearance_tasks, users } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
 import { getSlaStatus } from '@/lib/server_utils';
 
@@ -67,6 +67,85 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const slaStatus = req.sla_due_at ? getSlaStatus(req.created_at, req.sla_due_at) : 'OnTrack';
 
+    const toTimestamp = (value: Date | string | null) => (value ? new Date(value).getTime() : 0);
+
+    const fallbackTimeline = [
+      {
+        id: `request-created-${req.id}`,
+        title: 'Request submitted',
+        at: req.created_at,
+        subtitle: `Tracking #${req.tracking_number}`,
+      },
+      ...tasks
+        .filter((task) => !!task.cleared_at)
+        .map((task) => ({
+          id: `task-${task.office_name}`,
+          title: `${task.office_name} ${task.status.toLowerCase()}`,
+          at: task.cleared_at,
+          subtitle: task.cleared_by ? `By ${task.cleared_by}` : null,
+        })),
+    ]
+      .filter((event) => !!event.at)
+      .sort((a, b) => toTimestamp(a.at) - toTimestamp(b.at));
+
+    const auditEvents = await db
+      .select({
+        id: audit_log.id,
+        action: audit_log.action,
+        details: audit_log.details,
+        timestamp: audit_log.timestamp,
+        actor: users.full_name,
+      })
+      .from(audit_log)
+      .leftJoin(users, eq(audit_log.user_id, users.id))
+      .where(sql`${audit_log.details} ->> 'requestId' = ${req.id}`)
+      .orderBy(audit_log.timestamp);
+
+    const auditTimeline = auditEvents.map((event) => {
+      const details = (event.details ?? {}) as Record<string, unknown>;
+      const officeId = details.officeId ? Number(details.officeId) : null;
+      const officeName = officeId
+        ? tasks.find((task) => task.office_name && officeId)?.office_name
+        : null;
+
+      if (event.action === 'REQUEST_SUBMITTED') {
+        return {
+          id: event.id,
+          title: 'Request submitted',
+          at: event.timestamp,
+          subtitle: `Tracking #${req.tracking_number}`,
+        };
+      }
+
+      if (event.action === 'CLEARANCE_CLEARED') {
+        return {
+          id: event.id,
+          title: `${officeName ?? 'Office'} cleared`,
+          at: event.timestamp,
+          subtitle: event.actor ? `By ${event.actor}` : null,
+        };
+      }
+
+      if (event.action === 'CLEARANCE_REJECTED') {
+        const remark = typeof details.remarks === 'string' ? details.remarks : null;
+        return {
+          id: event.id,
+          title: `${officeName ?? 'Office'} rejected`,
+          at: event.timestamp,
+          subtitle: remark ?? (event.actor ? `By ${event.actor}` : null),
+        };
+      }
+
+      return {
+        id: event.id,
+        title: event.action,
+        at: event.timestamp,
+        subtitle: event.actor ? `By ${event.actor}` : null,
+      };
+    });
+
+    const timeline = auditTimeline.length ? auditTimeline : fallbackTimeline;
+
     return NextResponse.json(
       {
         request: {
@@ -86,6 +165,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           sla_status: slaStatus,
           created_at: req.created_at,
           clearance_tasks: tasks,
+          timeline,
           documents: [],
         },
       },

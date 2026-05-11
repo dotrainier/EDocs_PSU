@@ -41,11 +41,10 @@ import {
   calculateElapsedDays,
   formatDate,
   formatDateTime,
-  type ClearanceStatus,
   normalizeClearanceStatus,
   normalizeRequestStatus,
-  type RequestStatus,
 } from '@/lib/utils';
+import { RequestStatus, ClearanceStatus } from '@/types/document.type';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -58,10 +57,9 @@ interface ClearanceOffice {
 
 interface TimelineEntry {
   id: string;
-  status: RequestStatus;
-  timestamp: string;
-  office: string;
-  remark?: string;
+  title: string;
+  at: string;
+  subtitle?: string | null;
 }
 
 interface DocumentRequest {
@@ -112,6 +110,12 @@ interface RequestResponse {
       remarks: string | null;
       cleared_at: string | null;
       cleared_by: string | null;
+    }>;
+    timeline: Array<{
+      id: string;
+      title: string;
+      at: string;
+      subtitle?: string | null;
     }>;
     documents: Array<unknown>;
   };
@@ -205,17 +209,6 @@ function ClearanceIcon({ status }: { status: ClearanceStatus }) {
   return <Clock className='h-4 w-4 text-muted-foreground' />;
 }
 
-function TimelineStatusDot({ status }: { status: RequestStatus }) {
-  const colors: Record<RequestStatus, string> = {
-    Pending: 'bg-slate-400',
-    'In Process': 'bg-blue-500',
-    'Action Required': 'bg-red-500',
-    'Ready for Release': 'bg-emerald-500',
-    Released: 'bg-purple-500',
-    Cancelled: 'bg-zinc-400',
-  };
-  return <div className={`h-2.5 w-2.5 rounded-full ring-2 ring-background ${colors[status]}`} />;
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -255,14 +248,11 @@ export default function TrackRequestPage() {
         remark: task.remarks ?? undefined,
         clearedAt: task.cleared_at ? formatDate(task.cleared_at) : undefined,
       })),
-      timeline: apiRequest.clearance_tasks.map((task, index) => ({
-        id: `${apiRequest.tracking_number}-${index}`,
-        status,
-        timestamp: task.cleared_at
-          ? formatDateTime(task.cleared_at)
-          : formatDateTime(apiRequest.created_at),
-        office: task.office_name,
-        remark: task.remarks ?? undefined,
+      timeline: (apiRequest.timeline ?? []).map((event) => ({
+        id: event.id,
+        title: event.title,
+        at: event.at,
+        subtitle: event.subtitle,
       })),
       actionRequiredReason: undefined,
       actionRequiredInstruction: undefined,
@@ -525,20 +515,21 @@ export default function TrackRequestPage() {
             {request.timeline.map((entry, i) => (
               <li key={entry.id} className='flex gap-4 pb-6 last:pb-0'>
                 <div className='flex flex-col items-center'>
-                  <TimelineStatusDot status={entry.status} />
+                  <div className='h-2.5 w-2.5 rounded-full ring-2 ring-background bg-primary' />
                   {i < request.timeline.length - 1 && (
                     <div className='w-px flex-1 bg-border mt-1' />
                   )}
                 </div>
                 <div className='flex-1 min-w-0 pb-0'>
                   <div className='flex items-start justify-between gap-2 flex-wrap'>
-                    <StatusBadge status={entry.status} />
+                    <p className='text-sm font-medium text-foreground'>{entry.title}</p>
                     <span className='text-xs text-muted-foreground whitespace-nowrap'>
-                      {entry.timestamp}
+                      {formatDateTime(entry.at)}
                     </span>
                   </div>
-                  <p className='text-xs text-muted-foreground mt-1'>{entry.office}</p>
-                  {entry.remark && <p className='text-sm text-foreground mt-1'>{entry.remark}</p>}
+                  {entry.subtitle && (
+                    <p className='text-xs text-muted-foreground mt-0.5'>{entry.subtitle}</p>
+                  )}
                 </div>
               </li>
             ))}
