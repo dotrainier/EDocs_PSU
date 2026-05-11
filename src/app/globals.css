@@ -77,11 +77,11 @@
   --input: oklch(0.92 0 0);
   --ring: oklch(0.42 0.18 15); /* Maroon focus ring */
 
-  --chart-1: oklch(0.42 0.18 15); /* Maroon */
-  --chart-2: oklch(0.7 0.15 65); /* Gold */
-  --chart-3: oklch(0.65 0.18 200); /* Blue */
-  --chart-4: oklch(0.6 0.15 150); /* Teal */
-  --chart-5: oklch(0.55 0.15 330); /* Pink */
+  --chart-1: oklch(0.42 0.18 15); /* Maroon - Primary */
+  --chart-2: oklch(0.75 0.18 65); /* Gold - Warning/At Risk */
+  --chart-3: oklch(0.65 0.2 210); /* Blue - Secondary */
+  --chart-4: oklch(0.65 0.16 150); /* Teal - On Track */
+  --chart-5: oklch(0.62 0.22 25); /* Red - Breached */
 
   --radius: 0.5rem; /* Modern rounded corners */
 
@@ -124,11 +124,11 @@
   --input: oklch(0.3 0 0);
   --ring: oklch(0.48 0.19 15); /* Maroon focus ring */
 
-  --chart-1: oklch(0.48 0.19 15); /* Maroon */
-  --chart-2: oklch(0.75 0.16 65); /* Gold */
-  --chart-3: oklch(0.65 0.18 200); /* Blue */
-  --chart-4: oklch(0.6 0.15 150); /* Teal */
-  --chart-5: oklch(0.55 0.15 330); /* Pink */
+  --chart-1: oklch(0.48 0.19 15); /* Maroon - Primary */
+  --chart-2: oklch(0.78 0.18 65); /* Gold - Warning/At Risk */
+  --chart-3: oklch(0.7 0.2 210); /* Blue - Secondary */
+  --chart-4: oklch(0.68 0.16 150); /* Teal - On Track */
+  --chart-5: oklch(0.68 0.22 25); /* Red - Breached */
 
   --sidebar: oklch(0.18 0 0); /* Dark sidebar */
   --sidebar-foreground: oklch(0.96 0 0);

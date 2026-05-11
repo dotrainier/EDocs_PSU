@@ -29,6 +29,7 @@ import {
   formatSLAStatus,
   normalizeClearanceStatus,
 } from '@/lib/utils';
+import { api } from '@/lib/axios';
 import { useFetch } from '@/hooks/useFetch';
 import { ApiSLAStatus, ClearanceStatus, PaymentStatus, SLAStatus } from '@/types/document.type';
 
@@ -156,12 +157,10 @@ export default function OfficeRequestDetailPage() {
     if (!req?.my_task?.task_id) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/office/clearance/${req.my_task.task_id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'cleared', remarks: remarks || null }),
+      await api.patch(`/office/clearance/${req.my_task.task_id}`, {
+        action: 'cleared',
+        remarks: remarks || null,
       });
-      if (!res.ok) throw new Error('Failed to clear request');
       setActionTaken('Cleared');
       setTimeout(() => refetch(), 500);
     } catch (err) {
@@ -175,12 +174,10 @@ export default function OfficeRequestDetailPage() {
     if (!remarks.trim() || !req?.my_task?.task_id) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/office/clearance/${req.my_task.task_id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'rejected', remarks }),
+      await api.patch(`/office/clearance/${req.my_task.task_id}`, {
+        action: 'rejected',
+        remarks,
       });
-      if (!res.ok) throw new Error('Failed to reject request');
       setActionTaken('Rejected');
       setTimeout(() => refetch(), 500);
     } catch (err) {

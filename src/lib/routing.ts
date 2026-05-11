@@ -9,7 +9,7 @@ export async function advanceRouting(requestId: string, documentTypeId: number):
     .where(eq(clearance_tasks.request_id, requestId));
 
   const pendingParallel = existingTasks.filter(
-    (t) => t.sequence_order === null && t.status === 'pending',
+    (t) => t.sequence_order === null && t.status === 'Pending',
   );
 
   if (pendingParallel.length > 0) {
@@ -17,7 +17,7 @@ export async function advanceRouting(requestId: string, documentTypeId: number):
   }
 
   const completedSequential = existingTasks
-    .filter((t) => t.sequence_order !== null && t.status === 'cleared')
+    .filter((t) => t.sequence_order !== null && t.status === 'Cleared')
     .map((t) => t.sequence_order as number);
 
   const lastCompleted = completedSequential.length > 0 ? Math.max(...completedSequential) : 0;
@@ -37,7 +37,7 @@ export async function advanceRouting(requestId: string, documentTypeId: number):
     await db.insert(clearance_tasks).values({
       request_id: requestId,
       office_id: nextReq[0].office_id,
-      status: 'pending',
+      status: 'Pending',
       sequence_order: nextReq[0].sequence_order,
     });
     return;
