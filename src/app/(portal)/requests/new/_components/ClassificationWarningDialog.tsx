@@ -22,7 +22,7 @@ interface AIReasoningProps {
   matches: boolean;
 }
 
-export default function AIReasoning({
+export default function ClassificationWarningDialog({
   open,
   onDismiss,
   onOverride,

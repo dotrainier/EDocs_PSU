@@ -133,7 +133,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 export default function OfficeRequestDetailPage() {
   const [remarks, setRemarks] = useState('');
   const [actionTaken, setActionTaken] = useState<'Cleared' | 'Rejected' | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingAction, setSubmittingAction] = useState<'Cleared' | 'Rejected' | null>(null);
 
   const params = useParams<{ id: string }>();
   const requestId = params?.id ?? '';
@@ -156,7 +156,7 @@ export default function OfficeRequestDetailPage() {
 
   async function handleClear() {
     if (!req?.my_task?.task_id) return;
-    setIsSubmitting(true);
+    setSubmittingAction('Cleared');
     try {
       await api.patch(`/office/clearance/${req.my_task.task_id}`, {
         action: 'cleared',
@@ -167,13 +167,13 @@ export default function OfficeRequestDetailPage() {
     } catch (err) {
       console.error('Clear error:', err);
     } finally {
-      setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   }
 
   async function handleReject() {
     if (!remarks.trim() || !req?.my_task?.task_id) return;
-    setIsSubmitting(true);
+    setSubmittingAction('Rejected');
     try {
       await api.patch(`/office/clearance/${req.my_task.task_id}`, {
         action: 'rejected',
@@ -184,7 +184,7 @@ export default function OfficeRequestDetailPage() {
     } catch (err) {
       console.error('Reject error:', err);
     } finally {
-      setIsSubmitting(false);
+      setSubmittingAction(null);
     }
   }
 
@@ -390,28 +390,28 @@ export default function OfficeRequestDetailPage() {
                 <div className='flex gap-2'>
                   <Button
                     onClick={handleClear}
-                    disabled={isSubmitting}
+                    disabled={submittingAction !== null}
                     className='gap-2 bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600'
                   >
-                    {isSubmitting ? (
+                    {submittingAction === 'Cleared' ? (
                       <Loader2 className='h-4 w-4 animate-spin' />
                     ) : (
                       <CheckCircle2 className='h-4 w-4' />
                     )}
-                    {isSubmitting ? 'Processing...' : 'Clear'}
+                    {submittingAction === 'Cleared' ? 'Processing...' : 'Clear'}
                   </Button>
                   <Button
                     onClick={handleReject}
                     variant='destructive'
                     className='gap-2'
-                    disabled={!remarks.trim() || isSubmitting}
+                    disabled={!remarks.trim() || submittingAction !== null}
                   >
-                    {isSubmitting ? (
+                    {submittingAction === 'Rejected' ? (
                       <Loader2 className='h-4 w-4 animate-spin' />
                     ) : (
                       <XCircle className='h-4 w-4' />
                     )}
-                    {isSubmitting ? 'Processing...' : 'Reject'}
+                    {submittingAction === 'Rejected' ? 'Processing...' : 'Reject'}
                   </Button>
                 </div>
                 {!remarks.trim() && (

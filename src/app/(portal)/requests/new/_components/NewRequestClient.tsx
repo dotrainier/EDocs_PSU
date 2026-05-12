@@ -25,7 +25,8 @@ import Step1SelectDocument from './Step1SelectDocument';
 import Step2RequestDetails from './Step2RequestDetails';
 import Step3PrivacyNotice from './Step3PrivacyNotice';
 import Step4Review from './Step4Review';
-import AIReasoning from './AIReasoning';
+import ClassificationWarningDialog from './ClassificationWarningDialog';
+import PurposeQualityDialog from './PurposeQualityDialog';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,6 +60,25 @@ interface AIValidationResult {
   ai_failed: boolean;
   skip_validation?: boolean;
 }
+
+interface PurposeQualityResult {
+  is_valid: boolean;
+  is_vague: boolean;
+  reason: string;
+  suggestion: string;
+  ai_failed: boolean;
+}
+
+const PREDEFINED_PURPOSES = [
+  'Employment',
+  'Scholarship Application',
+  'Transfer to Another School',
+  'Loan Application',
+  'Government Requirement',
+  'Personal Record',
+  'Board Examination',
+  'Visa / Travel Abroad',
+];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -205,6 +225,7 @@ export default function NewRequestClient() {
   const [submittedTracking, setSubmittedTracking] = useState('');
   const [submittedFee, setSubmittedFee] = useState('');
   const [aiValidation, setAiValidation] = useState<AIValidationResult | null>(null);
+  const [purposeQuality, setPurposeQuality] = useState<PurposeQualityResult | null>(null);
   const [aiChecking, setAiChecking] = useState(false);
 
   const { data, loading, error, refetch } = useFetch<{ docs: DocumentType[] }>(
@@ -227,12 +248,16 @@ export default function NewRequestClient() {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (field === 'purpose' || field === 'documentTypeId') {
       setAiValidation(null);
+      setPurposeQuality(null);
     }
   }
 
   function canProceed(): boolean {
     if (currentStep === 1) return !!formData.documentTypeId;
-    if (currentStep === 2) return !!formData.purpose && !!formData.copies && !!formData.releaseMode;
+    if (currentStep === 2) {
+      const qualityBlocking = !!purposeQuality && !purposeQuality.ai_failed && !purposeQuality.is_valid;
+      return !!formData.purpose && !!formData.copies && !!formData.releaseMode && !qualityBlocking;
+    }
     if (currentStep === 3) return formData.agreedToPrivacy;
     return true;
   }
@@ -247,20 +272,41 @@ export default function NewRequestClient() {
 
     try {
       setAiChecking(true);
-      const result = await api.post<AIValidationResult>('/ai/validate-classification', {
-        documentTypeId: Number(formData.documentTypeId),
-        purpose: formData.purpose,
-      });
 
-      setAiValidation(result);
+      const isCustomPurpose = !PREDEFINED_PURPOSES.includes(formData.purpose);
 
-      if (result.ai_failed || result.skip_validation) {
+      const [classificationResult, qualityResult] = await Promise.allSettled([
+        api.post<AIValidationResult>('/ai/validate-classification', {
+          documentTypeId: Number(formData.documentTypeId),
+          purpose: formData.purpose,
+        }),
+        isCustomPurpose
+          ? api.post<PurposeQualityResult>('/ai/validate-purpose', {
+              documentTypeId: Number(formData.documentTypeId),
+              purpose: formData.purpose,
+            })
+          : Promise.resolve(null),
+      ]);
+
+      const classification =
+        classificationResult.status === 'fulfilled' ? classificationResult.value : null;
+      const quality =
+        qualityResult.status === 'fulfilled' ? qualityResult.value : null;
+
+      if (quality && !quality.ai_failed && !quality.is_valid) {
+        setPurposeQuality(quality);
+        return;
+      }
+
+      if (!classification || classification.ai_failed || classification.skip_validation) {
         setCurrentStep(3);
         return;
       }
 
-      const lowConfidence = result.confidence < AI_CONFIDENCE_THRESHOLD;
-      if (result.matches && !lowConfidence) {
+      setAiValidation(classification);
+
+      const lowConfidence = classification.confidence < AI_CONFIDENCE_THRESHOLD;
+      if (classification.matches && !lowConfidence) {
         setCurrentStep(3);
       }
     } catch {
@@ -388,8 +434,16 @@ export default function NewRequestClient() {
           {currentStep === 2 && (
             <div className='space-y-4'>
               <Step2RequestDetails formData={formData} onChange={handleFieldChange} />
+              <PurposeQualityDialog
+                open={!!purposeQuality && !purposeQuality.ai_failed && !purposeQuality.is_valid}
+                isVague={purposeQuality?.is_vague ?? false}
+                reason={purposeQuality?.reason ?? ''}
+                suggestion={purposeQuality?.suggestion ?? ''}
+                onDismiss={() => setPurposeQuality(null)}
+                onContinue={() => { setPurposeQuality(null); setCurrentStep(3); }}
+              />
               {showAiReasoning && (
-                <AIReasoning
+                <ClassificationWarningDialog
                   open={showAiReasoning}
                   onDismiss={() => setAiValidation(null)}
                   onOverride={() => {

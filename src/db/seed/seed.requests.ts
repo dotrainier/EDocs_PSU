@@ -7,8 +7,8 @@ import {
   offices,
   clearance_tasks,
   clearance_requirements,
+  audit_log,
 } from '@/db/schema';
-import { logAudit } from '@/lib/audit';
 
 export async function seedRequests() {
   console.log('Seeding document requests...');
@@ -317,8 +317,8 @@ export async function seedRequests() {
     const requestId = reqMap[request.tracking_number];
     if (!requestId || !request.user_id) continue;
 
-    await logAudit({
-      userId: request.user_id,
+    await db.insert(audit_log).values({
+      user_id: request.user_id,
       action: 'REQUEST_SUBMITTED',
       details: {
         requestId,
@@ -326,8 +326,8 @@ export async function seedRequests() {
         documentTypeId: request.document_type_id,
         purpose: request.purpose,
       },
-      ipAddress: 'seed',
-    });
+      ip_address: 'seed',
+    }).onConflictDoNothing();
   }
 
   // ── CLEARANCE_CLEARED / CLEARANCE_REJECTED — one entry per relevant task ──
@@ -346,8 +346,8 @@ export async function seedRequests() {
     const actorId = officeActor[officeCode] ?? systemActorId;
 
     if (task.status === 'Cleared') {
-      await logAudit({
-        userId: actorId,
+      await db.insert(audit_log).values({
+        user_id: actorId,
         action: 'CLEARANCE_CLEARED',
         details: {
           taskId: task.id,
@@ -355,14 +355,14 @@ export async function seedRequests() {
           officeId: task.office_id,
           remarks: 'Seeded as cleared',
         },
-        ipAddress: 'seed',
-      });
+        ip_address: 'seed',
+      }).onConflictDoNothing();
     }
 
     // Action Required maps to CLEARANCE_REJECTED in the real app flow.
     if (task.status === 'Action Required') {
-      await logAudit({
-        userId: actorId,
+      await db.insert(audit_log).values({
+        user_id: actorId,
         action: 'CLEARANCE_REJECTED',
         details: {
           taskId: task.id,
@@ -370,8 +370,8 @@ export async function seedRequests() {
           officeId: task.office_id,
           remarks: 'Seeded as action required — student response needed',
         },
-        ipAddress: 'seed',
-      });
+        ip_address: 'seed',
+      }).onConflictDoNothing();
     }
   }
 

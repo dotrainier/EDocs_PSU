@@ -1,0 +1,203 @@
+E-DOCS: AN AI-BASED ONLINE DOCUMENT REQUISITION AND MANAGEMENT SYSTEM FOR PAMPANGA STATE UNIVERSITY – MAIN CAMPUS
+
+
+A Capstone Presented to the Faculty of the College of Computing Studies
+Pampanga State University Mexico, Pampanga
+
+In Partial Fulfillment of the Requirements for the Degree of
+Bachelor of Science in Information Technology
+
+
+Salas, Vincent M. Aguas, John Bendict M. Macapagal, Maxine Joy V.
+Rivera, Earl Justin B. Gomez Mark Reden S
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+MAY 2026
+ 
+CHAPTER 1
+THE BACKGROUND OF THE STUDY
+The rapid advancement of digital technology has significantly transformed how institutions manage information and deliver services. In higher education, the adoption of automated and online systems has improved operational efficiency and enhanced user experience (Laudon & Laudon, 2020). One critical area that requires modernization is document requisition and management, which traditionally relies on manual and paper-based processes. These conventional methods are often time-consuming, inefficient, and prone to human error, leading to delays and dissatisfaction among students and faculty (Davenport, 2018). This study proposes the development of an AI-driven Online Document Requisition and Management System (e-Docs) for Pampanga State University – Main Campus to streamline document processing, improve accessibility, and enhance overall service delivery.
+Recent literature highlights the increasing significance of digital transformation in higher education institutions. Bond et al. (2020) reported that institutions that integrate digital technologies into administrative services experience improved operational efficiency, enhanced data management, and increased user satisfaction. Electronic document processing systems offer numerous benefits, including the automation of repetitive processes, reduction of physical paperwork, and provision of real-time access to data.
+Moreover, the implementation of e-government and e-service models in academic organizations has demonstrated significant benefits. Al-Hujran et al. (2021) reported that online service platforms enhance flexibility and transparency in management processes. These systems enable users to submit requests and track progress without being physically present, thereby reducing waiting times and office congestion.
+In document management, automation plays a crucial role in improving efficiency and reducing human error. Sahu and Gupta (2022) found that automated document management systems increase processing speed, improve data accuracy, and enhance record organization. These systems also support secure storage and efficient retrieval of documents, which are essential for maintaining institutional integrity and confidentiality.
+Artificial intelligence (AI) further enhances information systems by enabling intelligent decision-making and predictive capabilities. Dwivedi et al. (2023) noted that AI-based systems can streamline workflows, automate responses, and improve overall system reliability. In document requisition systems, AI can be used to categorize requests, detect errors, and generate personalized notifications, ultimately improving user experience.
+User satisfaction remains a key factor in evaluating the effectiveness of online systems. Nguyen et al. (2021) emphasized that usability, reliability, and interface design significantly influence user acceptance of digital platforms. More intuitive, responsive, and user-friendly systems are more likely to be adopted, particularly by students who are already familiar with digital technologies.
+ 
+Project Context
+Pampanga State University – Main Campus is one of the key higher education institutions in the province, serving a large population of students, faculty, and administrative staff. As part of its regular operations, the university handles a significant number of document requests, including transcripts, certifications, and other academic records. These documents play an important role in academic progression, employment, and other formal transactions, making efficient document management essential to the quality of institutional services. However, similar to many higher education institutions, the university continues to face challenges in updating its administrative processes to meet increasing demand and evolving digital expectations.
+At present, the university’s document requisition and processing system remains largely manual and fragmented. Students and faculty members often need to visit multiple offices, fill out paper-based forms, and wait in line for processing and approval. Documents are physically transferred between departments, and there is no centralized digital system to manage requests or store records efficiently. Communication between offices is mostly handled through manual coordination and verbal updates, with no available system for real-time tracking of request status.
+As a result, several operational challenges arise. Delays in processing are common, especially during peak periods such as enrollment and graduation. Paper-based records are also at risk of being lost, misplaced, or damaged. In addition, the lack of system integration increases the likelihood of miscommunication across offices. For users, unclear procedures and limited updates often lead to confusion and frustration, while administrative staff experience increased workload and pressure due to inefficient processes.
+These concerns are further reflected in both the qualitative and quantitative findings of this study. Respondents reported long waiting times, limited transparency in request handling, and inconvenience caused by the need for multiple visits to the campus. The absence of a reliable tracking and notification system also affects user experience, as students and staff are often uncertain about the progress and completion of their requests.
+Taken together, these issues highlight the limitations of the current system and point to the need for a more efficient and user-centered approach to document requisition. In response, this study proposes the development of an AI-based Online Document Requisition and Management System (e-Docs). The system is designed to simplify and streamline the request process through online submissions, automated workflows, real-time tracking, and timely notifications. More importantly, e-Docs is intended to align with the specific needs and processes of Pampanga State University – Main Campus, offering a more accessible, efficient, and modern approach to document management.
+Purpose and Description
+The primary objective of the proposed e-Docs system is to provide Pampanga State University – Main Campus with an intelligent, centralized, and accessible platform for managing document requisition and related services. The system is designed to improve processing speed, reduce reliance on manual procedures, and enhance overall efficiency, transparency, and user
+ 
+satisfaction. By integrating artificial intelligence (AI), real-time monitoring, and secure digital record management, the system aims to modernize the university’s existing document processing practices.
+To support these goals, the proposed system introduces a structured and fully digital approach to document requests. Students and staff will be able to submit requests for documents such as certifications, clearances, and service records through an online platform. This process is intended to improve the accuracy and completeness of submitted information while minimizing the need for physical forms and in-person transactions. In addition, users will be informed about data privacy policies to ensure transparency in how personal information is handled and protected.
+The system also incorporates features that support efficient processing and coordination among offices. Requests can be reviewed, verified, and approved within a unified digital environment, allowing authorized personnel from different departments to manage transactions more effectively. This approach reduces delays caused by manual document handling and improves communication across offices.
+To further enhance system performance, AI-based functionalities are integrated to assist in classifying requests, identifying incomplete or inconsistent entries, and prioritizing submissions when necessary. These features aim to reduce human error and support a more efficient workflow. Additionally, real-time tracking and notification mechanisms are included to keep users informed about the status of their requests, thereby improving transparency and reducing the need for follow- ups.
+The proposed system also emphasizes accessibility and user control. Users will be able to monitor the progress of their requests, receive timely updates, and access completed documents through secure digital channels. Administrative functions are supported through a centralized interface that enables system monitoring, request management, and report generation, which can assist in data-driven decision-making.
+Security and accountability are also key considerations in the system design. Role-based access ensures that users can only access functions relevant to their responsibilities, while audit trail features record system activities to maintain transparency and data integrity.
+Overall, the e-Docs system is envisioned as a comprehensive digital solution that transforms the traditional document requisition process into a more efficient, reliable, and user- centered service. By incorporating automation, AI support, and real-time communication, the system aims to improve both user experience and administrative operations within the university.
+Objectives of the Study
+This research seeks to design, develop and test e-Docs, an AI-Based Online Document Requisition and Management System at the Pampanga State University - Main Campus, which will simplify document request processes, allow users to track documents in real-time, improve communication between users and administrative offices, and improve the overall efficiency and quality of document processing services.
+ 
+In particular, this research seeks to:
+1.	Determine the existing processes and identify issues in the document requisition and management system of Pampanga State University – Main Campus.
+2.	Design and develop an AI-based Online Document Requisition and Management System (e-Docs) that supports secure user authentication, online document requests, real-time tracking, and automated notifications.
+3.	Evaluate the developed system based on the ISO/IEC 25010 software quality characteristics, including usability, performance efficiency, reliability, security, and user satisfaction.
+Scope and Delimitation Scope
+The e-Docs system will be designed and implemented for Pampanga State University – Main Campus to support students and faculty in requesting academic and administrative documents. The system covers the entire document requisition process, including user registration and authentication, request submission, processing, tracking, and document release. Through an online platform, users can request documents such as transcripts, certifications, clearances, and service records, while also monitoring the status of their requests in real time. Additional features include request cancellation, status viewing, and automated notifications to keep users informed throughout the process.
+
+All requests are stored in a centralized database and routed to an administrative dashboard, where authorized personnel can review, process, and update request statuses. The system enables efficient handling of requests, coordination among offices, and timely communication with users. An AI-assisted component is incorporated to classify and organize document requests, thereby improving workflow efficiency and prioritization. A notification mechanism is also included to provide timely updates on request confirmation, processing stages, and document availability, enhancing transparency and communication.
+
+System evaluation is included in the study to assess usability and performance. Evaluation metrics include task completion rate, time efficiency, and user satisfaction. Improvements in processing efficiency, reduction in delays, and overall user experience in document requisition services will be used to measure system effectiveness.
+
+Limitations of the Study
+
+•	The system is limited to document requisition and management functions and does not cover other university systems such as enrollment, grading, or financial transactions.
+•	The implementation is confined to Pampanga State University – Main Campus and may require further modification before it can be adapted to other institutions.
+•	The AI component functions only as a support tool for classifying and organizing requests and does not provide full automation of decision-making processes.
+•	The system evaluation is based on a limited group of respondents, which may affect the generalizability of the findings.
+ 
+•	Physical retrieval of documents may still be required for certain records in compliance with university policies; thus, the system does not completely eliminate in-person transactions.
+ 
+Definition of Terms
+Artificial Intelligence (AI). It is the system capability whereby the human intelligence is emulated to classify, arrange and aid in processing document requests on the e-Docs system.
+Centralized Database. It means the single storage system, in which all the user data, document requests, and records of the system are stored.
+Data Privacy. It means the safeguarding and safe processing of the personal and sensitive data of the users on the e-Docs system.
+Document Management System. It is the digital system that stores, manages, arranges, and tracks document requests and other records in the e-Docs system.
+Document Requisition. It means asking academic or administrative documents using e-Docs system like transcripts, certificates and service records.
+e-Docs System. It is the AI-based online document requisition and management system that has been developed in this study concerning Pampanga State University -Main Campus.
+Interface Design. It is the arrangement of the visual appearance, structure and the general system of the e-Docs such as buttons, icons and navigation features.
+User Acceptance Testing (UAT). It is a process of evaluation in which actual users test the system to ascertain its usability, functionality and the general performance of the system.
+User Authentication. It is described as a procedure of confirming the identity of the users using the sign-in details and then gaining access to the e-Docs system.
+User Satisfaction. It is defined as the degree of satisfaction of the users in terms of performance and service delivery on e-Docs system.
+ 
+Chapter 2
+REVIEW OF RELATED LITERATURE AND STUDIES
+Related Literatures
+Electronic Document Management Systems (EDMS) have become an essential part of digital transformation in organizations. These systems improve how documents are stored, retrieved, and processed, reducing reliance on paper-based methods. By automating routine tasks and providing easier access to information, EDMS help streamline operations and support more efficient workflows. Studies have shown that their use can lead to better productivity, improved collaboration, and more informed decision-making in institutional settings (Alshibly et al., 2021).
+The use of information technology in document processing also contributes to improved system performance and usability. Electronic systems allow documents to be processed more quickly, with fewer errors and greater accuracy. In this context, usability remains a key consideration. Systems that are effective, efficient, and satisfying to use are more likely to be accepted by users and successfully implemented in practice (Kusiak, 2022).
+Ensuring software quality is another important aspect of system development. The ISO/IEC 25010 model is widely used to evaluate systems based on characteristics such as usability, reliability, performance efficiency, and security. Researchers have emphasized that applying this model helps guide system design and ensures that digital solutions meet both user expectations and organizational needs (Rojas et al., 2023).
+Recent developments in document management systems have been influenced by artificial intelligence (AI) and automation. These technologies make it possible to handle requests more intelligently, improve system efficiency, and strengthen data security. Compared to traditional approaches, AI-enabled systems offer more flexible and adaptive solutions, particularly in environments that require frequent document processing (Ozman, 2024).
+Usability continues to play a central role in the success of digital systems, especially those that involve regular user interaction. Systems designed with clear interfaces, efficient workflows, and built-in error prevention are more likely to gain user acceptance. As a result, usability is not only a design consideration but also a key factor in overall system effectiveness (ISO, 2020).
+The accessibility and scalability have been further improved by incorporation of cloud- based technologies into Electronic Document Management Systems (EDMS). With cloud platforms, users can access documents whenever and wherever they want to, which is flexible in the organization operation. The development saves infrastructure expenses and provides backup and recovery of data, making document management more robust and sustainable (Marston et al., 2021).
+Data security and privacy is another key factor of EDMS. As the number of documents in digital format grows, it has become important to provide security against unauthorized access. The use of encryption, access control, and audit trails is integrated into modern systems to protect
+ 
+sensitive data and enhances user confidence and adherence to data protection laws (Hashizume et al., 2020).
+Another important aspect of successful document management systems is interoperability. Integrated systems that are capable of connecting with other systems like enterprise resource planning (ERP) and customer relationship management (CRM) enhance continuity of workflow and data accuracy. This integration helps organizations to handle documents in a more effective manner and across different platforms (Zhang et al., 2022).
+The adaptability of the system and user training has a great determination on the successful implementation of EDMS. Even systems that are designed properly might fail when the users are not properly trained or the system fails to fit the current workflow. Research indicates that ongoing training and technical assistance increase the level of user competence and system use (Tarhini et al., 2021).
+The sustainability has risen as one of the advantages of adopting the electronic document systems. Through lessening the use of paper, organizations are helping save the environment as well as decrease operational expenses. Digital transformation projects incorporating EDMS promote sustainable practices and are compatible with the worldwide sustainability objectives (Bocken et al., 2022).
+Related Studies
+Several recent studies highlight the effectiveness of web-based systems in improving institutional processes. Efendi et al. (2025) found that implementing a web-based management system led to better data organization, improved accessibility, and increased efficiency in processing tasks. The system also achieved high usability ratings when evaluated using ISO/IEC 25010 standards.
+Other research has focused on the importance of evaluating software systems using established quality frameworks. Ariningsih and Muhammad (2024) emphasized that assessing systems in terms of usability, efficiency, and reliability is essential for ensuring consistent performance. Their findings also suggest that regular evaluation supports continuous system improvement based on user feedback.
+Canlas et al. (2021) examined a research productivity monitoring system and reported high levels of usability and user satisfaction when ISO/IEC 25010 standards were applied. The study showed that structured evaluation methods are effective in measuring both system functionality and user acceptance.
+In a related study, Hussain and Mkpojiogu (2020) explored the impact of user-centered design on online systems. Their results indicated that systems designed with a focus on usability and efficiency are more likely to meet user expectations and deliver better outcomes.
+Similarly, Javier et al. (2022) developed an institutional online repository system and found that it achieved strong usability and acceptability when evaluated using the ISO/IEC 25010 model.
+ 
+The study supports the growing use of digital platforms in educational institutions to improve access to information and knowledge sharing.
+Santos et al. (2023) created a digital records management system among the local government units and discovered that it was highly effective in terms of time and data structure in the retrieval of documents. The system was tested and the ISO/IEC 25010 standards rated the system highly in terms of usability and performance efficiency.
+Garcia and Lopez (2022) carried out research on the application of a document tracking system in academic institutions. Their results showed that automation minimized delays in processing and minimized human errors leading to enhanced operating efficiency and user satisfaction.
+Rahman et al. (2024) conducted another study that investigated the usefulness of a document management system based on the cloud in corporations. These findings demonstrated improved teamwork and sharing of documents in real-time, which led to improved decision- making and increased productivity.
+Delos Reyes et al. (2021) tested a web-based filing system that was intended to be used by administrative offices. The report indicated that the system enhanced accuracy and access to data besides ensuring high levels of security and reliability as measured by ISO/IEC 25010 standards.
+Nguyen and Tran (2023) examined how the introduction of artificial intelligence to document management systems affects them. Their analysis revealed that AI-driven capabilities, including automated classification and search optimization, greatly improved the performance of the system and decreased the amount of manual work.
+Synthesis
+The literature and studies examined all emphasize the increasing role of electronic and automated systems in enhancing organi007Aational effectiveness, especially in document management. The various sources consistently demonstrate that electronic document management systems and web-based systems can decrease manual tasks, errors and improve information accessibility. In addition, the use of artificial intelligence and automation technologies leads to increased speed, accuracy and decision-making. The adoption of the ISO/IEC 25010 system is also highlighted as a trusted standard for system quality assessment in terms of usability, efficiency, reliability, and security, ensuring that the system is user and organization-friendly. These results indicate that an AI-enabled e-Docs system is worth developing, as it embraces the latest technological developments and best practices in improving service delivery and user experience in higher education.
+Conceptual Framework
+The conceptual framework of the study presents the structure of the proposed AI-powered e-Docs system using the Input–Process–Output (IPO) model. It illustrates how user data, system requirements, and institutional policies are transformed through system processes such as AI- assisted request handling and document management, resulting in an efficient, secure, and
+ 
+automated document requisition system. The framework also highlights the role of ISO/IEC 25010 standards and user feedback in ensuring system quality and continuous improvement.
+
+
+Figure 1
+Conceptual Framework of eDocs
+
+
+
+ 
+INPUT
+ 
+PROCESS
+ 
+
+ 
+
+User Data
+•	Personal information (name, ID, role)
+•	User credentials for authentication
+Document	Request
+Data
+•	Type of document requested
+•	Purpose and supporting details
+System Requirements
+•	Hardware and software components
+•	Database and network infrastructure
+Institutional Policies
+•	University rules on document processing
+•	Data privacy policies
+Quality Standards
+•	ISO/IEC	25010
+software quality criteria
+ 
+
+•	User authentication and secure login
+•	Submission of online document requests
+•	AI-assisted
+classification	and
+validation of requests
+•	Processing and approval by authorized personnel
+•	Real-time tracking of request status •
+Automated notifications (email/SMS/system alerts)
+•	Management through centralized	admin dashboard
+•	Implementation of security measures (data privacy, access control)
+•	System evaluation using ISO/IEC 25010
+•	User	Acceptance
+Testing (UAT)
+ 
+OUTPUT
+
+
+•	Fully functional AI- powered e-Docs system
+•	Faster and more efficient	document processing
+•	Reduced manual workload and human error
+•	Improved accuracy and transparency of transactions
+•	Enhanced data security
+and privacy
+•	Real-time tracking and user notifications
+•	Increased user satisfaction
+•	ISO/IEC   25010
+evaluation results
+ 
+
+
+
+
+ 
+ 
+The Input–Process–Output (IPO) conceptual framework of this study serves as a guide in understanding how the proposed AI-powered e-Docs system operates within Pampanga State University – Main Campus.
+In the Input stage, the system gathers essential elements needed for operation. This includes user data such as personal information and login credentials, document request details like type and purpose, system requirements involving hardware, software, and database infrastructure, as well as institutional policies including university regulations and data privacy requirements. Additionally, ISO/IEC 25010 software quality standards are included to ensure that the system development aligns with international benchmarks for usability, efficiency, reliability, and security.
+In the Process stage, these inputs are transformed through a series of automated and manual system functions. Users securely log in and submit document requests through the system. These requests are then processed using an AI-assisted classification mechanism that helps identify, validate, and organize requests efficiently. Authorized personnel handle approval and processing through a centralized administrative dashboard. The system also provides real-time tracking, automated notifications, and secure data management to ensure transparency and efficiency. Furthermore, the system undergoes evaluation using ISO/IEC 25010 standards and User Acceptance Testing (UAT) to assess performance and usability.
+In the Output stage, the system produces a fully functional AI-powered e-Docs platform that enables faster, more accurate, and more efficient document processing. It reduces manual workload and human error while improving transparency, security, and accessibility of records. Users benefit from real-time updates and notifications, while administrators gain better control and monitoring of requests. The output also includes evaluation results based on ISO/IEC 25010, which serve as a basis for refining and improving the system prior to full deployment.
+Overall, the framework demonstrates how the integration of AI and digital systems can modernize document management processes in academic institutions, ensuring efficiency, security, and user satisfaction.
+
+
+Technical Background
+The design of an AI-based Online Document Requisition and Management System (e- Docs) is based on the evolution of web-based information systems, database management systems, and artificial intelligence technologies. Contemporary document management systems (DMS) are designed using a client-server model, with users accessing a web-based interface (frontend), and document requests handled and stored in a backend system linked to a database. This enables real- time access, scalability, and security of institutional records.
+The system uses a relational database management system (RDBMS) to store user data, requests, transactions, and status messages. This guarantees data integrity, consistency and record retrieval. Data security features like role-based access control (RBAC) and encryption are employed to ensure confidentiality and security of sensitive information, and to adhere to data privacy laws such as the Data Privacy Act of 2012 (Republic Act 10173).
+ 
+The system can be further improved through the use of artificial intelligence (AI) to automate document request classification and verification. AI algorithms can be employed to classify request types, validate requests for completeness, and determine prioritization rules. This minimizes human interaction and enhances efficiency and accuracy of the process.
+Additionally, the system uses real-time processing technologies, such as API-driven communication and notification services (e-mail or SMS), enabling a real-time request status. The system is also assessed based on the ISO/IEC 25010 software quality model, which measures attributes such as efficiency, reliability, security, usability and user satisfaction.
+In summary, the system's technical infrastructure integrates web technologies, database systems, AI-powered processing, and software quality models to deliver a secure, efficient, and user-friendly document management system that meets the needs of contemporary educational institutions.

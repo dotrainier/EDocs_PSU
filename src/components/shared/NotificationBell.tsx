@@ -155,7 +155,7 @@ export function NotificationBell() {
           </div>
         ) : (
           <div className='max-h-[420px] overflow-y-auto overscroll-contain py-1.5'>
-            {notifications.map((notif, index) => {
+            {notifications.map((notif) => {
               const status = notif.status || 'pending';
               const statusCfg = statusConfig[status];
 

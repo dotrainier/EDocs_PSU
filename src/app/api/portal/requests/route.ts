@@ -126,10 +126,14 @@ export async function POST(request: Request) {
     void (async () => {
       try {
         // Notify portal user
-        await createNotification({
-          userId: session.userId,
+        const userNotif = {
           title: `Request submitted: ${docType.name}`,
           message: `Your request has been submitted successfully. Tracking number: ${trackingNumber}.`,
+        };
+        await createNotification({
+          userId: session.userId,
+          title: userNotif.title,
+          message: userNotif.message,
           type: 'document_submitted',
           requestId,
         });
@@ -140,7 +144,7 @@ export async function POST(request: Request) {
             documentId: requestId,
             userId: session.userId,
             status: 'Pending',
-            message: `Your request has been submitted successfully. Tracking number: ${trackingNumber}.`,
+            message: userNotif.message,
           }),
         }).catch(() => {});
 
@@ -159,12 +163,16 @@ export async function POST(request: Request) {
           .from(office_staff)
           .where(inArray(office_staff.office_id, [...involvedOfficeIds]));
 
+        const staffNotif = {
+          title: `New ${docType.name} request`,
+          message: `A new ${docType.name} request has been submitted. Tracking: ${trackingNumber}.`,
+        };
         await Promise.all(
           staffRows.map(async ({ user_id }) => {
             await createNotification({
               userId: user_id,
-              title: `New ${docType.name} request`,
-              message: `A new request has been submitted. Tracking: ${trackingNumber}.`,
+              title: staffNotif.title,
+              message: staffNotif.message,
               type: 'document_submitted',
               requestId,
             });
@@ -175,7 +183,7 @@ export async function POST(request: Request) {
                 documentId: requestId,
                 userId: user_id,
                 status: 'Pending',
-                message: `A new ${docType.name} request has been submitted. Tracking: ${trackingNumber}.`,
+                message: staffNotif.message,
               }),
             }).catch(() => {});
           }),

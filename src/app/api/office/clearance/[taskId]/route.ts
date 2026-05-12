@@ -138,10 +138,15 @@ export async function PATCH(
         if (!requestor[0]) return;
         const officeName = officeResult[0]?.name || 'Office';
 
+        const notif = {
+          title: `Your ${docRequest.document_name} request has been ${newStatus.toLowerCase()} by ${officeName}`,
+          message: `Your request for ${docRequest.document_name} has been ${newStatus.toLowerCase()} by ${officeName}.`,
+        };
+
         await createNotification({
           userId: docRequest.user_id,
-          title: `Your ${docRequest.document_name} request has been ${newStatus.toLowerCase()} by ${officeName}`,
-          message: `Your request for ${docRequest.document_name} has been ${newStatus.toLowerCase()} by ${officeName}. Please check the system for details.`,
+          title: notif.title,
+          message: notif.message,
           type: newStatus === 'Cleared' ? 'clearance_cleared' : 'clearance_rejected',
           requestId: task.request_id,
           relatedId: task.id.toString(),
@@ -154,7 +159,7 @@ export async function PATCH(
             documentId: task.request_id,
             userId: docRequest.user_id,
             status: newStatus,
-            message: `Your request for ${docRequest.document_name} has been ${newStatus.toLowerCase()} by ${officeName}. Please check the system for details.`,
+            message: notif.message,
           }),
         }).catch(() => {});
 

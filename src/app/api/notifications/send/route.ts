@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     if (controller) {
       try {
         controller.enqueue(new TextEncoder().encode(notificationEvent));
-      } catch (error) {
+      } catch {
         connections.delete(userId);
         console.log(`Connection closed for user ${userId}`);
       }
