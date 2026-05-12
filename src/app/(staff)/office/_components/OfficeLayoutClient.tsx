@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import { cn, formatRole } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/axios';
 import { NotificationBell } from '@/components/shared/NotificationBell';
@@ -25,6 +25,7 @@ interface User {
   schoolId: string;
   role: string;
   initials: string;
+  officeCode: string;
 }
 
 const NAV_ITEMS = [
@@ -104,12 +105,19 @@ function SidebarContent({ user, onNavClick }: { user: User; onNavClick?: () => v
           </div>
           <div className='min-w-0 flex-1'>
             <p className='truncate text-sm font-semibold text-foreground'>{user.fullName}</p>
-            <Badge
-              variant='secondary'
-              className='mt-0.5 h-4 rounded-sm px-1.5 text-[10px] font-medium'
-            >
-              {user.role}
-            </Badge>
+            <div className='mt-0.5 flex items-center gap-1'>
+              <Badge
+                variant='secondary'
+                className='h-4 rounded-sm px-1.5 text-[10px] font-medium'
+              >
+                {formatRole(user.role)}
+              </Badge>
+              {user.officeCode && (
+                <Badge className='h-4 rounded-sm px-1.5 text-[10px] font-medium'>
+                  {user.officeCode}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
         <Button

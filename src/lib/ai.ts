@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { normalizeString } from '@/lib/utils';
 
 // ============================================================================
 // Types
@@ -96,9 +97,6 @@ function setCached<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T):
   cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
 }
 
-function normalizePurpose(p: string): string {
-  return p.trim().toLowerCase().replace(/\s+/g, ' ');
-}
 
 // ============================================================================
 // Pre-filter: obvious purpose <-> document type matches that don't need AI.
@@ -123,7 +121,7 @@ export async function validateDocumentClassification(
   availableTypes: { code: string; name: string; description: string }[],
   userRole: string,
 ): Promise<ClassificationResult> {
-  const cacheKey = `${selectedCode}::${normalizePurpose(purpose)}`;
+  const cacheKey = `${selectedCode}::${normalizeString(purpose)}`;
   const cached = getCached(classificationCache, cacheKey);
   if (cached) return cached;
 
@@ -220,7 +218,7 @@ export async function validatePurposeQuality(
     };
   }
 
-  const cacheKey = `${documentTypeName}::${normalizePurpose(purpose)}`;
+  const cacheKey = `${documentTypeName}::${normalizeString(purpose)}`;
   const cached = getCached(purposeCache, cacheKey);
   if (cached) return cached;
 

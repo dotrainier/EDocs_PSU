@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { cn } from '@/lib/utils';
+import { cn, getGreeting } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
@@ -134,13 +134,6 @@ const STATUS_CONFIG: Record<
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
-}
 
 function baseOptions(): ApexOptions {
   return {

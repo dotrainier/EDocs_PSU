@@ -1,4 +1,3 @@
-// src/app/(portal)/_components/PortalLayoutClient.tsx
 'use client';
 
 import { useState } from 'react';
@@ -45,7 +44,7 @@ const NAV_ITEMS = [
 
 function resolvePageTitle(pathname: string): string {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
-  if (pathname.startsWith('/requests/')) return 'Track Request'; // was /request/
+  if (pathname.startsWith('/requests/')) return 'Track Request';
   return 'e-Docs';
 }
 

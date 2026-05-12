@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifyAccessToken } from '@/lib/auth';
 import { db } from '@/db';
-import { users, roles, office_staff } from '@/db/schema';
+import { users, roles, office_staff, offices } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export type SessionUser = {
@@ -14,6 +14,7 @@ export type SessionUser = {
   role: string;
   officeId: string | null;
   initials: string;
+  officeCode: string;
 };
 
 export async function requireSession(): Promise<SessionUser> {
@@ -30,10 +31,12 @@ export async function requireSession(): Promise<SessionUser> {
       school_id: users.school_id,
       role_name: roles.name,
       office_id: office_staff.office_id,
+      office_code: offices.code,
     })
     .from(users)
     .innerJoin(roles, eq(users.role_id, roles.id))
     .leftJoin(office_staff, eq(office_staff.user_id, users.id))
+    .leftJoin(offices, eq(offices.id, office_staff.office_id))
     .where(eq(users.id, payload.userId))
     .limit(1);
 
@@ -55,5 +58,6 @@ export async function requireSession(): Promise<SessionUser> {
     role: user.role_name,
     officeId: user.office_id ? String(user.office_id) : null,
     initials,
+    officeCode: user.office_code ?? '',
   };
 }

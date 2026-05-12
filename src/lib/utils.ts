@@ -85,3 +85,18 @@ export function calculateElapsedDays(start: string) {
   const diffMs = Date.now() - startDate.getTime();
   return Math.max(Math.ceil(diffMs / (1000 * 60 * 60 * 24)), 0);
 }
+
+export function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+export function normalizeString(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+export function formatRole(role: string) {
+  return role.replace(/([A-Z])/g, ' $1').trim();
+}
