@@ -1,445 +1,426 @@
 # Document Request Workflow Demo Tutorial
 
-This tutorial walks through the complete document request clearance workflow, demonstrating how a student submits a request and how staff members process it through the clearance system.
+This tutorial walks through the complete document request clearance workflow in two parts:
 
-## Overview
-
-- **Timeline**: May 12, 2026
-- **Student**: Juan (School ID: `2021-00001`)
-- **Document Type**: Certificate of Good Moral Character (COG)
-- **Request Tracking Number**: `EDOC-2026-000003`
-- **Initial Status**: Pending
-- **Purpose**: Board Examination
+- **Tutorial 1** — Single-office clearance (COG: Certificate of Grades)
+- **Tutorial 2** — Multi-office clearance (TOR: Transcript of Records)
 
 ---
 
-## Part 1: Student View - Submitting a Request
+# Tutorial 1: Single-Office Clearance
+
+**Document Type**: Certificate of Grades (COG)
+**Request**: `EDOC-2026-000003`
+**Student**: Juan — School ID `2021-00001`
+**Purpose**: Board Examination
+**Clearance**: OUR only (1 office)
+
+---
+
+## Part 1: Student View
 
 ### Step 1.1: Login as Student Juan
 
-**Credentials:**
+| Field     | Value        |
+| --------- | ------------ |
+| School ID | `2021-00001` |
+| Full Name | Juan         |
+| Role      | Student      |
 
-- School ID: `2021-00001`
-- Full Name: Juan (Student)
-- Role: Student
+Navigate to the signin page, enter School ID `2021-00001`, and you will be redirected to the student portal dashboard.
 
-**Action:**
+### Step 1.2: View Active Requests
 
-1. Navigate to the signin page
-2. Enter school ID `2021-00001`
-3. You will be redirected to the student portal dashboard
-
-### Step 1.2: View Pending Requests
-
-Once logged in, you'll see the dashboard with your active requests. Juan has multiple requests in various states:
+Juan has the following requests in various states:
 
 | Tracking Number      | Document | Purpose        | Status            | Fee       | Due Date       |
 | -------------------- | -------- | -------------- | ----------------- | --------- | -------------- |
-| EDOC-2026-000001     | TOR      | Employment     | **Pending**       | 150.00    | 2026-05-10     |
+| EDOC-2026-000001     | TOR      | Employment     | Pending           | 150.00    | 2026-05-10     |
 | EDOC-2026-000002     | COE      | Scholarship    | Ready for Release | 50.00     | 2026-05-07     |
 | **EDOC-2026-000003** | **COG**  | **Board Exam** | **Pending**       | **50.00** | **2026-05-08** |
 | EDOC-2026-000004     | CGMC     | Government     | Released          | 50.00     | 2026-05-05     |
 | EDOC-2026-000005     | TC       | Transfer       | Action Required   | 100.00    | 2026-05-09     |
 
-### Step 1.3: Click on EDOC-2026-000003 (COG Request)
+### Step 1.3: Open EDOC-2026-000003 (COG Request)
 
-**What you'll see:**
+Click on **EDOC-2026-000003**. The request detail card shows:
 
-- Request details card showing:
-  - Tracking Number: `EDOC-2026-000003`
-  - Document Type: Certificate of Good Moral Character (COG)
-  - Purpose: Board Examination
-  - Copies: 1
-  - Release Mode: Digital
-  - Fee Amount: 50.00
-  - Payment Status: **Unpaid** (needs payment)
-  - Current Status: **Pending**
+- Tracking Number: `EDOC-2026-000003`
+- Document Type: Certificate of Grades (COG)
+- Purpose: Board Examination
+- Copies: 1
+- Release Mode: Digital
+- Fee Amount: 50.00
+- Payment Status: **Unpaid**
+- Current Status: **Pending**
 
 ### Step 1.4: Understand Clearance Requirements
 
-Below the request details, you'll see the **Clearance Status** section listing all offices that must clear this document:
+The Clearance Status section shows a single requirement:
 
 ```
 Clearance Requirements for COG (EDOC-2026-000003):
 
-1. Office of the Registrar (OUR)         [Status: Pending]
-2. University Cashier's Office (UCF)     [Status: Pending]
-3. Library (LIB)                         [Status: Pending]
-4. Property and Supply Office (PSO)      [Status: Pending]
-5. Management Information Systems (MIS)  [Status: Pending]
+1. Office of the University Registrar (OUR)   [Status: Pending]
 ```
 
-**Current Status**: All 5 offices need to clear before the document can be released.
-**Block Reason**: Payment not yet verified + All offices awaiting clearance.
+Once OUR clears the request, the document will be ready for release.
 
 ---
 
-## Part 2: Staff View - Office Clearing Process
+## Part 2: Staff View — OUR Clearance
 
-### Step 2.1: Logout from Student Portal
+### Step 2.1: Logout and Login as OUR Head
 
-Click the logout button in the navigation menu.
+| Field       | Value                              |
+| ----------- | ---------------------------------- |
+| Employee ID | `EMP-2015-001`                     |
+| Name        | Francis Aquino                     |
+| Role        | Office Head                        |
+| Office      | Office of the University Registrar |
 
-### Step 2.2: Login as First Staff Member - OUR Head
+### Step 2.2: Navigate to Queue
 
-**Credentials:**
+In the staff dashboard, click **Queue** to see all pending requests assigned to OUR.
 
-- Employee ID: `EMP-2015-001`
-- Name: Francis Aquino
-- Role: Office Head (Office of the Registrar)
-- Office: OUR
+**What you'll see for EDOC-2026-000003:**
 
-**Action:**
+- Student: Juan
+- Document Type: COG
+- SLA Due Date: 2026-05-08
+- Clearance Task Status: **Pending**
 
-1. Go to signin page
-2. Enter employee ID `EMP-2015-001`
-3. You will be redirected to the staff dashboard
+### Step 2.3: Open the Request and Clear It
 
-### Step 2.3: Navigate to Queue/Pending Requests
-
-In the staff dashboard, click on **"Queue"** or **"Pending Requests"** to see all requests waiting for OUR clearance.
-
-**What you'll see:**
-
-- A list of all pending document requests requiring OUR clearance
-- EDOC-2026-000003 (COG - Juan's request) will appear in the queue
-- Additional metadata showing:
-  - Student: Juan
-  - Document Type: COG
-  - Submitted Date: (timestamp when request was created)
-  - Days Pending: (calculated from submission)
-  - SLA Due Date: 2026-05-08
-
-### Step 2.4: Open the Request for Review
-
-Click on **EDOC-2026-000003** to open the full request details in the office staff view.
-
-**What you'll see:**
-
-- Complete request information
-- Student contact information
-- Document requirements
-- **Clearance Task Card** specifically for OUR showing:
-  - Current Status: **Pending**
-  - Assigned To: Francis Aquino (or available staff in OUR)
-  - Action Buttons:
-    - ✅ **Clear** (Approve the request)
-    - ❌ **Reject** (Request action from student)
-    - 💬 **Add Remarks** (Optional notes)
-
-### Step 2.5: Clear the Request (OUR)
-
-**Action:**
-
-1. Review the student's information and request purpose
-2. Click the **"Clear"** button
-3. Optionally add remarks: "Document verified by OUR. All records in order."
-4. Confirm the clearance action
+1. Click on **EDOC-2026-000003** to open the request detail
+2. Review the student information and request purpose
+3. Click **Clear**
+4. Optionally add remarks: `"Certificate of Grades verified. All academic records in order."`
+5. Confirm the action
 
 **Result:**
 
-- The clearance status for OUR is now: ✅ **Cleared**
-- System logs the action in audit trail
-- Student receives notification (if notifications enabled)
-- Request status remains **Pending** (waiting for other offices)
+- OUR clearance status: ✅ **Cleared**
+- All clearances complete → request status automatically changes to **Ready for Release**
+- Student receives a notification
 
 ---
 
-### Step 2.6: Logout and Login as Next Staff Member - Cashier (UCF)
+## Part 3: Student Retrieves Document
 
-**Credentials:**
+### Step 3.1: Login Back as Student Juan
 
-- Employee ID: `EMP-2018-002`
-- Name: Ben Torres
-- Role: Cashier Staff
-- Office: University Cashier's Office (UCF)
+School ID: `2021-00001`
 
-**Action:**
+**Dashboard change:** EDOC-2026-000003 now shows **Ready for Release** instead of Pending.
 
-1. Logout from Francis Aquino's account
-2. Go to signin page
-3. Enter employee ID `EMP-2018-002`
-4. Access the staff dashboard
+### Step 3.2: Open and Download
 
-### Step 2.7: Navigate to Queue and Open EDOC-2026-000003
+1. Click on **EDOC-2026-000003**
+2. Click **Retrieve Document** or **Download**
+3. A PDF of the Certificate of Grades is downloaded
 
-Once in the UCF staff dashboard:
+**Clearance Summary shown to student:**
 
-1. Go to **Queue** section
-2. Search or find **EDOC-2026-000003**
-3. Click to open the request
+```
+✅ Office of the University Registrar (OUR) — Cleared by Francis Aquino
+Document Ready: YES
+Release Mode: Digital
+```
 
-**What you'll see:**
+---
 
-- Clearance progress bar now shows:
-  ```
-  ✅ OUR (Cleared) → ⏳ UCF (Pending) → ⏳ LIB → ⏳ PSO → ⏳ MIS
-  ```
-- The request now shows **2 of 5** clearances complete
-- Timestamp showing when OUR cleared it
+## Tutorial 1 Summary
 
-### Step 2.8: Process UCF Clearance - Check Payment Status
+```
+Student submits COG request (EDOC-2026-000003)
+        ↓
+OUR Head (Francis Aquino) reviews and clears
+        ↓
+System: Pending → Ready for Release
+        ↓
+Student downloads Certificate of Grades (PDF)
+```
 
-Since UCF handles payments:
+---
 
-**Payment Verification:**
+---
 
-- Current Payment Status: **Unpaid**
-- UCF staff should:
-  1. Check if student has submitted payment
-  2. Once payment is received: Mark payment as **Paid**
-  3. Then proceed with clearance
+# Tutorial 2: Multi-Office Clearance
 
-**For this demo:**
+**Document Type**: Transcript of Records (TOR)
+**Request**: `EDOC-2026-000001`
+**Student**: Juan — School ID `2021-00001`
+**Purpose**: Employment
+**Clearance**: LIB, UCF, PSO, OSAS (parallel) → OUR (sequential, final)
 
-- Assume payment has been verified offline or through payment system
-- Update Payment Status to: **Paid**
-- Add remarks: "Payment of 50.00 verified and processed."
+---
 
-### Step 2.9: Clear the Request (UCF)
+## Part 1: Student View
 
-**Action:**
+### Step 1.1: Login as Student Juan
 
-1. Confirm payment status is verified
-2. Click **"Clear"** button
-3. Add remarks about payment verification
-4. Confirm clearance
+School ID: `2021-00001`
+
+### Step 1.2: Open EDOC-2026-000001 (TOR Request)
+
+Click on **EDOC-2026-000001**. The request detail card shows:
+
+- Tracking Number: `EDOC-2026-000001`
+- Document Type: Transcript of Records (TOR)
+- Purpose: Employment
+- Copies: 2
+- Release Mode: Digital
+- Fee Amount: 150.00
+- Payment Status: **Paid**
+- Current Status: **Pending**
+
+### Step 1.3: Understand Clearance Requirements
+
+TOR requires clearance from multiple offices. The parallel offices may be processed in any order; OUR is the final sequential step that only unlocks after all parallel offices have cleared.
+
+```
+Clearance Requirements for TOR (EDOC-2026-000001):
+
+Parallel (any order):
+  1. University Library (LIB)           [Status: Pending]
+  2. University Cashier / Finance (UCF) [Status: Pending]
+  3. Property / Supply Office (PSO)     [Status: Pending]
+  4. Guidance / OSAS (OSAS)             [Status: Pending]
+
+Sequential (unlocks after all parallel offices clear):
+  5. Office of the University Registrar (OUR)  [Status: Locked]
+```
+
+---
+
+## Part 2: Staff View — Parallel Clearances
+
+The four parallel offices can process in any order. Each staff member logs in, finds the request in their queue, and clears it.
+
+### Step 2.1: Login as Library Staff — Clara Mendoza
+
+| Field       | Value                    |
+| ----------- | ------------------------ |
+| Employee ID | `EMP-2018-003`           |
+| Name        | Clara Mendoza            |
+| Role        | Office Staff             |
+| Office      | University Library (LIB) |
+
+1. Go to **Queue**
+2. Find **EDOC-2026-000001**
+3. Click **Clear**
+4. Add remarks: `"Library records verified. No outstanding fees."`
+5. Confirm
+
+**Status after:** ✅ LIB Cleared
+
+---
+
+### Step 2.2: Login as Cashier Staff — Ben Torres
+
+| Field       | Value                              |
+| ----------- | ---------------------------------- |
+| Employee ID | `EMP-2018-002`                     |
+| Name        | Ben Torres                         |
+| Role        | Office Staff                       |
+| Office      | University Cashier / Finance (UCF) |
+
+1. Go to **Queue**, find **EDOC-2026-000001**
+2. Payment Status is already **Paid** — verify the payment record
+3. Click **Clear**
+4. Add remarks: `"Payment of 150.00 confirmed."`
+5. Confirm
+
+**Status after:** ✅ UCF Cleared
+
+---
+
+### Step 2.3: Login as Property Staff — Diego Lim
+
+| Field       | Value                          |
+| ----------- | ------------------------------ |
+| Employee ID | `EMP-2018-004`                 |
+| Name        | Diego Lim                      |
+| Role        | Office Staff                   |
+| Office      | Property / Supply Office (PSO) |
+
+1. Go to **Queue**, find **EDOC-2026-000001**
+2. Review property/supply clearance
+3. Click **Clear**
+4. Add remarks: `"All borrowed items accounted for."`
+5. Confirm
+
+**Status after:** ✅ PSO Cleared
+
+---
+
+### Step 2.4: Login as OSAS Staff
+
+| Field  | Value           |
+| ------ | --------------- |
+| Office | Guidance / OSAS |
+
+1. Go to **Queue**, find **EDOC-2026-000001**
+2. Review student records
+3. Click **Clear**
+4. Confirm
+
+**Status after:** ✅ OSAS Cleared
+
+---
+
+### Step 2.5: Clearance Progress After All Parallel Offices
+
+```
+✅ LIB  (Cleared)
+✅ UCF  (Cleared)
+✅ PSO  (Cleared)
+✅ OSAS (Cleared)
+⏳ OUR  (Now unlocked — awaiting final clearance)
+```
+
+The system has created the OUR sequential clearance task. The request remains **Pending** until OUR gives final approval.
+
+---
+
+## Part 3: Staff View — Final Sequential Clearance (OUR)
+
+### Step 3.1: Login as OUR Head — Francis Aquino
+
+| Field       | Value                              |
+| ----------- | ---------------------------------- |
+| Employee ID | `EMP-2015-001`                     |
+| Name        | Francis Aquino                     |
+| Role        | Office Head                        |
+| Office      | Office of the University Registrar |
+
+### Step 3.2: Open EDOC-2026-000001 and Clear It
+
+1. Go to **Queue** — EDOC-2026-000001 now appears since all parallel offices have cleared
+2. Review the full clearance trail (all 4 parallel offices already cleared)
+3. Click **Clear**
+4. Add remarks: `"All offices cleared. TOR approved for release."`
+5. Confirm
 
 **Result:**
 
-- UCF clearance status: ✅ **Cleared**
-- Request status still: **Pending** (3 offices remain)
-- Student notification sent
+- OUR clearance status: ✅ **Cleared**
+- All 5 clearances complete → request status automatically changes to **Ready for Release**
+- Student receives a notification
 
 ---
 
-### Step 2.10: Continue with Remaining Offices
+## Part 4: Student Retrieves Document
 
-Repeat the process for the remaining three offices in sequence:
+### Step 4.1: Login Back as Student Juan
 
-#### Library (LIB) - Clara Mendoza (EMP-2018-003)
+School ID: `2021-00001`
 
-**Action:**
+**Dashboard change:** EDOC-2026-000001 now shows **Ready for Release**.
 
-1. Logout from Ben Torres
-2. Login as Clara Mendoza (`EMP-2018-003`)
-3. Go to Queue, find EDOC-2026-000003
-4. Review library requirements (no outstanding library fines assumed)
-5. Add remarks: "Library records verified. No outstanding fees."
-6. Click **Clear**
+### Step 4.2: Open and Download
 
-**Status After**: ✅ OUR → ✅ UCF → ✅ LIB → ⏳ PSO → ⏳ MIS
+1. Click on **EDOC-2026-000001**
+2. Click **Retrieve Document** or **Download**
+3. The TOR downloads as a PDF
 
-#### Property and Supply Office (PSO) - Diego Lim (EMP-2018-004)
-
-**Action:**
-
-1. Logout from Clara Mendoza
-2. Login as Diego Lim (`EMP-2018-004`)
-3. Navigate to Queue and open EDOC-2026-000003
-4. Review property/supply requirements
-5. Add remarks: "All property/borrowed items accounted for."
-6. Click **Clear**
-
-**Status After**: ✅ OUR → ✅ UCF → ✅ LIB → ✅ PSO → ⏳ MIS
-
-#### Management Information Systems (MIS) - Elena Cruz (EMP-2018-005)
-
-**Action:**
-
-1. Logout from Diego Lim
-2. Login as Elena Cruz (`EMP-2018-005`)
-3. Go to Queue, find EDOC-2026-000003
-4. Review MIS requirements (systems access, pending IT issues, etc.)
-5. Add remarks: "All IT systems clear. No outstanding issues."
-6. Click **Clear**
-
-**Status After**: ✅ OUR → ✅ UCF → ✅ LIB → ✅ PSO → ✅ MIS
-
----
-
-## Part 3: System Transitions - Request Ready for Release
-
-### Step 3.1: Request Status Changes Automatically
-
-Once the final office (MIS) clears the request:
-
-**Automatic System Transition:**
+**Clearance Timeline shown to student:**
 
 ```
-Before Last Clearance: "Pending" (waiting for MIS)
-                      ↓
-After Last Clearance:  "Ready for Release"
-```
+✅ University Library (LIB)                  — Cleared by Clara Mendoza
+✅ University Cashier / Finance (UCF)         — Cleared by Ben Torres
+✅ Property / Supply Office (PSO)             — Cleared by Diego Lim
+✅ Guidance / OSAS (OSAS)                     — Cleared
+✅ Office of the University Registrar (OUR)   — Cleared by Francis Aquino (Final)
 
-The system automatically updates because:
-
-- ✅ All 5 clearances completed
-- ✅ Payment status verified as "Paid"
-- ✅ No blocking issues remain
-
-### Step 3.2: Login Back as Student Juan
-
-**Credentials:**
-
-- School ID: `2021-00001`
-
-**What's Changed in Dashboard:**
-
-- EDOC-2026-000003 now shows status: **"Ready for Release"** (instead of "Pending")
-- A **"Retrieve Document"** or **"Download"** button is now available
-- Release mode shows: **Digital** (will be provided as PDF download)
-
-### Step 3.3: Student Views Request
-
-In the request detail view:
-
-**Clearance Summary:**
-
-```
-Clearance Status: ✅ ALL OFFICES CLEARED
-
-Timeline:
-✅ Office of the Registrar (OUR)          - Cleared on 2026-05-12 10:15 AM by Francis Aquino
-✅ University Cashier's Office (UCF)      - Cleared on 2026-05-12 10:22 AM by Ben Torres
-✅ Library (LIB)                          - Cleared on 2026-05-12 10:28 AM by Clara Mendoza
-✅ Property and Supply Office (PSO)       - Cleared on 2026-05-12 10:35 AM by Diego Lim
-✅ Management Information Systems (MIS)   - Cleared on 2026-05-12 10:42 AM by Elena Cruz
-
-Document Ready: YES ✅
-Release Date: 2026-05-12
-```
-
-### Step 3.4: Retrieve Document
-
-**Action:**
-
-1. Click **"Retrieve Document"** or **"Download Certificate"** button
-2. For digital release mode: Document downloads as PDF
-3. For physical mode: It would show pickup location/instructions
-
-**What Student Receives:**
-
-- PDF of Certificate of Good Moral Character
-- Generated document includes:
-  - Official letterhead
-  - Student information
-  - Document type and purpose
-  - All clearance signatures/approvals
-  - Generation date and tracking number
-
----
-
-## Part 4: Audit Trail & Monitoring
-
-### Step 4.1: Admin View - Audit Logs
-
-If you login as an Administrator (ADM-2024-001), you can view the complete audit trail:
-
-**Request EDOC-2026-000003 Audit Log:**
-
-| Timestamp        | Action            | Actor                | Details                        |
-| ---------------- | ----------------- | -------------------- | ------------------------------ |
-| 2026-05-12 09:45 | REQUEST_SUBMITTED | Juan (2021-00001)    | Student submitted COG request  |
-| 2026-05-12 10:15 | CLEARANCE_CLEARED | Francis Aquino (OUR) | Document verified by OUR       |
-| 2026-05-12 10:22 | CLEARANCE_CLEARED | Ben Torres (UCF)     | Payment verified and processed |
-| 2026-05-12 10:28 | CLEARANCE_CLEARED | Clara Mendoza (LIB)  | Library records verified       |
-| 2026-05-12 10:35 | CLEARANCE_CLEARED | Diego Lim (PSO)      | Property verified              |
-| 2026-05-12 10:42 | CLEARANCE_CLEARED | Elena Cruz (MIS)     | Systems verified               |
-| 2026-05-12 10:42 | REQUEST_RELEASED  | System               | Document ready for release     |
-
----
-
-## Summary
-
-**Workflow Flow:**
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ STUDENT: Juan (2021-00001)                                      │
-│ - Logs in to portal                                             │
-│ - Views pending requests                                        │
-│ - Finds EDOC-2026-000003 (COG) - Status: Pending               │
-│ - Reviews required clearances (5 offices)                       │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │ Request awaiting staff action
-                       ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ STAFF CLEARANCE PIPELINE                                        │
-├─────────────────────────────────────────────────────────────────┤
-│ 1️⃣  OUR Head (Francis Aquino)        → CLEARS request          │
-│ 2️⃣  Cashier (Ben Torres)             → Verifies payment + CLEARS │
-│ 3️⃣  Library (Clara Mendoza)          → CLEARS request          │
-│ 4️⃣  Property (Diego Lim)             → CLEARS request          │
-│ 5️⃣  MIS (Elena Cruz)                 → CLEARS request ✅ FINAL  │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │ All clearances complete
-                       ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ SYSTEM TRANSITION                                               │
-│ Status: Pending → Ready for Release                             │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │ Request ready
-                       ↓
-┌─────────────────────────────────────────────────────────────────┐
-│ STUDENT: Juan (2021-00001)                                      │
-│ - Logs back in                                                  │
-│ - EDOC-2026-000003 now shows: "Ready for Release"               │
-│ - Downloads Certificate of Good Moral Character (PDF)           │
-│ - Transaction Complete ✅                                        │
-└─────────────────────────────────────────────────────────────────┘
+Document Ready: YES
+Release Mode: Digital
 ```
 
 ---
 
-## Key Points to Remember
+## Tutorial 2 Summary
 
-1. **Sequential Processing**: Each office processes in order (based on requirements)
-2. **Parallel vs Sequential**: Some clearances may run in parallel depending on business rules
-3. **Payment Integration**: Cashier office verifies and marks payment status
-4. **Automatic Transitions**: System automatically updates request status when all clearances complete
-5. **Audit Trail**: Every action is logged for compliance and tracking
-6. **Notifications**: Students are notified at key milestones (ready for release, rejection, etc.)
-
----
-
-## Troubleshooting / Alternative Scenarios
-
-### Scenario: Office Rejects Request
-
-If any office clicks **"Reject"** instead of **"Clear"**:
-
-- Request status changes to: **"Action Required"**
-- Student receives notification explaining the rejection
-- Student can resubmit or address concerns
-- Clearance process restarts from that office
-
-### Scenario: Payment Not Verified
-
-If UCF cannot verify payment:
-
-- Reject or hold the request
-- Student receives notification to complete payment
-- Request remains **"Pending"** until payment resolved
-
-### Scenario: Overdue Request
-
-If SLA due date (2026-05-08) passes before all offices clear:
-
-- Request shows as **"Overdue"** in dashboards
-- System flags for admin review
-- May trigger escalation workflows
+```
+Student submits TOR request (EDOC-2026-000001)
+        ↓
+Parallel clearances (any order):
+  LIB  → Clara Mendoza clears
+  UCF  → Ben Torres verifies payment + clears
+  PSO  → Diego Lim clears
+  OSAS → OSAS staff clears
+        ↓
+All parallel offices cleared → OUR task unlocked
+        ↓
+OUR Head (Francis Aquino) gives final clearance
+        ↓
+System: Pending → Ready for Release
+        ↓
+Student downloads Transcript of Records (PDF)
+```
 
 ---
 
-## Testing Checklist
+---
 
-- [ ] Login as student 2021-00001 successfully
-- [ ] View EDOC-2026-000003 in pending requests
-- [ ] See all 5 clearance requirements
-- [ ] Logout and login as OUR Head (EMP-2015-001)
-- [ ] Find request in queue and clear it
-- [ ] Logout and repeat for other 4 staff members
-- [ ] Verify request status changes to "Ready for Release" after final clearance
-- [ ] Login as student and verify they can now retrieve the document
-- [ ] Check admin audit logs for complete action history
+# Audit Trail Reference
+
+Admins can view the full audit log for any request. Login as `ADM-2024-001` to access audit logs.
+
+**Example — EDOC-2026-000001 (TOR) Audit Log:**
+
+| Action            | Actor                | Details                       |
+| ----------------- | -------------------- | ----------------------------- |
+| REQUEST_SUBMITTED | Juan (2021-00001)    | TOR request submitted         |
+| CLEARANCE_CLEARED | Clara Mendoza (LIB)  | Library records verified      |
+| CLEARANCE_CLEARED | Ben Torres (UCF)     | Payment confirmed             |
+| CLEARANCE_CLEARED | Diego Lim (PSO)      | Property cleared              |
+| CLEARANCE_CLEARED | OSAS staff           | Student records cleared       |
+| CLEARANCE_CLEARED | Francis Aquino (OUR) | Final approval — TOR released |
+
+---
+
+# Troubleshooting / Alternative Scenarios
+
+### Office Rejects a Request
+
+If any office clicks **Reject** instead of **Clear**:
+
+- Request status changes to **Action Required**
+- Student receives a notification with the rejection reason
+- Student addresses the concern and resubmits
+- Clearance for that office restarts
+
+### Payment Not Verified (UCF)
+
+If UCF cannot confirm payment:
+
+- UCF rejects or holds the request
+- Student receives a notification to complete payment
+- Request remains **Pending** until payment is resolved
+
+### Overdue Request
+
+If the SLA due date passes before all offices clear:
+
+- Request is flagged as **Overdue** in dashboards
+- Triggers admin review and possible escalation
+
+---
+
+# Quick-Reference: Seed Accounts
+
+| Employee ID    | Name                 | Role         | Office |
+| -------------- | -------------------- | ------------ | ------ |
+| `2021-00001`   | Juan                 | Student      | —      |
+| `2021-00002`   | Maria                | Student      | —      |
+| `EMP-2015-001` | Francis Aquino       | Office Head  | OUR    |
+| `EMP-2018-002` | Ben Torres           | Office Staff | UCF    |
+| `EMP-2018-003` | Clara Mendoza        | Office Staff | LIB    |
+| `EMP-2018-004` | Diego Lim            | Office Staff | PSO    |
+| `EMP-2018-005` | Elena Cruz           | Office Staff | MIS    |
+| `EMP-2015-002` | Grace Villanueva     | Office Head  | HRMO   |
+| `ADM-2024-001` | System Administrator | Admin        | —      |
+
+Default password for all accounts: `password123`
