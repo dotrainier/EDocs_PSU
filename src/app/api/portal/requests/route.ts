@@ -21,6 +21,10 @@ const createRequestSchema = z.object({
   copies: z.number().int().min(1).max(10),
   releaseMode: z.enum(['digital', 'physical', 'both']),
   additionalNotes: z.string().max(1000).optional(),
+  schoolYear: z.string().max(20).optional(),
+  semester: z.string().max(30).optional(),
+  dateFrom: z.string().max(20).optional(),
+  dateTo: z.string().max(20).optional(),
 });
 
 async function createClearanceTasks(requestId: string, documentTypeId: number): Promise<void> {
@@ -75,7 +79,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Invalid input' }, { status: 400 });
     }
 
-    const { documentTypeId, purpose, copies, releaseMode, additionalNotes } = parsed.data;
+    const { documentTypeId, purpose, copies, releaseMode, additionalNotes, schoolYear, semester, dateFrom, dateTo } = parsed.data;
 
     const docTypeResult = await db
       .select()
@@ -88,10 +92,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Document type not found or inactive' }, { status: 404 });
     }
 
+    // Validate period fields driven by period_type on the document type record
+    if (docType.period_type === 'semester') {
+      if (!schoolYear || !semester) {
+        return NextResponse.json(
+          { message: 'School year and semester are required for this document type' },
+          { status: 400 },
+        );
+      }
+    }
+    if (docType.period_type === 'date_range') {
+      if (!dateFrom) {
+        return NextResponse.json(
+          { message: 'Start date is required for this document type' },
+          { status: 400 },
+        );
+      }
+    }
+
     const trackingNumber = await generateTrackingNumber();
     const slaDeadline = calculateSlaDeadline(docType.sla_working_days);
 
-    // 6. Insert request row
+    const hasSemester = docType.period_type === 'semester' || docType.period_type === 'semester_optional';
+    const hasDateRange = docType.period_type === 'date_range';
+
     const inserted = await db
       .insert(document_requests)
       .values({
@@ -104,8 +128,12 @@ export async function POST(request: Request) {
         additional_notes: additionalNotes ?? null,
         status: 'Pending',
         fee_amount: docType.fee_amount,
-        payment_status: docType.fee_amount && docType.fee_amount !== '0.00' ? 'Unpaid' : 'Paid', // free documents skip payment
+        payment_status: docType.fee_amount && docType.fee_amount !== '0.00' ? 'Unpaid' : 'Paid',
         sla_due_at: slaDeadline,
+        school_year: hasSemester ? (schoolYear ?? null) : null,
+        semester: hasSemester ? (semester ?? null) : null,
+        date_from: hasDateRange ? (dateFrom ?? null) : null,
+        date_to: hasDateRange ? (dateTo ?? null) : null,
       })
       .returning({ id: document_requests.id });
 
@@ -219,13 +247,14 @@ export async function GET(request: Request) {
       tracking_number: document_requests.tracking_number,
       document_type: document_types.name,
       created_at: document_requests.created_at,
+      updated_at: document_requests.updated_at,
       purpose: document_requests.purpose,
       status: document_requests.status,
     })
     .from(document_requests)
     .innerJoin(document_types, eq(document_requests.document_type_id, document_types.id))
     .where(eq(document_requests.user_id, session.userId))
-    .orderBy(desc(document_requests.created_at));
+    .orderBy(desc(document_requests.updated_at));
 
   return NextResponse.json(
     {

@@ -2,39 +2,43 @@
 import { AlertCircle } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-interface DocumentType {
-  id: string;
-  name: string;
-  code: string;
-  description: string;
-  fee_amount: string;
-  sla_working_days: number;
-  requires_clearance: boolean;
-  handling_pattern: string;
-  issuing_office: string;
-}
-
-interface RequestFormData {
-  documentTypeId: string;
-  purpose: string;
-  copies: string;
-  releaseMode: 'digital' | 'physical' | 'both';
-  additionalNotes: string;
-  agreedToPrivacy: boolean;
-}
+import { type DocumentType, type RequestFormData } from './NewRequestClient';
 
 interface Step4Props {
   formData: RequestFormData;
   documentType: DocumentType | undefined;
 }
 
+function formatDate(iso: string): string {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[parseInt(m, 10) - 1]} ${d}, ${y}`;
+}
+
 export default function Step4Review({ formData, documentType }: Step4Props) {
   if (!documentType) return null;
+
+  const periodType = documentType.period_type ?? null;
+
+  const periodRows: { label: string; value: string }[] = [];
+  if ((periodType === 'semester' || periodType === 'semester_optional') && formData.schoolYear && formData.semester) {
+    periodRows.push({ label: 'School Year', value: formData.schoolYear });
+    periodRows.push({ label: 'Semester', value: formData.semester });
+  }
+  if (periodType === 'date_range' && formData.dateFrom) {
+    periodRows.push({ label: 'Date From', value: formatDate(formData.dateFrom) });
+    if (formData.dateTo) {
+      periodRows.push({ label: 'Date To', value: formatDate(formData.dateTo) });
+    } else {
+      periodRows.push({ label: 'Date To', value: 'Present' });
+    }
+  }
 
   const rows = [
     { label: 'Document Type', value: documentType.name },
     { label: 'Issuing Office', value: documentType.issuing_office },
+    ...periodRows,
     { label: 'Purpose', value: formData.purpose },
     { label: 'Number of Copies', value: formData.copies },
     {

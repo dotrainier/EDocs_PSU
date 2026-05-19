@@ -24,6 +24,12 @@ export const document_types = pgTable(
     fee_amount: decimal('fee_amount', { precision: 10, scale: 2 }), // null = free
     sla_working_days: integer('sla_working_days').notNull().default(3),
     requires_clearance: boolean('requires_clearance').notNull().default(false),
+    // Controls which extra period fields are collected on the request form:
+    // 'semester'          → school_year + semester required (COG, COE, GENCLR)
+    // 'semester_optional' → school_year + semester optional (CUE)
+    // 'date_range'        → date_from required, date_to optional (SR, COEMPL)
+    // null                → no period fields (TOR, DIPLOMA, TC, CGMC)
+    period_type: varchar('period_type', { length: 30 }),
     is_active: boolean('is_active').notNull().default(true),
   },
   (table) => [

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   document_types,
@@ -38,6 +39,7 @@ export async function seedDocuments() {
       fee_amount: '150.00',
       sla_working_days: 7,
       requires_clearance: true,
+      period_type: null,
       is_active: true,
     },
     {
@@ -50,6 +52,7 @@ export async function seedDocuments() {
       fee_amount: '500.00',
       sla_working_days: 14,
       requires_clearance: true,
+      period_type: null,
       is_active: true,
     },
     {
@@ -61,7 +64,8 @@ export async function seedDocuments() {
       handling_pattern: 'GENERATE',
       fee_amount: '50.00',
       sla_working_days: 3,
-      requires_clearance: true, // ← OUR head approval before release
+      requires_clearance: true,
+      period_type: 'semester',
       is_active: true,
     },
     {
@@ -72,7 +76,8 @@ export async function seedDocuments() {
       handling_pattern: 'GENERATE',
       fee_amount: '50.00',
       sla_working_days: 3,
-      requires_clearance: true, // ← client specifically mentioned COG security trail
+      requires_clearance: true,
+      period_type: 'semester',
       is_active: true,
     },
     {
@@ -83,7 +88,8 @@ export async function seedDocuments() {
       handling_pattern: 'GENERATE',
       fee_amount: '50.00',
       sla_working_days: 5,
-      requires_clearance: true, // ← OUR head approval before release
+      requires_clearance: true,
+      period_type: 'semester_optional',
       is_active: true,
     },
     {
@@ -96,6 +102,7 @@ export async function seedDocuments() {
       fee_amount: '100.00',
       sla_working_days: 5,
       requires_clearance: true,
+      period_type: null,
       is_active: true,
     },
     {
@@ -108,6 +115,7 @@ export async function seedDocuments() {
       fee_amount: '0.00',
       sla_working_days: 7,
       requires_clearance: true,
+      period_type: 'semester',
       is_active: true,
     },
     // ── OSAS documents ──
@@ -120,7 +128,8 @@ export async function seedDocuments() {
       handling_pattern: 'GENERATE',
       fee_amount: '50.00',
       sla_working_days: 3,
-      requires_clearance: true, // ← OSAS head approval before release
+      requires_clearance: true,
+      period_type: null,
       is_active: true,
     },
     // ── HRMO documents ──
@@ -134,6 +143,7 @@ export async function seedDocuments() {
       fee_amount: '0.00',
       sla_working_days: 5,
       requires_clearance: true,
+      period_type: 'date_range',
       is_active: true,
     },
     {
@@ -145,12 +155,27 @@ export async function seedDocuments() {
       handling_pattern: 'GENERATE',
       fee_amount: '0.00',
       sla_working_days: 3,
-      requires_clearance: true, // ← HRMO head approval before release
+      requires_clearance: true,
+      period_type: 'date_range',
       is_active: true,
     },
   ];
 
-  await db.insert(document_types).values(documentTypeData).onConflictDoNothing();
+  // Upsert on code so re-running the seed (without db:fresh) stays in sync
+  await db.insert(document_types).values(documentTypeData).onConflictDoUpdate({
+    target: document_types.code,
+    set: {
+      name: sql`excluded.name`,
+      description: sql`excluded.description`,
+      issuing_office_id: sql`excluded.issuing_office_id`,
+      handling_pattern: sql`excluded.handling_pattern`,
+      fee_amount: sql`excluded.fee_amount`,
+      sla_working_days: sql`excluded.sla_working_days`,
+      requires_clearance: sql`excluded.requires_clearance`,
+      period_type: sql`excluded.period_type`,
+      is_active: sql`excluded.is_active`,
+    },
+  });
 
   const existingDocTypes = await db.select().from(document_types);
   const docMap: Record<string, number> = {};

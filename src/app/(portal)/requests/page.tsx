@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Search,
   FileStack,
@@ -44,6 +45,7 @@ interface RequestRecord {
   tracking_number: string;
   document_type: string;
   created_at: string;
+  updated_at: string;
   purpose: string;
   status: string;
   has_download: boolean;
@@ -226,8 +228,19 @@ function CardSkeleton() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function RequestPage() {
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
+
+  const statusParam = searchParams.get('status') ?? 'all';
+
+  function handleStatusChange(value: string) {
+    const params = new URLSearchParams();
+    if (value !== 'all') params.set('status', value);
+    const qs = params.toString();
+    router.replace(qs ? `/requests?${qs}` : '/requests', { scroll: false });
+  }
 
   const getDownloadUrl = (trackingNumber: string) =>
     `/api/portal/documents/download/${trackingNumber}`;
@@ -259,20 +272,20 @@ export default function RequestPage() {
         r.tracking_number.toLowerCase().includes(search.toLowerCase()) ||
         r.document_type.toLowerCase().includes(search.toLowerCase()) ||
         r.purpose.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || normalizeStatus(r.status) === statusFilter;
+      const matchesStatus = statusParam === 'all' || normalizeStatus(r.status) === statusParam;
       return matchesSearch && matchesStatus;
     });
-  }, [requests, search, statusFilter]);
+  }, [requests, search, statusParam]);
 
-  const hasActiveFilters = search !== '' || statusFilter !== 'all';
+  const hasActiveFilters = search !== '' || statusParam !== 'all';
 
   function clearFilters() {
     setSearch('');
-    setStatusFilter('all');
+    router.replace('/requests', { scroll: false });
   }
 
   return (
-    <div className='space-y-5'>
+    <div className='space-y-5 px-4 py-6 sm:px-6 lg:px-8'>
       {/* Page header */}
       <div className='flex items-center justify-between'>
         <div>
@@ -298,7 +311,7 @@ export default function RequestPage() {
           />
         </div>
         <div className='flex items-center gap-2'>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusParam} onValueChange={handleStatusChange}>
             <SelectTrigger className='w-44'>
               <Filter className='h-3.5 w-3.5 text-muted-foreground mr-1' />
               <SelectValue placeholder='All Statuses' />

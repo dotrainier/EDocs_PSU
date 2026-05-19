@@ -390,7 +390,8 @@ export default function OfficeRequestDetailPage() {
                 <div className='flex gap-2'>
                   <Button
                     onClick={handleClear}
-                    disabled={submittingAction !== null}
+                    disabled={submittingAction !== null || req.payment_status !== 'Paid'}
+                    title={req.payment_status !== 'Paid' ? 'Payment must be confirmed before clearing' : undefined}
                     className='gap-2 bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600'
                   >
                     {submittingAction === 'Cleared' ? (

@@ -229,11 +229,32 @@ export async function GET(request: Request) {
     }));
 
     // ─────────────────────────────────────────────────────────────────────────
+    // 7. PERSONAL STATS (OfficeStaff only)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const myStatsRow = await db
+      .select({
+        cleared: sql<number>`SUM(CASE WHEN ${clearance_tasks.status} = 'Cleared' THEN 1 ELSE 0 END)`.as('cleared'),
+        rejected: sql<number>`SUM(CASE WHEN ${clearance_tasks.status} = 'Rejected' THEN 1 ELSE 0 END)`.as('rejected'),
+      })
+      .from(clearance_tasks)
+      .where(eq(clearance_tasks.cleared_by, session.userId));
+
+    const myStats = {
+      my_cleared: Number(myStatsRow[0]?.cleared ?? 0),
+      my_rejected: Number(myStatsRow[0]?.rejected ?? 0),
+      my_pending: stats.total_pending,
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
     // RESPONSE
     // ─────────────────────────────────────────────────────────────────────────
 
     return NextResponse.json(
       {
+        // Role (used by AI insights to tailor prompt)
+        role: session.role,
+
         // Stats cards
         stats,
 
@@ -245,6 +266,9 @@ export async function GET(request: Request) {
 
         // Queue preview
         tasks: queuePreview,
+
+        // Personal stats for role-aware AI insights
+        myStats,
       },
       { status: 200 },
     );

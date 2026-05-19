@@ -30,6 +30,7 @@ export async function GET(request: Request) {
         tracking_number: document_requests.tracking_number,
         document_type: document_types.name,
         status: document_requests.status,
+        payment_status: document_requests.payment_status,
         created_at: document_requests.created_at,
         updated_at: document_requests.updated_at,
         sla_due_at: document_requests.sla_due_at,
@@ -43,12 +44,17 @@ export async function GET(request: Request) {
     // 2. STATS SUMMARY
     // ─────────────────────────────────────────────────────────────────────────
 
+    const activeStatuses = new Set(['Pending', 'In Process', 'Ready for Release', 'Action Required']);
     const stats = {
       total: userRequests.length,
       pending: userRequests.filter((r) => r.status === 'Pending').length,
       inProcess: userRequests.filter((r) => r.status === 'In Process').length,
       readyForRelease: userRequests.filter((r) => r.status === 'Ready for Release').length,
       completed: userRequests.filter((r) => r.status === 'Released').length,
+      actionRequired: userRequests.filter((r) => r.status === 'Action Required').length,
+      unpaidCount: userRequests.filter(
+        (r) => activeStatuses.has(r.status) && r.payment_status === 'Unpaid',
+      ).length,
     };
 
     // ─────────────────────────────────────────────────────────────────────────

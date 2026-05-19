@@ -151,3 +151,28 @@
     @apply font-sans;
   }
 }
+
+@layer utilities {
+  .scrollbar-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    overflow-x: hidden;
+  }
+
+  .scrollbar-sidebar::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  .scrollbar-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-sidebar::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 9999px;
+  }
+
+  .scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted-foreground);
+  }
+}

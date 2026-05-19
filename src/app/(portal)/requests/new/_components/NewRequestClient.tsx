@@ -39,16 +39,21 @@ export interface DocumentType {
   sla_working_days: number;
   requires_clearance: boolean;
   handling_pattern: string;
+  period_type: string | null;
   issuing_office: string;
 }
 
-interface RequestFormData {
+export interface RequestFormData {
   documentTypeId: string;
   purpose: string;
   copies: string;
   releaseMode: 'digital' | 'physical' | 'both';
   additionalNotes: string;
   agreedToPrivacy: boolean;
+  schoolYear: string;
+  semester: string;
+  dateFrom: string;
+  dateTo: string;
 }
 
 interface AIValidationResult {
@@ -240,6 +245,10 @@ export default function NewRequestClient() {
     releaseMode: 'digital',
     additionalNotes: '',
     agreedToPrivacy: false,
+    schoolYear: '',
+    semester: '',
+    dateFrom: '',
+    dateTo: '',
   });
 
   const selectedDoc = DOCUMENT_TYPES.find((d) => d.id === formData.documentTypeId);
@@ -256,7 +265,11 @@ export default function NewRequestClient() {
     if (currentStep === 1) return !!formData.documentTypeId;
     if (currentStep === 2) {
       const qualityBlocking = !!purposeQuality && !purposeQuality.ai_failed && !purposeQuality.is_valid;
-      return !!formData.purpose && !!formData.copies && !!formData.releaseMode && !qualityBlocking;
+      if (!formData.purpose || !formData.copies || !formData.releaseMode || qualityBlocking) return false;
+      const pt = selectedDoc?.period_type ?? null;
+      if (pt === 'semester' && (!formData.schoolYear || !formData.semester)) return false;
+      if (pt === 'date_range' && !formData.dateFrom) return false;
+      return true;
     }
     if (currentStep === 3) return formData.agreedToPrivacy;
     return true;
@@ -334,6 +347,10 @@ export default function NewRequestClient() {
         copies: Number(formData.copies),
         releaseMode: formData.releaseMode,
         additionalNotes: formData.additionalNotes || undefined,
+        schoolYear: formData.schoolYear || undefined,
+        semester: formData.semester || undefined,
+        dateFrom: formData.dateFrom || undefined,
+        dateTo: formData.dateTo || undefined,
       });
 
       setSubmittedTracking(res.trackingNumber);
@@ -425,7 +442,16 @@ export default function NewRequestClient() {
               {!loading && !error && (
                 <Step1SelectDocument
                   selected={formData.documentTypeId}
-                  onSelect={(id) => setFormData((prev) => ({ ...prev, documentTypeId: id }))}
+                  onSelect={(id) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      documentTypeId: id,
+                      schoolYear: '',
+                      semester: '',
+                      dateFrom: '',
+                      dateTo: '',
+                    }))
+                  }
                   documentTypes={DOCUMENT_TYPES}
                 />
               )}
@@ -433,7 +459,7 @@ export default function NewRequestClient() {
           )}
           {currentStep === 2 && (
             <div className='space-y-4'>
-              <Step2RequestDetails formData={formData} onChange={handleFieldChange} />
+              <Step2RequestDetails formData={formData} onChange={handleFieldChange} selectedDoc={selectedDoc} />
               <PurposeQualityDialog
                 open={!!purposeQuality && !purposeQuality.ai_failed && !purposeQuality.is_valid}
                 isVague={purposeQuality?.is_vague ?? false}

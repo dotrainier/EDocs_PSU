@@ -29,9 +29,14 @@ export async function seedRequests() {
 
   // ─── 2. Requests ─────────────────────────────────────────────────────────────
 
+  const daysFromNow = (n: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d;
+  };
+
   const requestData = [
     // Juan — Student — multiple statuses for UI testing
-    // (sla_due_at dates are intentionally in the past to test overdue UI states)
     {
       tracking_number: 'EDOC-2026-000001',
       user_id: userMap['2021-00001'],
@@ -43,7 +48,7 @@ export async function seedRequests() {
       status: 'Pending',
       fee_amount: '150.00',
       payment_status: 'Paid',
-      sla_due_at: new Date('2026-05-10'),
+      sla_due_at: daysFromNow(-9), // overdue — SLA breached
     },
     {
       tracking_number: 'EDOC-2026-000002',
@@ -56,7 +61,7 @@ export async function seedRequests() {
       status: 'Ready for Release',
       fee_amount: '50.00',
       payment_status: 'Paid',
-      sla_due_at: new Date('2026-05-07'),
+      sla_due_at: daysFromNow(-12), // overdue — SLA breached
     },
     {
       tracking_number: 'EDOC-2026-000003',
@@ -69,7 +74,7 @@ export async function seedRequests() {
       status: 'Pending',
       fee_amount: '50.00',
       payment_status: 'Unpaid',
-      sla_due_at: new Date('2026-05-08'),
+      sla_due_at: daysFromNow(1), // due tomorrow — SLA warning
     },
     {
       tracking_number: 'EDOC-2026-000004',
@@ -82,7 +87,7 @@ export async function seedRequests() {
       status: 'Released',
       fee_amount: '50.00',
       payment_status: 'Paid',
-      sla_due_at: new Date('2026-05-05'),
+      sla_due_at: daysFromNow(-14), // completed late — for historical data
     },
     {
       tracking_number: 'EDOC-2026-000005',
@@ -95,7 +100,7 @@ export async function seedRequests() {
       status: 'Action Required',
       fee_amount: '100.00',
       payment_status: 'Pending Verification',
-      sla_due_at: new Date('2026-05-09'),
+      sla_due_at: daysFromNow(-5), // overdue — SLA breached
     },
     // Maria — Student
     {
@@ -108,7 +113,7 @@ export async function seedRequests() {
       status: 'Pending',
       fee_amount: '50.00',
       payment_status: 'Unpaid',
-      sla_due_at: new Date('2026-05-11'),
+      sla_due_at: daysFromNow(3), // within SLA — comfortable
     },
     // Pedro — Faculty
     {
@@ -122,7 +127,7 @@ export async function seedRequests() {
       status: 'In Process',
       fee_amount: '0.00',
       payment_status: 'Paid',
-      sla_due_at: new Date('2026-05-09'),
+      sla_due_at: daysFromNow(2), // due in 2 days — SLA warning
     },
     // Rosa — NonTeachingStaff
     {
@@ -135,7 +140,7 @@ export async function seedRequests() {
       status: 'Pending',
       fee_amount: '0.00',
       payment_status: 'Paid',
-      sla_due_at: new Date('2026-05-08'),
+      sla_due_at: daysFromNow(5), // within SLA — comfortable
     },
   ];
 

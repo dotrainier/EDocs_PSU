@@ -13,6 +13,6 @@ export const clearance_tasks = pgTable('clearance_tasks', {
   sequence_order: integer('sequence_order'),
   remarks: text('remarks'),
   cleared_by: uuid('cleared_by').references(() => users.id),
-  cleared_at: timestamp('cleared_at'),
-  created_at: timestamp('created_at').defaultNow().notNull(),
+  cleared_at: timestamp('cleared_at', { withTimezone: true }),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

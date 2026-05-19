@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx src/db/seed/index.ts",
+    "db:push": "npx drizzle-kit push",
     "db:fresh": "tsx scripts/reset.ts && drizzle-kit push && npm run seed"
   },
   "dependencies": {

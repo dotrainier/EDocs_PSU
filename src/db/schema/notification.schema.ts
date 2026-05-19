@@ -7,7 +7,7 @@ export const audit_log = pgTable('audit_log', {
   action: varchar('action', { length: 100 }).notNull(),
   details: jsonb('details'),
   ip_address: varchar('ip_address', { length: 45 }),
-  timestamp: timestamp('timestamp').defaultNow().notNull(),
+  timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const notifications = pgTable(
@@ -42,8 +42,8 @@ export const notifications = pgTable(
     title: varchar('title', { length: 100 }).notNull(),
     message: varchar('message', { length: 500 }).notNull(),
     is_read: boolean('is_read').default(false).notNull(),
-    created_at: timestamp('created_at').defaultNow().notNull(),
-    read_at: timestamp('read_at'),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    read_at: timestamp('read_at', { withTimezone: true }),
     related_id: uuid('related_id'),
   },
   (table) => [

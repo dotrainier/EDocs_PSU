@@ -45,6 +45,7 @@ export async function GET(request: Request) {
         sla_working_days: document_types.sla_working_days,
         requires_clearance: document_types.requires_clearance,
         handling_pattern: document_types.handling_pattern,
+        period_type: document_types.period_type,
         issuing_office: offices.name,
       })
       .from(document_types)

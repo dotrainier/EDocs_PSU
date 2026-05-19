@@ -16,6 +16,7 @@ import {
   AlertCircle,
   TrendingUp,
   Zap,
+  CreditCard,
 } from 'lucide-react';
 import { ApexOptions } from 'apexcharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,6 +59,8 @@ interface PortalDashboardResponse {
     inProcess: number;
     readyForRelease: number;
     completed: number;
+    actionRequired: number;
+    unpaidCount: number;
   };
   requestTrend: Array<{
     month: string;
@@ -220,6 +223,8 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         inProcess: 0,
         readyForRelease: 0,
         completed: 0,
+        actionRequired: 0,
+        unpaidCount: 0,
       },
     [data?.stats],
   );
@@ -423,10 +428,10 @@ export default function DashboardClient({ user }: DashboardClientProps) {
             size='lg'
             className='shrink-0 gap-2 bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-md hover:text-primary-foreground'
           >
-            <a href='/request/new'>
+            <Link href='/requests/new'>
               <FilePlus2 className='h-4 w-4' />
               Request a Document
-            </a>
+            </Link>
           </Button>
         </div>
       </div>
@@ -460,6 +465,71 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         />
       </div>
 
+      {/* Smart Alert Banners */}
+      {(stats.actionRequired > 0 || stats.readyForRelease > 0 || stats.unpaidCount > 0) && (
+        <div className='space-y-2.5'>
+          {stats.actionRequired > 0 && (
+            <div className='flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800'>
+              <AlertCircle className='mt-0.5 h-4 w-4 shrink-0 text-red-500' />
+              <div className='flex-1'>
+                <p className='font-semibold'>
+                  {stats.actionRequired} request{stats.actionRequired > 1 ? 's' : ''} require{stats.actionRequired === 1 ? 's' : ''} your action
+                </p>
+                <p className='mt-0.5 text-xs text-red-700'>
+                  Additional information or documents may be needed to continue processing.
+                </p>
+              </div>
+              <Link
+                href='/requests'
+                className='shrink-0 text-xs font-semibold text-red-700 underline-offset-2 hover:underline'
+              >
+                View →
+              </Link>
+            </div>
+          )}
+
+          {stats.readyForRelease > 0 && (
+            <div className='flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800'>
+              <PackageCheck className='mt-0.5 h-4 w-4 shrink-0 text-emerald-500' />
+              <div className='flex-1'>
+                <p className='font-semibold'>
+                  {stats.readyForRelease} document{stats.readyForRelease > 1 ? 's' : ''} ready for pick-up
+                </p>
+                <p className='mt-0.5 text-xs text-emerald-700'>
+                  Please visit the registrar&apos;s office to claim your document{stats.readyForRelease > 1 ? 's' : ''}.
+                </p>
+              </div>
+              <Link
+                href='/requests'
+                className='shrink-0 text-xs font-semibold text-emerald-700 underline-offset-2 hover:underline'
+              >
+                View →
+              </Link>
+            </div>
+          )}
+
+          {stats.unpaidCount > 0 && (
+            <div className='flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800'>
+              <CreditCard className='mt-0.5 h-4 w-4 shrink-0 text-amber-500' />
+              <div className='flex-1'>
+                <p className='font-semibold'>
+                  {stats.unpaidCount} request{stats.unpaidCount > 1 ? 's' : ''} pending payment
+                </p>
+                <p className='mt-0.5 text-xs text-amber-700'>
+                  Complete your payment to allow processing of your request{stats.unpaidCount > 1 ? 's' : ''}.
+                </p>
+              </div>
+              <Link
+                href='/requests'
+                className='shrink-0 text-xs font-semibold text-amber-700 underline-offset-2 hover:underline'
+              >
+                Pay now →
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Charts Row 1 */}
       <div className='grid gap-6 lg:grid-cols-2'>
         <Card>
@@ -474,12 +544,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           </CardHeader>
           <CardContent className='pt-0'>
             {(data?.requestTrend?.length ?? 0) > 0 ? (
-              <ReactApexChart
-                type='area'
-                height={220}
-                options={areaOptions}
-                series={areaSeries}
-              />
+              <ReactApexChart type='area' height={220} options={areaOptions} series={areaSeries} />
             ) : (
               <EmptyChart message='No data available' />
             )}

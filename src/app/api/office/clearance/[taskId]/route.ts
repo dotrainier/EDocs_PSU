@@ -54,13 +54,14 @@ export async function PATCH(
       return NextResponse.json({ message: 'Forbidden - not your office' }, { status: 403 });
     }
 
-    // 3. Get the request to access documentTypeId
+    // 3. Get the request to access documentTypeId and payment status
     const requestResult = await db
       .select({
         user_id: document_requests.user_id,
         document_type_id: document_requests.document_type_id,
         tracking_number: document_requests.tracking_number,
         document_name: document_types.name,
+        payment_status: document_requests.payment_status,
       })
       .from(document_requests)
       .innerJoin(document_types, eq(document_requests.document_type_id, document_types.id))
@@ -77,7 +78,15 @@ export async function PATCH(
       return NextResponse.json({ message: 'Request not found' }, { status: 404 });
     }
 
-    // 4. Update clearance task
+    // 4. Block clearing if payment has not been confirmed
+    if (action === 'cleared' && docRequest.payment_status !== 'Paid') {
+      return NextResponse.json(
+        { message: 'Payment has not been confirmed. Request cannot be cleared until payment is verified.' },
+        { status: 422 },
+      );
+    }
+
+    // 5. Update clearance task
     const newStatus = action === 'cleared' ? 'Cleared' : 'Rejected';
 
     await db

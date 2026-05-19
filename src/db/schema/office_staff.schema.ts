@@ -10,5 +10,5 @@ export const office_staff = pgTable('office_staff', {
     .notNull()
     .references(() => offices.id, { onDelete: 'cascade' }),
   is_office_head: boolean('is_office_head').notNull().default(false),
-  assigned_at: timestamp('assigned_at').defaultNow().notNull(),
+  assigned_at: timestamp('assigned_at', { withTimezone: true }).defaultNow().notNull(),
 });

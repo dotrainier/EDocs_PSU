@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
 import { SLAStatus } from '@/types/document.type';
+import { AiInsights } from './_components/AiInsights';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -40,6 +41,7 @@ interface QueuePreviewItem {
 }
 
 interface DashboardResponse {
+  role: string;
   stats: { total_pending: number; on_track: number; at_risk: number; breached: number };
   slaWeeklyTrend: Array<{ week: string; onTrack: number; atRisk: number; breached: number }>;
   documentTypeDistribution: Array<{ name: string; value: number }>;
@@ -54,6 +56,7 @@ interface DashboardResponse {
     sla_status: string;
     payment_status: string;
   }>;
+  myStats: { my_cleared: number; my_rejected: number; my_pending: number };
 }
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
@@ -280,6 +283,8 @@ export default function OfficeDashboardPage() {
         <StatCard title='At Risk' value={stats.at_risk} icon={Clock} iconClass='text-amber-600' bgClass='bg-amber-100 dark:bg-amber-950/40' description='Near SLA deadline' />
         <StatCard title='SLA Breached' value={stats.breached} icon={AlertTriangle} iconClass='text-red-600' bgClass='bg-red-100 dark:bg-red-950/40' description='Past their deadline' />
       </div>
+
+      <AiInsights data={data} />
 
       <div className='grid gap-6 lg:grid-cols-2'>
         <Card>

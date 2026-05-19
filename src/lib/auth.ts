@@ -74,7 +74,7 @@ export async function setAuthCookies(accessToken: string, refreshToken: string):
   cookieStore.set(AUTH_CONFIG.accessCookieName, accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: AUTH_CONFIG.accessTokenExpirySeconds,
   });
@@ -82,7 +82,7 @@ export async function setAuthCookies(accessToken: string, refreshToken: string):
   cookieStore.set(AUTH_CONFIG.refreshCookieName, refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: AUTH_CONFIG.refreshTokenExpirySeconds,
   });
@@ -137,7 +137,7 @@ export function setAuthCookiesOnResponse(
   response.cookies.set(AUTH_CONFIG.accessCookieName, accessToken, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: AUTH_CONFIG.accessTokenExpirySeconds,
   });
@@ -145,7 +145,7 @@ export function setAuthCookiesOnResponse(
   response.cookies.set(AUTH_CONFIG.refreshCookieName, refreshToken, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: AUTH_CONFIG.refreshTokenExpirySeconds,
   });
