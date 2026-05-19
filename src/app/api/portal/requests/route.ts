@@ -5,6 +5,9 @@ import { db } from '@/db';
 import { generateTrackingNumber, calculateSlaDeadline } from '@/lib/generate';
 import { logAudit } from '@/lib/audit';
 import { createNotification } from '@/lib/notification';
+import { sendMailToMultiple } from '@/lib/lib-mailer';
+import { NewRequestStaffEmail } from '@/email-templates/NewRequestStaff';
+import { render } from 'react-email';
 
 import {
   document_requests,
@@ -12,6 +15,7 @@ import {
   clearance_requirements,
   clearance_tasks,
   office_staff,
+  users,
 } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
 
@@ -187,14 +191,32 @@ export async function POST(request: Request) {
         }
 
         const staffRows = await db
-          .select({ user_id: office_staff.user_id })
+          .select({ user_id: office_staff.user_id, email: users.email, full_name: users.full_name })
           .from(office_staff)
+          .innerJoin(users, eq(office_staff.user_id, users.id))
           .where(inArray(office_staff.office_id, [...involvedOfficeIds]));
 
         const staffNotif = {
           title: `New ${docType.name} request`,
           message: `A new ${docType.name} request has been submitted. Tracking: ${trackingNumber}.`,
         };
+
+        const staffEmails = staffRows.map((r) => r.email);
+        if (staffEmails.length > 0) {
+          const emailHtml = await render(
+            NewRequestStaffEmail({
+              documentType: docType.name,
+              trackingNumber,
+              dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/office/requests`,
+            }),
+          );
+          await sendMailToMultiple({
+            to: staffEmails,
+            subject: `New Document Request: ${docType.name} [${trackingNumber}]`,
+            html: emailHtml,
+          }).catch(() => {});
+        }
+
         await Promise.all(
           staffRows.map(async ({ user_id }) => {
             await createNotification({
