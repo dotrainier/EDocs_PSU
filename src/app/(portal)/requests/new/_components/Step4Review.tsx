@@ -9,30 +9,15 @@ interface Step4Props {
   documentType: DocumentType | undefined;
 }
 
-function formatDate(iso: string): string {
-  if (!iso) return '';
-  const [y, m, d] = iso.split('-');
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${months[parseInt(m, 10) - 1]} ${d}, ${y}`;
-}
-
 export default function Step4Review({ formData, documentType }: Step4Props) {
   if (!documentType) return null;
 
   const periodType = documentType.period_type ?? null;
 
   const periodRows: { label: string; value: string }[] = [];
-  if ((periodType === 'semester' || periodType === 'semester_optional') && formData.schoolYear && formData.semester) {
+  if (periodType === 'semester_past_only' && formData.schoolYear && formData.semester) {
     periodRows.push({ label: 'School Year', value: formData.schoolYear });
     periodRows.push({ label: 'Semester', value: formData.semester });
-  }
-  if (periodType === 'date_range' && formData.dateFrom) {
-    periodRows.push({ label: 'Date From', value: formatDate(formData.dateFrom) });
-    if (formData.dateTo) {
-      periodRows.push({ label: 'Date To', value: formatDate(formData.dateTo) });
-    } else {
-      periodRows.push({ label: 'Date To', value: 'Present' });
-    }
   }
 
   const rows = [
@@ -41,15 +26,7 @@ export default function Step4Review({ formData, documentType }: Step4Props) {
     ...periodRows,
     { label: 'Purpose', value: formData.purpose },
     { label: 'Number of Copies', value: formData.copies },
-    {
-      label: 'Release Mode',
-      value:
-        formData.releaseMode === 'both'
-          ? 'Digital + Physical Pickup'
-          : formData.releaseMode === 'digital'
-            ? 'Digital (PDF)'
-            : 'Physical Pickup',
-    },
+    { label: 'Release Method', value: 'Physical Pickup Only' },
     { label: 'Estimated SLA', value: `${documentType.sla_working_days} working days` },
     {
       label: 'Fee',

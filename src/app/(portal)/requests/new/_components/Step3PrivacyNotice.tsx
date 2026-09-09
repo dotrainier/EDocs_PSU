@@ -21,7 +21,7 @@ By submitting this request, you acknowledge that PSU Main may collect and proces
 • Full name and identification numbers (Student ID, Employee ID)
 • Contact information (email address, phone number)
 • Academic or employment records as relevant to the document type requested
-• Purpose, number of copies, and preferred release mode of the document requested
+• Purpose and number of copies of the document requested
 • Timestamps and system logs related to your request
 
 DATA SHARING

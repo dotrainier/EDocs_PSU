@@ -23,12 +23,9 @@ const createRequestSchema = z.object({
   documentTypeId: z.number().int().positive(),
   purpose: z.string().min(1).max(255),
   copies: z.number().int().min(1).max(10),
-  releaseMode: z.enum(['digital', 'physical', 'both']),
   additionalNotes: z.string().max(1000).optional(),
   schoolYear: z.string().max(20).optional(),
   semester: z.string().max(30).optional(),
-  dateFrom: z.string().max(20).optional(),
-  dateTo: z.string().max(20).optional(),
 });
 
 async function createClearanceTasks(requestId: string, documentTypeId: number): Promise<void> {
@@ -83,7 +80,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Invalid input' }, { status: 400 });
     }
 
-    const { documentTypeId, purpose, copies, releaseMode, additionalNotes, schoolYear, semester, dateFrom, dateTo } = parsed.data;
+    const { documentTypeId, purpose, copies, additionalNotes, schoolYear, semester } = parsed.data;
 
     const docTypeResult = await db
       .select()
@@ -97,18 +94,10 @@ export async function POST(request: Request) {
     }
 
     // Validate period fields driven by period_type on the document type record
-    if (docType.period_type === 'semester') {
+    if (docType.period_type === 'semester_past_only') {
       if (!schoolYear || !semester) {
         return NextResponse.json(
           { message: 'School year and semester are required for this document type' },
-          { status: 400 },
-        );
-      }
-    }
-    if (docType.period_type === 'date_range') {
-      if (!dateFrom) {
-        return NextResponse.json(
-          { message: 'Start date is required for this document type' },
           { status: 400 },
         );
       }
@@ -117,8 +106,7 @@ export async function POST(request: Request) {
     const trackingNumber = await generateTrackingNumber();
     const slaDeadline = calculateSlaDeadline(docType.sla_working_days);
 
-    const hasSemester = docType.period_type === 'semester' || docType.period_type === 'semester_optional';
-    const hasDateRange = docType.period_type === 'date_range';
+    const hasSemester = docType.period_type === 'semester_past_only';
 
     const inserted = await db
       .insert(document_requests)
@@ -128,7 +116,6 @@ export async function POST(request: Request) {
         document_type_id: documentTypeId,
         purpose,
         copies,
-        release_mode: releaseMode,
         additional_notes: additionalNotes ?? null,
         status: 'Pending',
         fee_amount: docType.fee_amount,
@@ -136,8 +123,6 @@ export async function POST(request: Request) {
         sla_due_at: slaDeadline,
         school_year: hasSemester ? (schoolYear ?? null) : null,
         semester: hasSemester ? (semester ?? null) : null,
-        date_from: hasDateRange ? (dateFrom ?? null) : null,
-        date_to: hasDateRange ? (dateTo ?? null) : null,
       })
       .returning({ id: document_requests.id });
 

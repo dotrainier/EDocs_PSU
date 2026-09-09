@@ -7,7 +7,6 @@ import {
   XCircle,
   Clock,
   ChevronRight,
-  Download,
   MapPin,
   AlertTriangle,
   Building2,
@@ -73,7 +72,6 @@ interface DocumentRequest {
   dateFiled: string;
   copies: number;
   purpose: string;
-  releaseMode: 'digital' | 'physical' | 'both';
   slaDays: number;
   elapsedDays: number;
   fee: string | null;
@@ -82,7 +80,6 @@ interface DocumentRequest {
   timeline: TimelineEntry[];
   actionRequiredReason?: string;
   actionRequiredInstruction?: string;
-  downloadUrl?: string;
   pickupLocation?: string;
   pickupSchedule?: string;
   pickupBringItems?: string[];
@@ -97,7 +94,6 @@ interface RequestResponse {
     issuing_office: string;
     purpose: string;
     copies: number;
-    release_mode: 'digital' | 'physical' | 'both';
     additional_notes: string | null;
     status: string;
     fee_amount: string | null;
@@ -241,7 +237,6 @@ export default function TrackRequestPage() {
       dateFiled: formatDate(apiRequest.created_at),
       copies: apiRequest.copies,
       purpose: apiRequest.purpose,
-      releaseMode: apiRequest.release_mode,
       slaDays: slaDays || 1,
       elapsedDays,
       fee: apiRequest.fee_amount,
@@ -260,7 +255,6 @@ export default function TrackRequestPage() {
       })),
       actionRequiredReason: undefined,
       actionRequiredInstruction: undefined,
-      downloadUrl: apiRequest.payment_proof_path ?? undefined,
       pickupLocation: undefined,
       pickupSchedule: undefined,
       pickupBringItems: undefined,
@@ -394,16 +388,7 @@ export default function TrackRequestPage() {
                 { icon: Building2, label: 'Issuing Office', value: request.issuingOffice },
                 { icon: Copy, label: 'Number of Copies', value: String(request.copies) },
                 { icon: FileText, label: 'Purpose', value: request.purpose },
-                {
-                  icon: Printer,
-                  label: 'Release Mode',
-                  value:
-                    request.releaseMode === 'both'
-                      ? 'Digital + Physical Pickup'
-                      : request.releaseMode === 'digital'
-                        ? 'Digital (PDF)'
-                        : 'Physical Pickup',
-                },
+                { icon: Printer, label: 'Release Method', value: 'Physical Pickup Only' },
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label} className='flex items-start gap-2.5'>
                   <Icon className='h-4 w-4 text-muted-foreground mt-0.5 shrink-0' />
@@ -497,47 +482,32 @@ export default function TrackRequestPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className='pt-0'>
-            {request.releaseMode === 'digital' || request.releaseMode === 'both' ? (
-              <div className='space-y-3'>
-                <p className='text-sm text-emerald-800'>
-                  Your document is ready for download. The file is valid and digitally signed by the
-                  issuing office.
-                </p>
-                <Button className='gap-2' asChild>
-                  <a href={request.downloadUrl ?? '#'} download>
-                    <Download className='h-4 w-4' />
-                    Download PDF
-                  </a>
-                </Button>
-              </div>
-            ) : (
-              <div className='space-y-3'>
-                <p className='text-sm text-emerald-800'>
-                  Your document is ready for physical pickup. Please bring the following:
-                </p>
-                {request.pickupBringItems && (
-                  <ul className='space-y-1'>
-                    {request.pickupBringItems.map((item) => (
-                      <li key={item} className='flex items-center gap-2 text-sm text-emerald-800'>
-                        <CheckCircle2 className='h-3.5 w-3.5 shrink-0' />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {request.pickupLocation && (
-                  <div className='flex items-start gap-2 text-sm text-emerald-800'>
-                    <MapPin className='h-4 w-4 mt-0.5 shrink-0' />
-                    <div>
-                      <p className='font-medium'>{request.pickupLocation}</p>
-                      {request.pickupSchedule && (
-                        <p className='text-emerald-700'>{request.pickupSchedule}</p>
-                      )}
-                    </div>
+            <div className='space-y-3'>
+              <p className='text-sm text-emerald-800'>
+                Your document is ready for physical pickup. Please bring the following:
+              </p>
+              {request.pickupBringItems && (
+                <ul className='space-y-1'>
+                  {request.pickupBringItems.map((item) => (
+                    <li key={item} className='flex items-center gap-2 text-sm text-emerald-800'>
+                      <CheckCircle2 className='h-3.5 w-3.5 shrink-0' />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {request.pickupLocation && (
+                <div className='flex items-start gap-2 text-sm text-emerald-800'>
+                  <MapPin className='h-4 w-4 mt-0.5 shrink-0' />
+                  <div>
+                    <p className='font-medium'>{request.pickupLocation}</p>
+                    {request.pickupSchedule && (
+                      <p className='text-emerald-700'>{request.pickupSchedule}</p>
+                    )}
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}

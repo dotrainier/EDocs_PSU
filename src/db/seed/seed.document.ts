@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { sql, inArray, notInArray } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   document_types,
@@ -6,6 +6,7 @@ import {
   offices,
   roles,
   document_type_roles,
+  document_requests,
 } from '@/db/schema';
 
 export async function seedDocuments() {
@@ -43,19 +44,6 @@ export async function seedDocuments() {
       is_active: true,
     },
     {
-      name: 'Diploma Duplicate',
-      code: 'DIPLOMA',
-      description:
-        'Replacement copy of the official diploma for graduates who have lost their original.',
-      issuing_office_id: officeMap['OUR'],
-      handling_pattern: 'UPLOAD',
-      fee_amount: '500.00',
-      sla_working_days: 14,
-      requires_clearance: true,
-      period_type: null,
-      is_active: true,
-    },
-    {
       name: 'Certificate of Enrollment',
       code: 'COE',
       description:
@@ -65,101 +53,55 @@ export async function seedDocuments() {
       fee_amount: '50.00',
       sla_working_days: 3,
       requires_clearance: true,
-      period_type: 'semester',
+      period_type: null,
       is_active: true,
     },
     {
       name: 'Certificate of Grades',
       code: 'COG',
-      description: 'Official record of grades for a specific semester or academic year.',
+      description: 'Official record of grades for a specific past semester or academic year.',
       issuing_office_id: officeMap['OUR'],
       handling_pattern: 'GENERATE',
       fee_amount: '50.00',
       sla_working_days: 3,
       requires_clearance: true,
-      period_type: 'semester',
+      period_type: 'semester_past_only',
       is_active: true,
     },
     {
-      name: 'Certificate of Units Earned',
-      code: 'CUE',
-      description: 'Certifies the total number of academic units earned by the student.',
+      name: 'Certificate of Registration',
+      code: 'COR',
+      description:
+        'Certifies the courses and units a student is officially registered for in the current semester.',
       issuing_office_id: officeMap['OUR'],
       handling_pattern: 'GENERATE',
-      fee_amount: '50.00',
-      sla_working_days: 5,
-      requires_clearance: true,
-      period_type: 'semester_optional',
-      is_active: true,
-    },
-    {
-      name: 'Transfer Credential',
-      code: 'TC',
-      description:
-        'Official document for students transferring to another institution, certifying honorable dismissal.',
-      issuing_office_id: officeMap['OUR'],
-      handling_pattern: 'UPLOAD',
-      fee_amount: '100.00',
-      sla_working_days: 5,
-      requires_clearance: true,
+      fee_amount: '0.00',
+      sla_working_days: 1,
+      requires_clearance: false,
       period_type: null,
-      is_active: true,
-    },
-    {
-      name: 'General Clearance',
-      code: 'GENCLR',
-      description:
-        'University-wide clearance certifying no outstanding obligations across all offices.',
-      issuing_office_id: officeMap['OUR'],
-      handling_pattern: 'GENERATE',
-      fee_amount: '0.00',
-      sla_working_days: 7,
-      requires_clearance: true,
-      period_type: 'semester',
-      is_active: true,
-    },
-    // ── OSAS documents ──
-    {
-      name: 'Certificate of Good Moral Character',
-      code: 'CGMC',
-      description:
-        'Certifies the good moral standing and conduct of the student within the university.',
-      issuing_office_id: officeMap['OSAS'],
-      handling_pattern: 'GENERATE',
-      fee_amount: '50.00',
-      sla_working_days: 3,
-      requires_clearance: true,
-      period_type: null,
-      is_active: true,
-    },
-    // ── HRMO documents ──
-    {
-      name: 'Service Record',
-      code: 'SR',
-      description:
-        'Official record of employment history, positions held, and tenure within the university.',
-      issuing_office_id: officeMap['HRMO'],
-      handling_pattern: 'UPLOAD',
-      fee_amount: '0.00',
-      sla_working_days: 5,
-      requires_clearance: true,
-      period_type: 'date_range',
-      is_active: true,
-    },
-    {
-      name: 'Certificate of Employment',
-      code: 'COEMPL',
-      description:
-        'Certifies active employment status, position, and salary grade of a university employee.',
-      issuing_office_id: officeMap['HRMO'],
-      handling_pattern: 'GENERATE',
-      fee_amount: '0.00',
-      sla_working_days: 3,
-      requires_clearance: true,
-      period_type: 'date_range',
       is_active: true,
     },
   ];
+
+  const activeCodes = documentTypeData.map((d) => d.code);
+
+  // Remove document types no longer supported (and, via cascade, their
+  // document_type_roles and clearance_requirements rows) so re-running the
+  // seed without a full reset converges to the current supported list.
+  const staleDocTypes = await db
+    .select({ id: document_types.id })
+    .from(document_types)
+    .where(notInArray(document_types.code, activeCodes));
+  const staleDocTypeIds = staleDocTypes.map((d) => d.id);
+
+  if (staleDocTypeIds.length > 0) {
+    // document_requests has no cascade on document_type_id, so stale demo
+    // requests (and, via cascade, their clearance_tasks/notifications) must
+    // be cleared first or the delete below violates the FK constraint.
+    await db.delete(document_requests).where(inArray(document_requests.document_type_id, staleDocTypeIds));
+  }
+
+  await db.delete(document_types).where(notInArray(document_types.code, activeCodes));
 
   // Upsert on code so re-running the seed (without db:fresh) stays in sync
   await db.insert(document_types).values(documentTypeData).onConflictDoUpdate({
@@ -193,36 +135,14 @@ export async function seedDocuments() {
     // TOR → Student only
     { document_type_id: docMap['TOR'], role_id: roleMap['Student'] },
 
-    // DIPLOMA → Student only
-    { document_type_id: docMap['DIPLOMA'], role_id: roleMap['Student'] },
-
     // COE → Student only
     { document_type_id: docMap['COE'], role_id: roleMap['Student'] },
 
     // COG → Student only
     { document_type_id: docMap['COG'], role_id: roleMap['Student'] },
 
-    // CUE → Student only
-    { document_type_id: docMap['CUE'], role_id: roleMap['Student'] },
-
-    // TC → Student only
-    { document_type_id: docMap['TC'], role_id: roleMap['Student'] },
-
-    // GENCLR → Student, Faculty, NonTeachingStaff
-    { document_type_id: docMap['GENCLR'], role_id: roleMap['Student'] },
-    { document_type_id: docMap['GENCLR'], role_id: roleMap['Faculty'] },
-    { document_type_id: docMap['GENCLR'], role_id: roleMap['NonTeachingStaff'] },
-
-    // CGMC → Student only
-    { document_type_id: docMap['CGMC'], role_id: roleMap['Student'] },
-
-    // SR → Faculty, NonTeachingStaff
-    { document_type_id: docMap['SR'], role_id: roleMap['Faculty'] },
-    { document_type_id: docMap['SR'], role_id: roleMap['NonTeachingStaff'] },
-
-    // COEMPL → Faculty, NonTeachingStaff
-    { document_type_id: docMap['COEMPL'], role_id: roleMap['Faculty'] },
-    { document_type_id: docMap['COEMPL'], role_id: roleMap['NonTeachingStaff'] },
+    // COR → Student only
+    { document_type_id: docMap['COR'], role_id: roleMap['Student'] },
   ];
 
   await db.insert(document_type_roles).values(documentTypeRolesData).onConflictDoNothing();
@@ -263,26 +183,6 @@ export async function seedDocuments() {
       is_required: true,
     },
 
-    // ── DIPLOMA: parallel clearances → OUR final ──
-    {
-      document_type_id: docMap['DIPLOMA'],
-      office_id: officeMap['LIB'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['DIPLOMA'],
-      office_id: officeMap['UCF'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['DIPLOMA'],
-      office_id: officeMap['OUR'],
-      sequence_order: 1,
-      is_required: true,
-    },
-
     // ── COE: OUR head approval only ──
     {
       document_type_id: docMap['COE'],
@@ -299,125 +199,7 @@ export async function seedDocuments() {
       is_required: true,
     },
 
-    // ── CUE: OUR head approval only ──
-    {
-      document_type_id: docMap['CUE'],
-      office_id: officeMap['OUR'],
-      sequence_order: 1,
-      is_required: true,
-    },
-
-    // ── TC: parallel clearances → OUR final ──
-    {
-      document_type_id: docMap['TC'],
-      office_id: officeMap['LIB'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['TC'],
-      office_id: officeMap['UCF'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['TC'],
-      office_id: officeMap['PSO'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['TC'],
-      office_id: officeMap['OSAS'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['TC'],
-      office_id: officeMap['DCO'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['TC'],
-      office_id: officeMap['OUR'],
-      sequence_order: 1,
-      is_required: true,
-    },
-
-    // ── GENCLR: all offices parallel → OUR final ──
-    {
-      document_type_id: docMap['GENCLR'],
-      office_id: officeMap['LIB'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['GENCLR'],
-      office_id: officeMap['UCF'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['GENCLR'],
-      office_id: officeMap['PSO'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['GENCLR'],
-      office_id: officeMap['MIS'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['GENCLR'],
-      office_id: officeMap['OSAS'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['GENCLR'],
-      office_id: officeMap['HRMO'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['GENCLR'],
-      office_id: officeMap['OUR'],
-      sequence_order: 1,
-      is_required: true,
-    },
-
-    // ── CGMC: OSAS head approval only ──
-    {
-      document_type_id: docMap['CGMC'],
-      office_id: officeMap['OSAS'],
-      sequence_order: 1,
-      is_required: true,
-    },
-
-    // ── SR: Cashier clearance → HRMO final ──
-    {
-      document_type_id: docMap['SR'],
-      office_id: officeMap['UCF'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['SR'],
-      office_id: officeMap['HRMO'],
-      sequence_order: 1,
-      is_required: true,
-    },
-
-    // ── COEMPL: HRMO head approval only ──
-    {
-      document_type_id: docMap['COEMPL'],
-      office_id: officeMap['HRMO'],
-      sequence_order: 1,
-      is_required: true,
-    },
+    // ── COR: no clearance required ──
   ];
 
   await db.insert(clearance_requirements).values(clearanceData).onConflictDoNothing();

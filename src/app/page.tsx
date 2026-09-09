@@ -526,8 +526,8 @@ export default async function LandingPage() {
                   Submit Document Requests Online
                 </CardTitle>
                 <CardDescription>
-                  Submit requests from any device at any time. System-generated documents are
-                  available digitally; others may require physical pickup.
+                  Submit requests from any device at any time. All documents are released via
+                  physical pickup at the issuing office.
                 </CardDescription>
               </CardHeader>
             </Card>

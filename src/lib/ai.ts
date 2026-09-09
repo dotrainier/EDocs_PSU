@@ -223,9 +223,8 @@ Constraints: title ≤ 60 chars, body ≤ 130 chars, action ≤ 55 chars or null
 const OBVIOUS_PURPOSES: Record<string, RegExp> = {
   COE: /\b(scholarship|visa|loan|ojt|internship|enrollment proof|currently enrolled)\b/i,
   TOR: /\b(graduate school|board exam|licensure|employment|transfer credit|masters?|phd)\b/i,
-  TC: /\b(transfer|moving|another school|enroll(ing)? elsewhere|shifting school)\b/i,
   COG: /\b(grades?|gpa|academic standing|grade(s)? report|class standing)\b/i,
-  CE: /\b(employment|job application|work|hiring|employer)\b/i,
+  COR: /\b(registration|registered subjects|enlisted courses|proof of registration|course load)\b/i,
 };
 
 // ============================================================================
@@ -267,18 +266,18 @@ ${typesList}
 
 If the purpose matches the selected type, respond with the selected code.
 If the purpose clearly suggests a DIFFERENT type, respond with that code instead.
-Return ONLY the 3-letter code (e.g., "TOR", "COE", "TC") and confidence 0.0-1.0.
+Return ONLY the code (e.g., "TOR", "COE", "COG", "COR") and confidence 0.0-1.0.
 
 Examples:
-- Purpose "transferring to another school" + selected COE → respond TC (confidence 0.9)
-- Purpose "employment" + selected COE → respond CE (confidence 0.85)
+- Purpose "proof of registered subjects this semester" + selected COE → respond COR (confidence 0.9)
+- Purpose "employment" + selected COE → respond TOR (confidence 0.85)
 - Purpose "grades" + selected COE → respond COG (confidence 0.8)
 
 Respond ONLY in this format (JSON):
 {
-  "suggested_code": "TC",
+  "suggested_code": "COR",
   "confidence": 0.92,
-  "reasoning": "Student purpose is 'transferring'. This requires Transfer Credential, not the selected Certificate of Enrollment."
+  "reasoning": "Student purpose is 'proof of registration'. This requires Certificate of Registration, not the selected Certificate of Enrollment."
 }
 `;
 

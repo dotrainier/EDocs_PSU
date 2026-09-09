@@ -60,7 +60,6 @@ interface RequestDetailApiResponse {
     issuing_office: string;
     purpose: string;
     copies: number;
-    release_mode: string;
     additional_notes: string | null;
     status: string;
     fee_amount: number | null;
@@ -295,7 +294,7 @@ export default function OfficeRequestDetailPage() {
                 <InfoRow label='ID Number' value={req.requestor_school_id} />
                 <InfoRow label='Purpose' value={req.purpose} />
                 <InfoRow label='Copies' value={req.copies} />
-                <InfoRow label='Release Mode' value={req.release_mode} />
+                <InfoRow label='Release Method' value='Physical Pickup Only' />
                 <InfoRow label='Date Submitted' value={formatDateTime(req.created_at)} />
               </dl>
             </CardContent>

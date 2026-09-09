@@ -47,13 +47,10 @@ export interface RequestFormData {
   documentTypeId: string;
   purpose: string;
   copies: string;
-  releaseMode: 'digital' | 'physical' | 'both';
   additionalNotes: string;
   agreedToPrivacy: boolean;
   schoolYear: string;
   semester: string;
-  dateFrom: string;
-  dateTo: string;
 }
 
 interface AIValidationResult {
@@ -242,13 +239,10 @@ export default function NewRequestClient() {
     documentTypeId: '',
     purpose: '',
     copies: '1',
-    releaseMode: 'digital',
     additionalNotes: '',
     agreedToPrivacy: false,
     schoolYear: '',
     semester: '',
-    dateFrom: '',
-    dateTo: '',
   });
 
   const selectedDoc = DOCUMENT_TYPES.find((d) => d.id === formData.documentTypeId);
@@ -265,10 +259,9 @@ export default function NewRequestClient() {
     if (currentStep === 1) return !!formData.documentTypeId;
     if (currentStep === 2) {
       const qualityBlocking = !!purposeQuality && !purposeQuality.ai_failed && !purposeQuality.is_valid;
-      if (!formData.purpose || !formData.copies || !formData.releaseMode || qualityBlocking) return false;
+      if (!formData.purpose || !formData.copies || qualityBlocking) return false;
       const pt = selectedDoc?.period_type ?? null;
-      if (pt === 'semester' && (!formData.schoolYear || !formData.semester)) return false;
-      if (pt === 'date_range' && !formData.dateFrom) return false;
+      if (pt === 'semester_past_only' && (!formData.schoolYear || !formData.semester)) return false;
       return true;
     }
     if (currentStep === 3) return formData.agreedToPrivacy;
@@ -345,12 +338,9 @@ export default function NewRequestClient() {
         documentTypeId: Number(formData.documentTypeId),
         purpose: formData.purpose,
         copies: Number(formData.copies),
-        releaseMode: formData.releaseMode,
         additionalNotes: formData.additionalNotes || undefined,
         schoolYear: formData.schoolYear || undefined,
         semester: formData.semester || undefined,
-        dateFrom: formData.dateFrom || undefined,
-        dateTo: formData.dateTo || undefined,
       });
 
       setSubmittedTracking(res.trackingNumber);
@@ -448,8 +438,6 @@ export default function NewRequestClient() {
                       documentTypeId: id,
                       schoolYear: '',
                       semester: '',
-                      dateFrom: '',
-                      dateTo: '',
                     }))
                   }
                   documentTypes={DOCUMENT_TYPES}

@@ -43,7 +43,6 @@ export async function seedRequests() {
       document_type_id: docMap['TOR'],
       purpose: 'Employment',
       copies: 2,
-      release_mode: 'digital',
       // All clearance tasks are Pending — no work started yet.
       status: 'Pending',
       fee_amount: '150.00',
@@ -56,7 +55,6 @@ export async function seedRequests() {
       document_type_id: docMap['COE'],
       purpose: 'Scholarship Application',
       copies: 1,
-      release_mode: 'digital',
       // All clearance tasks are Cleared → Ready for Release is correct.
       status: 'Ready for Release',
       fee_amount: '50.00',
@@ -69,7 +67,6 @@ export async function seedRequests() {
       document_type_id: docMap['COG'],
       purpose: 'Board Examination',
       copies: 1,
-      release_mode: 'digital',
       // All tasks will be seeded as Pending below.
       status: 'Pending',
       fee_amount: '50.00',
@@ -79,68 +76,26 @@ export async function seedRequests() {
     {
       tracking_number: 'EDOC-2026-000004',
       user_id: userMap['2021-00001'],
-      document_type_id: docMap['CGMC'],
-      purpose: 'Government Requirement',
+      document_type_id: docMap['COR'],
+      purpose: 'Scholarship Application',
       copies: 1,
-      release_mode: 'physical',
-      // All tasks will be seeded as Cleared below — document was released.
+      // COR requires no clearance — goes straight to Released.
       status: 'Released',
-      fee_amount: '50.00',
+      fee_amount: '0.00',
       payment_status: 'Paid',
-      sla_due_at: daysFromNow(-14), // completed late — for historical data
-    },
-    {
-      tracking_number: 'EDOC-2026-000005',
-      user_id: userMap['2021-00001'],
-      document_type_id: docMap['TC'],
-      purpose: 'Transfer to another school',
-      copies: 1,
-      release_mode: 'physical',
-      // One task will be seeded as 'Action Required' below to explain the block.
-      status: 'Action Required',
-      fee_amount: '100.00',
-      payment_status: 'Pending Verification',
-      sla_due_at: daysFromNow(-5), // overdue — SLA breached
+      sla_due_at: daysFromNow(-6), // completed — for historical data
     },
     // Maria — Student
     {
-      tracking_number: 'EDOC-2026-000006',
+      tracking_number: 'EDOC-2026-000005',
       user_id: userMap['2021-00002'],
       document_type_id: docMap['COE'],
       purpose: 'Loan Application',
       copies: 1,
-      release_mode: 'digital',
       status: 'Pending',
       fee_amount: '50.00',
       payment_status: 'Unpaid',
       sla_due_at: daysFromNow(3), // within SLA — comfortable
-    },
-    // Pedro — Faculty
-    {
-      tracking_number: 'EDOC-2026-000007',
-      user_id: userMap['FAC-2019-001'],
-      document_type_id: docMap['SR'],
-      purpose: 'Personal Record',
-      copies: 1,
-      release_mode: 'physical',
-      // First half of tasks Cleared, second half Pending — consistent with In Process.
-      status: 'In Process',
-      fee_amount: '0.00',
-      payment_status: 'Paid',
-      sla_due_at: daysFromNow(2), // due in 2 days — SLA warning
-    },
-    // Rosa — NonTeachingStaff
-    {
-      tracking_number: 'EDOC-2026-000008',
-      user_id: userMap['NTS-2020-001'],
-      document_type_id: docMap['COEMPL'],
-      purpose: 'Bank Requirement',
-      copies: 2,
-      release_mode: 'digital',
-      status: 'Pending',
-      fee_amount: '0.00',
-      payment_status: 'Paid',
-      sla_due_at: daysFromNow(5), // within SLA — comfortable
     },
   ];
 
@@ -209,41 +164,13 @@ export async function seedRequests() {
     totalTasks += cogTasks.length;
   }
 
-  // ── CGMC (EDOC-2026-000004) — Released ───────────────────────────────────
-  // All requirements cleared — consistent with terminal 'Released' status.
-  const cgmcReqs = existingOffices.filter((r) => r.document_type_id === docMap['CGMC']);
-  const cgmcTasks = cgmcReqs.map((r) => ({
-    request_id: reqMap['EDOC-2026-000004'],
-    office_id: r.office_id,
-    status: 'Cleared',
-    sequence_order: r.sequence_order,
-  }));
+  // ── COR (EDOC-2026-000004) — Released ────────────────────────────────────
+  // COR has no clearance_requirements rows, so no clearance tasks are seeded.
 
-  if (cgmcTasks.length > 0) {
-    await db.insert(clearance_tasks).values(cgmcTasks).onConflictDoNothing();
-    totalTasks += cgmcTasks.length;
-  }
-
-  // ── TC (EDOC-2026-000005) — Action Required ───────────────────────────────
-  // First task is the blocker; the rest remain Pending.
-  const tcReqs = existingOffices.filter((r) => r.document_type_id === docMap['TC']);
-  const tcTasks = tcReqs.map((r, idx) => ({
-    request_id: reqMap['EDOC-2026-000005'],
-    office_id: r.office_id,
-    // First office is blocking — requires action from the student.
-    status: idx === 0 ? 'Action Required' : 'Pending',
-    sequence_order: r.sequence_order,
-  }));
-
-  if (tcTasks.length > 0) {
-    await db.insert(clearance_tasks).values(tcTasks).onConflictDoNothing();
-    totalTasks += tcTasks.length;
-  }
-
-  // ── COE Maria (EDOC-2026-000006) — Pending ───────────────────────────────
+  // ── COE Maria (EDOC-2026-000005) — Pending ───────────────────────────────
   // Reusing COE requirements; all tasks pending.
   const coe2Tasks = coeReqs.map((r) => ({
-    request_id: reqMap['EDOC-2026-000006'],
+    request_id: reqMap['EDOC-2026-000005'],
     office_id: r.office_id,
     status: 'Pending',
     sequence_order: r.sequence_order,
@@ -252,35 +179,6 @@ export async function seedRequests() {
   if (coe2Tasks.length > 0) {
     await db.insert(clearance_tasks).values(coe2Tasks).onConflictDoNothing();
     totalTasks += coe2Tasks.length;
-  }
-
-  // ── SR Pedro (EDOC-2026-000007) — In Process ─────────────────────────────
-  // First half cleared, second half still pending — consistent with 'In Process'.
-  const srReqs = existingOffices.filter((r) => r.document_type_id === docMap['SR']);
-  const srTasks = srReqs.map((r, idx) => ({
-    request_id: reqMap['EDOC-2026-000007'],
-    office_id: r.office_id,
-    status: idx < Math.ceil(srReqs.length / 2) ? 'Cleared' : 'Pending',
-    sequence_order: r.sequence_order,
-  }));
-
-  if (srTasks.length > 0) {
-    await db.insert(clearance_tasks).values(srTasks).onConflictDoNothing();
-    totalTasks += srTasks.length;
-  }
-
-  // ── COEMPL Rosa (EDOC-2026-000008) — Pending ─────────────────────────────
-  const coemplReqs = existingOffices.filter((r) => r.document_type_id === docMap['COEMPL']);
-  const coemplTasks = coemplReqs.map((r) => ({
-    request_id: reqMap['EDOC-2026-000008'],
-    office_id: r.office_id,
-    status: 'Pending',
-    sequence_order: r.sequence_order,
-  }));
-
-  if (coemplTasks.length > 0) {
-    await db.insert(clearance_tasks).values(coemplTasks).onConflictDoNothing();
-    totalTasks += coemplTasks.length;
   }
 
   // ─── 4. Summary ──────────────────────────────────────────────────────────────
