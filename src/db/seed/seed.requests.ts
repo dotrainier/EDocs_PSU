@@ -39,7 +39,7 @@ export async function seedRequests() {
     // Juan — Student — multiple statuses for UI testing
     {
       tracking_number: 'EDOC-2026-000001',
-      user_id: userMap['2021-00001'],
+      user_id: userMap['2021307001'],
       document_type_id: docMap['TOR'],
       purpose: 'Employment',
       copies: 2,
@@ -51,7 +51,7 @@ export async function seedRequests() {
     },
     {
       tracking_number: 'EDOC-2026-000002',
-      user_id: userMap['2021-00001'],
+      user_id: userMap['2021307001'],
       document_type_id: docMap['COE'],
       purpose: 'Scholarship Application',
       copies: 1,
@@ -63,7 +63,7 @@ export async function seedRequests() {
     },
     {
       tracking_number: 'EDOC-2026-000003',
-      user_id: userMap['2021-00001'],
+      user_id: userMap['2021307001'],
       document_type_id: docMap['COG'],
       purpose: 'Board Examination',
       copies: 1,
@@ -75,7 +75,7 @@ export async function seedRequests() {
     },
     {
       tracking_number: 'EDOC-2026-000004',
-      user_id: userMap['2021-00001'],
+      user_id: userMap['2021307001'],
       document_type_id: docMap['COR'],
       purpose: 'Scholarship Application',
       copies: 1,
@@ -88,7 +88,7 @@ export async function seedRequests() {
     // Maria — Student
     {
       tracking_number: 'EDOC-2026-000005',
-      user_id: userMap['2021-00002'],
+      user_id: userMap['2021307002'],
       document_type_id: docMap['COE'],
       purpose: 'Loan Application',
       copies: 1,

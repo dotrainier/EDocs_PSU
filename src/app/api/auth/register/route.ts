@@ -25,9 +25,15 @@ const baseFields = {
   password: z.string().min(8, 'Password must be at least 8 characters'),
 };
 
+const studentIdSchema = z
+  .string()
+  .trim()
+  .min(1, 'Student ID is required')
+  .regex(/^\d{10}$/, 'Student ID must be a 10-digit number (e.g. 2022307072)');
+
 const activeStudentSchema = z.object({
   student_type: z.literal('active'),
-  student_id: z.string().trim().min(1, 'Student ID is required'),
+  student_id: studentIdSchema,
   ...baseFields,
   year_level: z.string().trim().min(1, 'Year level is required'),
   email: z.string().trim().min(1, 'School email address is required').email('Enter a valid email address'),

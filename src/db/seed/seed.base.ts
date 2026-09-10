@@ -53,7 +53,7 @@ export async function seedBase() {
 
   const userData = [
     {
-      school_id: '2021-00001',
+      school_id: '2021307001',
       email: 'juan.delacruz@psu.edu.ph',
       password_hash: defaultPassword,
       full_name: 'Juan Dela Cruz',
@@ -62,7 +62,7 @@ export async function seedBase() {
       verification_status: 'approved',
     },
     {
-      school_id: '2021-00002',
+      school_id: '2021307002',
       email: 'maria.santos@psu.edu.ph',
       password_hash: defaultPassword,
       full_name: 'Maria Santos',

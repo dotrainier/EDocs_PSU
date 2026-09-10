@@ -129,6 +129,11 @@ export default function RegisterPage() {
     if (!accountType) return;
     setError('');
 
+    if (accountType === 'active' && !/^\d{10}$/.test(form.student_id)) {
+      setError('Student ID must be a 10-digit number (e.g. 2022307072).');
+      return;
+    }
+
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -312,8 +317,12 @@ export default function RegisterPage() {
                       <Input
                         id='student_id'
                         value={form.student_id}
-                        onChange={(e) => update('student_id')(e.target.value)}
-                        placeholder='e.g. 2021-00001'
+                        onChange={(e) =>
+                          update('student_id')(e.target.value.replace(/\D/g, '').slice(0, 10))
+                        }
+                        placeholder='e.g. 2022307072'
+                        inputMode='numeric'
+                        maxLength={10}
                         required
                         className='h-11'
                       />
