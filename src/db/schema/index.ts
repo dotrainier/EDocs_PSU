@@ -1,4 +1,5 @@
 export * from './roles.schema';
+export * from './courses.schema';
 export * from './users.schema';
 export * from './sessions.schema';
 export * from './offices.schema';

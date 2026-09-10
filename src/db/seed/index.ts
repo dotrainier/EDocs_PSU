@@ -1,8 +1,10 @@
+import { seedCourses } from './seed.courses';
 import { seedBase } from './seed.base';
 import { seedDocuments } from './seed.document';
 import { seedRequests } from './seed.requests';
 
 export async function seedDatabase() {
+  await seedCourses();
   await seedBase();
   await seedDocuments();
   await seedRequests();

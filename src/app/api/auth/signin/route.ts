@@ -37,6 +37,7 @@ export async function POST(request: Request) {
         email: users.email,
         password_hash: users.password_hash,
         status: users.status,
+        verification_status: users.verification_status,
         full_name: users.full_name,
         role_id: users.role_id,
         role_name: roles.name,
@@ -60,6 +61,25 @@ export async function POST(request: Request) {
     console.log('[signin] User status:', user.status);
     console.log('[signin] Role name:', user.role_name);
     console.log('[signin] Hash from DB:', user.password_hash);
+
+    if (user.verification_status === 'pending') {
+      console.log('[signin] Registration pending review');
+      return NextResponse.json(
+        { message: 'Your registration is still pending review. Please wait for admin approval before signing in.' },
+        { status: 403 },
+      );
+    }
+
+    if (user.verification_status === 'rejected') {
+      console.log('[signin] Registration rejected');
+      return NextResponse.json(
+        {
+          message:
+            'Your registration was not approved. Please contact the administrator for more information.',
+        },
+        { status: 403 },
+      );
+    }
 
     if (user.status !== 'active') {
       console.log('[signin] Account inactive');

@@ -18,7 +18,7 @@ export async function seedRequests() {
   const existingUsers = await db.select().from(users);
   const userMap: Record<string, string> = {};
   existingUsers.forEach((u) => {
-    userMap[u.school_id] = u.id;
+    if (u.school_id) userMap[u.school_id] = u.id;
   });
 
   const existingDocTypes = await db.select().from(document_types);

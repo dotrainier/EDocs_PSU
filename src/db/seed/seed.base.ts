@@ -59,6 +59,7 @@ export async function seedBase() {
       full_name: 'Juan Dela Cruz',
       role_id: roleMap['Student'],
       status: 'active',
+      verification_status: 'approved',
     },
     {
       school_id: '2021-00002',
@@ -67,6 +68,7 @@ export async function seedBase() {
       full_name: 'Maria Santos',
       role_id: roleMap['Student'],
       status: 'active',
+      verification_status: 'approved',
     },
     {
       school_id: 'FAC-2019-001',
@@ -75,6 +77,7 @@ export async function seedBase() {
       full_name: 'Pedro Reyes',
       role_id: roleMap['Faculty'],
       status: 'active',
+      verification_status: 'approved',
     },
     {
       school_id: 'NTS-2020-001',
@@ -83,6 +86,7 @@ export async function seedBase() {
       full_name: 'Rosa Garcia',
       role_id: roleMap['NonTeachingStaff'],
       status: 'active',
+      verification_status: 'approved',
     },
     {
       school_id: 'EMP-2018-001',
@@ -91,6 +95,7 @@ export async function seedBase() {
       full_name: 'Ana Reyes',
       role_id: roleMap['OfficeStaff'],
       status: 'active',
+      verification_status: 'approved',
     },
     {
       school_id: 'EMP-2018-002',
@@ -99,6 +104,7 @@ export async function seedBase() {
       full_name: 'Ben Torres',
       role_id: roleMap['OfficeStaff'],
       status: 'active',
+      verification_status: 'approved',
     },
     {
       school_id: 'EMP-2018-003',
@@ -107,6 +113,7 @@ export async function seedBase() {
       full_name: 'Clara Mendoza',
       role_id: roleMap['OfficeStaff'],
       status: 'active',
+      verification_status: 'approved',
     },
     {
       school_id: 'EMP-2018-004',
@@ -115,6 +122,7 @@ export async function seedBase() {
       full_name: 'Diego Lim',
       role_id: roleMap['OfficeStaff'],
       status: 'active',
+      verification_status: 'approved',
     },
     {
       school_id: 'EMP-2018-005',
@@ -123,6 +131,7 @@ export async function seedBase() {
       full_name: 'Elena Cruz',
       role_id: roleMap['OfficeStaff'],
       status: 'active',
+      verification_status: 'approved',
     },
     {
       school_id: 'EMP-2015-001',
@@ -131,6 +140,7 @@ export async function seedBase() {
       full_name: 'Francis Aquino',
       role_id: roleMap['OfficeHead'],
       status: 'active',
+      verification_status: 'approved',
     },
     {
       school_id: 'EMP-2015-002',
@@ -139,6 +149,7 @@ export async function seedBase() {
       full_name: 'Grace Villanueva',
       role_id: roleMap['OfficeHead'],
       status: 'active',
+      verification_status: 'approved',
     },
     {
       school_id: 'ADM-2024-001',
@@ -147,6 +158,7 @@ export async function seedBase() {
       full_name: 'System Administrator',
       role_id: roleMap['Admin'],
       status: 'active',
+      verification_status: 'approved',
     },
   ];
 
@@ -155,7 +167,7 @@ export async function seedBase() {
   const existingUsers = await db.select({ id: users.id, school_id: users.school_id }).from(users);
   const userMap: Record<string, string> = {};
   existingUsers.forEach((u) => {
-    userMap[u.school_id] = u.id;
+    if (u.school_id) userMap[u.school_id] = u.id;
   });
 
   // ─── 4. Office Staff Assignments ────────────────────────────────────────────
