@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { render } from 'react-email';
 import { db } from '@/db';
 import { users, roles, courses } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
+import { sendMail } from '@/lib/lib-mailer';
+import { RegistrationApprovedEmail } from '@/email-templates/RegistrationApproved';
+import { RegistrationRejectedEmail } from '@/email-templates/RegistrationRejected';
 
 async function requireAdmin(request: Request) {
   const session = await getAccessTokenPayload(request);
@@ -92,6 +96,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       .where(eq(users.id, id))
       .returning({
         id: users.id,
+        email: users.email,
+        full_name: users.full_name,
         verification_status: users.verification_status,
       });
 
@@ -99,7 +105,40 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ user: updated }, { status: 200 });
+    // Fire-and-forget: the approve/reject email must never block the response.
+    if (
+      (updated.verification_status === 'approved' || updated.verification_status === 'rejected') &&
+      updated.email
+    ) {
+      void (async () => {
+        try {
+          const isApproved = updated.verification_status === 'approved';
+          const html = await render(
+            isApproved
+              ? RegistrationApprovedEmail({
+                  userName: updated.full_name,
+                  signinUrl: `${process.env.NEXT_PUBLIC_APP_URL}/signin`,
+                })
+              : RegistrationRejectedEmail({ userName: updated.full_name }),
+          );
+
+          await sendMail({
+            to: updated.email,
+            subject: isApproved
+              ? 'Your e-Docs registration has been approved'
+              : 'An update on your e-Docs registration',
+            html,
+          });
+        } catch {
+          // email errors are non-critical — the verification decision already persisted
+        }
+      })();
+    }
+
+    return NextResponse.json(
+      { user: { id: updated.id, verification_status: updated.verification_status } },
+      { status: 200 },
+    );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'An unexpected error occurred';
     return NextResponse.json({ message }, { status: 500 });

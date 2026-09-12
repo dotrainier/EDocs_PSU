@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, GraduationCap, ArrowRight, Loader2 } from 'lucide-react';
 import { api } from '@/lib/axios';
@@ -164,6 +165,17 @@ export default function SigninPage() {
               )}
             </Button>
           </form>
+
+          {/* Register link */}
+          <p className='text-xs text-muted-foreground text-center leading-relaxed'>
+            Don&apos;t have an account?{' '}
+            <Link
+              href='/register'
+              className='text-primary hover:text-primary/80 font-medium transition-colors'
+            >
+              Create one
+            </Link>
+          </p>
 
           {/* Help Text */}
           <p className='text-xs text-muted-foreground text-center leading-relaxed'>

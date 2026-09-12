@@ -20,6 +20,7 @@ import {
   Settings2,
   Activity,
   BookOpen,
+  ClipboardCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -43,6 +44,7 @@ interface User {
 
 const OVERVIEW_ITEMS = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/verification', label: 'Pending Registrations', icon: ClipboardCheck },
 ];
 
 const CONFIG_ITEMS = [
@@ -61,6 +63,7 @@ const ALL_ITEMS = [...OVERVIEW_ITEMS, ...CONFIG_ITEMS, ...MONITOR_ITEMS];
 
 const PAGE_TITLES: Record<string, string> = {
   '/admin/dashboard': 'Dashboard',
+  '/admin/verification': 'Pending Registrations',
   '/admin/users': 'Users',
   '/admin/offices': 'Offices',
   '/admin/document-types': 'Document Types',
@@ -85,6 +88,7 @@ function NavLink({
   icon: Icon,
   active,
   indent,
+  badge,
   onClick,
 }: {
   href: string;
@@ -92,6 +96,7 @@ function NavLink({
   icon: React.ElementType;
   active: boolean;
   indent?: boolean;
+  badge?: number;
   onClick?: () => void;
 }) {
   return (
@@ -114,7 +119,19 @@ function NavLink({
         )}
       />
       <span className='flex-1 truncate'>{label}</span>
-      {active && !indent && <span className='h-1.5 w-1.5 rounded-full bg-primary-foreground/50' />}
+      {!!badge && (
+        <span
+          className={cn(
+            'flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1 text-[10px] font-semibold',
+            active ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-amber-500 text-white',
+          )}
+        >
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
+      {active && !indent && !badge && (
+        <span className='h-1.5 w-1.5 rounded-full bg-primary-foreground/50' />
+      )}
     </Link>
   );
 }
@@ -192,12 +209,14 @@ function RailItem({
   label,
   icon: Icon,
   active,
+  badge,
   onClick,
 }: {
   href: string;
   label: string;
   icon: React.ElementType;
   active: boolean;
+  badge?: number;
   onClick?: () => void;
 }) {
   return (
@@ -207,18 +226,24 @@ function RailItem({
           href={href}
           onClick={onClick}
           className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150',
+            'relative flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150',
             active
               ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
               : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           )}
         >
           <Icon className='h-4 w-4' />
+          {!!badge && (
+            <span className='absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-semibold text-white'>
+              {badge > 9 ? '9+' : badge}
+            </span>
+          )}
           <span className='sr-only'>{label}</span>
         </Link>
       </TooltipTrigger>
       <TooltipContent side='right' sideOffset={8} className='text-xs'>
         {label}
+        {!!badge && ` (${badge})`}
       </TooltipContent>
     </Tooltip>
   );
@@ -226,7 +251,15 @@ function RailItem({
 
 // ─── Expanded sidebar ─────────────────────────────────────────────────────────
 
-function ExpandedSidebar({ user, onNavClick }: { user: User; onNavClick?: () => void }) {
+function ExpandedSidebar({
+  user,
+  pendingCount,
+  onNavClick,
+}: {
+  user: User;
+  pendingCount: number;
+  onNavClick?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -291,6 +324,7 @@ function ExpandedSidebar({ user, onNavClick }: { user: User; onNavClick?: () => 
                 label={label}
                 icon={icon}
                 active={pathname === href}
+                badge={href === '/admin/verification' ? pendingCount : undefined}
                 onClick={onNavClick}
               />
             ))}
@@ -367,7 +401,7 @@ function ExpandedSidebar({ user, onNavClick }: { user: User; onNavClick?: () => 
 
 // ─── Collapsed rail ───────────────────────────────────────────────────────────
 
-function CollapsedRail({ user }: { user: User }) {
+function CollapsedRail({ user, pendingCount }: { user: User; pendingCount: number }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -406,6 +440,7 @@ function CollapsedRail({ user }: { user: User }) {
             label={label}
             icon={icon}
             active={pathname === href || pathname.startsWith(href + '/')}
+            badge={href === '/admin/verification' ? pendingCount : undefined}
           />
         ))}
 
@@ -444,7 +479,7 @@ function CollapsedRail({ user }: { user: User }) {
 
 // ─── Mobile nav ───────────────────────────────────────────────────────────────
 
-function MobileNav({ user }: { user: User }) {
+function MobileNav({ user, pendingCount }: { user: User; pendingCount: number }) {
   const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -455,7 +490,7 @@ function MobileNav({ user }: { user: User }) {
         </Button>
       </SheetTrigger>
       <SheetContent side='left' className='w-64 p-0'>
-        <ExpandedSidebar user={user} onNavClick={() => setOpen(false)} />
+        <ExpandedSidebar user={user} pendingCount={pendingCount} onNavClick={() => setOpen(false)} />
       </SheetContent>
     </Sheet>
   );
@@ -475,6 +510,7 @@ export default function AdminLayoutClient({
 
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     const saved = localStorage.getItem('edocs_admin_sidebar');
@@ -483,6 +519,19 @@ export default function AdminLayoutClient({
       if (saved === 'collapsed') setCollapsed(true);
     });
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get<{ users: unknown[] }>('/admin/users?verification_status=pending')
+      .then((res) => {
+        if (active) setPendingCount(res.users.length);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {
@@ -504,7 +553,11 @@ export default function AdminLayoutClient({
           isCollapsed ? 'w-17' : 'w-64',
         )}
       >
-        {isCollapsed ? <CollapsedRail user={user} /> : <ExpandedSidebar user={user} />}
+        {isCollapsed ? (
+          <CollapsedRail user={user} pendingCount={pendingCount} />
+        ) : (
+          <ExpandedSidebar user={user} pendingCount={pendingCount} />
+        )}
 
         {/* Toggle button */}
         <button
@@ -527,7 +580,7 @@ export default function AdminLayoutClient({
       {/* Main content */}
       <div className='flex flex-1 flex-col overflow-hidden'>
         <header className='sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-sm lg:px-5'>
-          <MobileNav user={user} />
+          <MobileNav user={user} pendingCount={pendingCount} />
 
           <div className='flex items-center gap-2 lg:hidden'>
             <div className='flex h-7 w-7 items-center justify-center rounded-lg bg-primary'>
