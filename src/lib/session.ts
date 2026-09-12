@@ -10,7 +10,7 @@ export type SessionUser = {
   id: string;
   fullName: string;
   firstName: string;
-  schoolId: string;
+  schoolId: string | null;
   role: string;
   officeId: string | null;
   initials: string;

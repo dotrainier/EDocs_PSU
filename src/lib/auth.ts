@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { nanoid } from 'nanoid';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import type { UserRole } from '@/types/user.type';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -13,14 +14,6 @@ const AUTH_CONFIG = {
   accessCookieName: 'edocs_access',
   refreshCookieName: 'edocs_refresh',
 } as const;
-
-export type UserRole =
-  | 'Student'
-  | 'Faculty'
-  | 'NonTeachingStaff'
-  | 'OfficeStaff'
-  | 'OfficeHead'
-  | 'Admin';
 
 export type AccessTokenPayload = {
   userId: string;

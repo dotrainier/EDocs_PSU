@@ -30,14 +30,8 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  cn,
-  formatDateOptional,
-  formatSLAStatus,
-  type ApiSLAStatus,
-  type PaymentStatus,
-  type SLAStatus,
-} from '@/lib/utils';
+import { cn, formatDateOptional, formatSLAStatus } from '@/lib/utils';
+import type { ApiSLAStatus, PaymentStatus, SLAStatus } from '@/types/document.type';
 import { useFetch } from '@/hooks/useFetch';
 
 interface QueueApiTask {

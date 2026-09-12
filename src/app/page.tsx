@@ -23,7 +23,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { verifyAccessToken, type UserRole } from '@/lib/auth';
+import { verifyAccessToken } from '@/lib/auth';
+import type { UserRole } from '@/types/user.type';
 
 const offices = [
   {

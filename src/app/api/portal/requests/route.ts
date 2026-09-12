@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
     }
 
-    const frontUserRoles = ['Student', 'Faculty', 'NonTeachingStaff'];
+    const frontUserRoles = ['Student'];
     if (!frontUserRoles.includes(session.role)) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }

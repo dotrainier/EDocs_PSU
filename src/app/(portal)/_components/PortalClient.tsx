@@ -46,7 +46,7 @@ import { useNotifications, type Notification } from '@/hooks/useNotifications';
 interface User {
   id: string;
   fullName: string;
-  schoolId: string;
+  schoolId: string | null;
   role: string;
   initials: string;
 }

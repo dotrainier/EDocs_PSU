@@ -1,8 +1,8 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { RequestStatus, ClearanceStatus, ApiSLAStatus, SLAStatus } from '@/types/document.type';
+import type { UserRole } from '@/types/user.type';
 
-type UserRole = 'Student' | 'Faculty' | 'NonTeachingStaff' | 'OfficeStaff' | 'OfficeHead' | 'Admin';
 const OFFICE_ROLES: UserRole[] = ['OfficeStaff', 'OfficeHead'];
 
 export function cn(...inputs: ClassValue[]) {

@@ -4,8 +4,6 @@ import bcrypt from 'bcryptjs';
 
 const roleData = [
   { name: 'Student' },
-  { name: 'Faculty' },
-  { name: 'NonTeachingStaff' },
   { name: 'OfficeStaff' },
   { name: 'OfficeHead' },
   { name: 'Admin' },
@@ -19,7 +17,6 @@ const officeData = [
   { name: 'MIS / IT Office', code: 'MIS' },
   { name: "Dean's / College Office", code: 'DCO' },
   { name: 'Guidance / OSAS', code: 'OSAS' },
-  { name: 'HRMO', code: 'HRMO' },
 ];
 
 export async function seedBase() {
@@ -67,24 +64,6 @@ export async function seedBase() {
       password_hash: defaultPassword,
       full_name: 'Maria Santos',
       role_id: roleMap['Student'],
-      status: 'active',
-      verification_status: 'approved',
-    },
-    {
-      school_id: 'FAC-2019-001',
-      email: 'pedro.reyes@psu.edu.ph',
-      password_hash: defaultPassword,
-      full_name: 'Pedro Reyes',
-      role_id: roleMap['Faculty'],
-      status: 'active',
-      verification_status: 'approved',
-    },
-    {
-      school_id: 'NTS-2020-001',
-      email: 'rosa.garcia@psu.edu.ph',
-      password_hash: defaultPassword,
-      full_name: 'Rosa Garcia',
-      role_id: roleMap['NonTeachingStaff'],
       status: 'active',
       verification_status: 'approved',
     },
@@ -180,7 +159,6 @@ export async function seedBase() {
     { user_id: userMap['EMP-2018-004'], office_id: officeMap['PSO'], is_office_head: false },
     { user_id: userMap['EMP-2018-005'], office_id: officeMap['MIS'], is_office_head: false },
     { user_id: userMap['EMP-2015-001'], office_id: officeMap['OUR'], is_office_head: true },
-    { user_id: userMap['EMP-2015-002'], office_id: officeMap['HRMO'], is_office_head: true },
   ];
 
   await db.insert(office_staff).values(officeStaffData).onConflictDoNothing();

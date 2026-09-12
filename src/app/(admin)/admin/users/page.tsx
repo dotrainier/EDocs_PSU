@@ -60,22 +60,12 @@ type UserRow = {
 
 const ROLE_COLORS: Record<string, string> = {
   Student: 'bg-blue-100 text-blue-700',
-  Faculty: 'bg-violet-100 text-violet-700',
-  NonTeachingStaff: 'bg-indigo-100 text-indigo-700',
   OfficeStaff: 'bg-amber-100 text-amber-700',
   OfficeHead: 'bg-orange-100 text-orange-700',
   Admin: 'bg-red-100 text-red-700',
 };
 
-const ROLES = [
-  'All Roles',
-  'Student',
-  'Faculty',
-  'NonTeachingStaff',
-  'OfficeStaff',
-  'OfficeHead',
-  'Admin',
-];
+const ROLES = ['All Roles', 'Student', 'OfficeStaff', 'OfficeHead', 'Admin'];
 const STATUSES = ['All', 'active', 'inactive'];
 const VERIFICATIONS = ['All', 'pending', 'approved', 'rejected'];
 

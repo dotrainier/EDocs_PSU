@@ -3,14 +3,14 @@ import {
   getAccessTokenFromRequest,
   getRefreshTokenFromRequest,
   verifyAccessToken,
-  type UserRole,
 } from '@/lib/auth';
 import { getDashboardByRole } from '@/lib/utils';
+import type { UserRole } from '@/types/user.type';
 
 const PUBLIC_PATHS = ['/', '/verify'];
 const AUTH_PATHS = ['/signin', '/register'];
 
-const FRONT_USER_ROLES: UserRole[] = ['Student', 'Faculty', 'NonTeachingStaff'];
+const FRONT_USER_ROLES: UserRole[] = ['Student'];
 const OFFICE_ROLES: UserRole[] = ['OfficeStaff', 'OfficeHead'];
 
 export async function proxy(request: NextRequest) {

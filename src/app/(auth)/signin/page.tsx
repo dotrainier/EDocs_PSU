@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { getDashboardByRole } from '@/lib/utils';
+import type { UserRole } from '@/types/user.type';
 
 type SigninResponse = {
   message: string;
@@ -20,8 +21,6 @@ type SigninResponse = {
     role: string;
   } | null;
 };
-
-type UserRole = 'Student' | 'Faculty' | 'NonTeachingStaff' | 'OfficeStaff' | 'OfficeHead' | 'Admin';
 
 export default function SigninPage() {
   const [username, setUsername] = useState('');

@@ -19,7 +19,7 @@ export async function seedDocuments() {
     officeMap[o.code] = o.id;
   });
 
-  const required = ['OUR', 'UCF', 'LIB', 'PSO', 'MIS', 'DCO', 'OSAS', 'HRMO'];
+  const required = ['OUR', 'UCF', 'LIB', 'PSO', 'MIS', 'DCO', 'OSAS'];
   for (const code of required) {
     if (!officeMap[code]) {
       throw new Error(`Office "${code}" not found. Run seedBase() first.`);

@@ -9,8 +9,8 @@ import {
   getRefreshToken,
   clearAuthCookies,
   setAuthCookies,
-  type UserRole,
 } from '@/lib/auth';
+import type { UserRole } from '@/types/user.type';
 
 export async function GET(request: Request) {
   try {

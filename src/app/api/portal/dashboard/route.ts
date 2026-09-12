@@ -13,8 +13,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
     }
 
-    // 2. Must be front user (Student, Faculty, NonTeachingStaff)
-    if (!['Student', 'Faculty', 'NonTeachingStaff'].includes(session.role)) {
+    // 2. Must be front user (Student)
+    if (!['Student'].includes(session.role)) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 

@@ -28,7 +28,7 @@ import { NotificationBell } from '@/components/shared/NotificationBell';
 
 interface User {
   fullName: string;
-  schoolId: string;
+  schoolId: string | null;
   role: string;
   initials: string;
   officeCode: string;

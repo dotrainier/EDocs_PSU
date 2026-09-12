@@ -40,7 +40,7 @@ interface DashboardClientProps {
   user: {
     firstName: string;
     role: string;
-    idNumber: string;
+    idNumber: string | null;
   };
 }
 

@@ -9,8 +9,8 @@ import {
   generateRefreshToken,
   getRefreshTokenExpiry,
   setAuthCookies,
-  type UserRole,
 } from '@/lib/auth';
+import type { UserRole } from '@/types/user.type';
 
 const signinSchema = z.object({
   username: z.string().min(1, 'Username is required').trim(),
