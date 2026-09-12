@@ -6,7 +6,6 @@ import {
   Search,
   FileText,
   GraduationCap,
-  Briefcase,
   ClipboardList,
   ListChecks,
   Building2,
@@ -62,11 +61,6 @@ const offices = [
     name: 'Guidance / OSAS',
     tagline: 'Certificate of Good Conduct & Good Moral',
   },
-  {
-    code: 'HRMO',
-    name: 'Human Resource Management Office',
-    tagline: 'Service Record & Certificate of Employment',
-  },
 ];
 
 const studentDocs = [
@@ -80,8 +74,6 @@ const studentDocs = [
   'Transfer Credential',
   'General Clearance',
 ];
-
-const facultyDocs = ['Service Record', 'Certificate of Employment', 'HR-issued Documents'];
 
 const steps = [
   {
@@ -370,11 +362,11 @@ export default async function LandingPage() {
               Who can use e-Docs
             </div>
             <h2 className='font-heading text-3xl font-semibold tracking-tight sm:text-4xl'>
-              Built for students, faculty, staff, and verifiers.
+              Built for students and verifiers.
             </h2>
           </div>
 
-          <div className='grid gap-6 lg:grid-cols-3'>
+          <div className='grid gap-6 lg:grid-cols-2'>
             <Card className='group relative overflow-hidden border-border/60 transition-all hover:border-primary/30 hover:shadow-lg'>
               <div className='absolute right-0 top-0 h-32 w-32 -translate-y-12 translate-x-12 rounded-full bg-primary/5 transition-transform group-hover:scale-110' />
               <CardHeader className='relative'>
@@ -390,35 +382,6 @@ export default async function LandingPage() {
               <CardContent className='relative'>
                 <div className='flex flex-wrap gap-1.5'>
                   {studentDocs.map((d) => (
-                    <Badge
-                      key={d}
-                      variant='secondary'
-                      className='bg-muted font-normal text-foreground hover:bg-muted'
-                    >
-                      {d}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className='group relative overflow-hidden border-border/60 transition-all hover:border-primary/30 hover:shadow-lg'>
-              <div className='absolute right-0 top-0 h-32 w-32 -translate-y-12 translate-x-12 rounded-full bg-accent/10 transition-transform group-hover:scale-110' />
-              <CardHeader className='relative'>
-                <div className='mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-secondary text-secondary-foreground'>
-                  <Briefcase className='h-5 w-5' />
-                </div>
-                <CardTitle className='font-heading text-xl'>
-                  For Faculty & Non-Teaching Staff
-                </CardTitle>
-                <CardDescription className='text-sm'>
-                  Pull HR records and employment certifications directly from HRMO without
-                  paperwork. Includes all teaching and non-teaching staff.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className='relative'>
-                <div className='flex flex-wrap gap-1.5'>
-                  {facultyDocs.map((d) => (
                     <Badge
                       key={d}
                       variant='secondary'
@@ -465,7 +428,7 @@ export default async function LandingPage() {
                 Offices involved
               </div>
               <h2 className='font-heading text-3xl font-semibold tracking-tight sm:text-4xl'>
-                Eight offices. One coordinated workflow.
+                Seven offices. One coordinated workflow.
               </h2>
               <p className='mt-3 text-muted-foreground'>
                 e-Docs orchestrates clearance and issuance across every office that touches your

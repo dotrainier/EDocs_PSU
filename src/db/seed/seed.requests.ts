@@ -203,7 +203,6 @@ export async function seedRequests() {
     LIB: userMap['EMP-2018-003'], // Clara Mendoza — Library Staff
     PSO: userMap['EMP-2018-004'], // Diego Lim — Property Staff
     MIS: userMap['EMP-2018-005'], // Elena Cruz — MIS Staff
-    HRMO: userMap['EMP-2015-002'], // Grace Villanueva — HRMO Head
     DCO: systemActorId,
     OSAS: systemActorId,
   };

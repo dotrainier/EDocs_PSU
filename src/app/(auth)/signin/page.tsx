@@ -258,7 +258,6 @@ export default function SigninPage() {
             {[
               { value: '50+', label: 'Programs' },
               { value: '25K+', label: 'Students' },
-              { value: '100+', label: 'Faculty' },
             ].map((stat, i) => (
               <div key={i} className='space-y-0.5'>
                 <div className='text-3xl font-bold tabular-nums'>{stat.value}</div>

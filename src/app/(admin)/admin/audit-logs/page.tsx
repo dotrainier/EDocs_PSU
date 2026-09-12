@@ -33,7 +33,7 @@ const LOGS = [
   { id: '6', action: 'DOCUMENT_RELEASED', user: 'Liza Aquino', role: 'OfficeStaff', detail: 'Released Service Record for Ana Gomez (EDC-2025-00408)', ip: '192.168.1.25', timestamp: 'May 7, 2025 14:10:05', category: 'clearance' },
   { id: '7', action: 'USER_CREATED', user: 'Admin User', role: 'Admin', detail: 'Created new user account carlo.reyes@psu.edu.ph', ip: '192.168.1.1', timestamp: 'May 7, 2025 11:20:33', category: 'admin' },
   { id: '8', action: 'SLA_BREACHED', user: 'System', role: 'System', detail: 'SLA deadline breached for EDC-2025-00388', ip: 'internal', timestamp: 'May 7, 2025 00:00:01', category: 'system' },
-  { id: '9', action: 'USER_LOGIN', user: 'Dr. Ana Reyes', role: 'Faculty', detail: 'Successful login from ana.reyes@psu.edu.ph', ip: '192.168.1.55', timestamp: 'May 6, 2025 08:15:22', category: 'auth' },
+  { id: '9', action: 'USER_LOGIN', user: 'Ana Reyes', role: 'OfficeStaff', detail: 'Successful login from ana.reyes@psu.edu.ph', ip: '192.168.1.55', timestamp: 'May 6, 2025 08:15:22', category: 'auth' },
   { id: '10', action: 'CLEARANCE_REJECTED', user: 'Carlos Mendoza', role: 'OfficeStaff', detail: 'Accounting rejected clearance for EDC-2025-00415 — unpaid balance', ip: '192.168.1.30', timestamp: 'May 6, 2025 13:44:10', category: 'clearance' },
   { id: '11', action: 'REQUEST_SUBMITTED', user: 'Roy Bautista', role: 'Student', detail: 'Submitted COE request EDC-2025-00377', ip: '192.168.1.88', timestamp: 'Apr 25, 2025 10:05:00', category: 'request' },
   { id: '12', action: 'PASSWORD_RESET', user: 'Admin User', role: 'Admin', detail: 'Password reset for patricia.gomez@psu.edu.ph', ip: '192.168.1.1', timestamp: 'Apr 20, 2025 09:00:00', category: 'admin' },

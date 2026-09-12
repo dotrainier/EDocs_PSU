@@ -101,7 +101,6 @@ const FAQ_SECTIONS: FaqSection[] = [
 
 const CONTACT_ITEMS = [
   { label: 'Office of the University Registrar', detail: 'OUR — Main Building, Room 101' },
-  { label: 'Human Resource Management Office', detail: 'HRMO — Admin Building, Room 205' },
   { label: 'MIS / IT Office', detail: 'MIS — ICT Building, Room 302' },
 ];
 
