@@ -33,6 +33,9 @@ import {
 import { api } from '@/lib/axios';
 import { useFetch } from '@/hooks/useFetch';
 import { ApiSLAStatus, ClearanceStatus, PaymentStatus, SLAStatus } from '@/types/document.type';
+import AcademicSummaryPanel, {
+  AcademicSummary,
+} from './_components/AcademicSummaryPanel';
 
 interface ClearanceTask {
   task_id: string;
@@ -56,10 +59,13 @@ interface RequestDetailApiResponse {
   request: {
     tracking_number: string;
     document_type: string;
+    document_type_code: string;
     handling_pattern: string;
     issuing_office: string;
     purpose: string;
     copies: number;
+    school_year: string | null;
+    semester: string | null;
     additional_notes: string | null;
     status: string;
     fee_amount: number | null;
@@ -74,6 +80,7 @@ interface RequestDetailApiResponse {
     clearance_tasks: ClearanceTask[];
     my_task: ClearanceTask | null;
     timeline: TimelineEvent[];
+    academic_summary: AcademicSummary | null;
   };
 }
 
@@ -460,6 +467,16 @@ export default function OfficeRequestDetailPage() {
               </CardContent>
             </Card>
           ) : null}
+
+          {/* Academic-records reference panel — Registrar staff only */}
+          {req.academic_summary && (
+            <AcademicSummaryPanel
+              documentTypeCode={req.document_type_code}
+              summary={req.academic_summary}
+              requestedSchoolYear={req.school_year}
+              requestedSemester={req.semester}
+            />
+          )}
         </div>
 
         {/* Right column */}

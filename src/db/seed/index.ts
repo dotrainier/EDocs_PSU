@@ -2,12 +2,14 @@ import { seedCourses } from './seed.courses';
 import { seedBase } from './seed.base';
 import { seedDocuments } from './seed.document';
 import { seedRequests } from './seed.requests';
+import { seedAcademicRecords } from './seed.academic-records';
 
 export async function seedDatabase() {
   await seedCourses();
   await seedBase();
   await seedDocuments();
   await seedRequests();
+  await seedAcademicRecords();
 }
 
 seedDatabase()

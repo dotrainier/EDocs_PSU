@@ -12,6 +12,7 @@ import {
 } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
 import { getSlaStatus } from '@/lib/server_utils';
+import { getStudentAcademicSummary } from '@/lib/academic-records';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -47,10 +48,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         sla_due_at: document_requests.sla_due_at,
         created_at: document_requests.created_at,
         document_type: document_types.name,
+        document_type_code: document_types.code,
         handling_pattern: document_types.handling_pattern,
         document_type_id: document_requests.document_type_id,
         issuing_office: offices.name,
+        // Period fields — only populated for COG requests
+        school_year: document_requests.school_year,
+        semester: document_requests.semester,
         // Requestor info
+        requestor_id: users.id,
         requestor_name: users.full_name,
         requestor_school_id: users.school_id,
         requestor_email: users.email,
@@ -179,15 +185,26 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const timeline = auditTimeline.length ? auditTimeline : fallbackTimeline;
 
+    // 7. Academic-records reference panel — Registrar staff only. Sourced
+    // entirely through getStudentAcademicSummary(), the sole entry point into
+    // the isolated (placeholder) academic-records data source.
+    const isRegistrarReviewer = myTask.office_name.toLowerCase().includes('registrar');
+    const academicSummary = isRegistrarReviewer
+      ? await getStudentAcademicSummary(req.requestor_id)
+      : null;
+
     return NextResponse.json(
       {
         request: {
           tracking_number: req.tracking_number,
           document_type: req.document_type,
+          document_type_code: req.document_type_code,
           handling_pattern: req.handling_pattern,
           issuing_office: req.issuing_office,
           purpose: req.purpose,
           copies: req.copies,
+          school_year: req.school_year,
+          semester: req.semester,
           additional_notes: req.additional_notes,
           status: req.status,
           fee_amount: req.fee_amount,
@@ -202,6 +219,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           clearance_tasks: tasks,
           my_task: myTask ?? null, // ← this office's task specifically
           timeline,
+          academic_summary: academicSummary,
         },
       },
       { status: 200 },

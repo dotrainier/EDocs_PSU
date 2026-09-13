@@ -67,6 +67,11 @@ export async function seedRequests() {
       document_type_id: docMap['COG'],
       purpose: 'Board Examination',
       copies: 1,
+      // Matches one of Juan's actual enrolled terms (see seed.academic-records.ts)
+      // — demonstrates the COG academic-records panel confirming the requested
+      // term is on file.
+      school_year: '2024-2025',
+      semester: '2nd Semester',
       // All tasks will be seeded as Pending below.
       status: 'Pending',
       fee_amount: '50.00',
@@ -85,7 +90,7 @@ export async function seedRequests() {
       payment_status: 'Paid',
       sla_due_at: daysFromNow(-6), // completed — for historical data
     },
-    // Maria — Student
+    // Maria — Student (graduated) — requesting a TOR for employment
     {
       tracking_number: 'EDOC-2026-000005',
       user_id: userMap['2021307002'],
@@ -96,6 +101,44 @@ export async function seedRequests() {
       fee_amount: '50.00',
       payment_status: 'Unpaid',
       sla_due_at: daysFromNow(3), // within SLA — comfortable
+    },
+    {
+      tracking_number: 'EDOC-2026-000007',
+      user_id: userMap['2021307002'],
+      document_type_id: docMap['TOR'],
+      purpose: 'Employment',
+      copies: 2,
+      status: 'Pending',
+      fee_amount: '150.00',
+      payment_status: 'Paid',
+      sla_due_at: daysFromNow(4), // within SLA
+    },
+    // Carlo — Student (transferred out) — requesting a TOR to transfer credits
+    {
+      tracking_number: 'EDOC-2026-000006',
+      user_id: userMap['2020307003'],
+      document_type_id: docMap['TOR'],
+      purpose: 'Transfer to another university',
+      copies: 2,
+      status: 'Pending',
+      fee_amount: '150.00',
+      payment_status: 'Paid',
+      sla_due_at: daysFromNow(2), // within SLA
+    },
+    // Carlo — requesting a COG for the last term he actually completed, for
+    // credential evaluation at his new school.
+    {
+      tracking_number: 'EDOC-2026-000008',
+      user_id: userMap['2020307003'],
+      document_type_id: docMap['COG'],
+      purpose: 'Credential Evaluation',
+      copies: 1,
+      school_year: '2023-2024',
+      semester: '1st Semester',
+      status: 'Pending',
+      fee_amount: '50.00',
+      payment_status: 'Paid',
+      sla_due_at: daysFromNow(5), // within SLA
     },
   ];
 
@@ -167,6 +210,22 @@ export async function seedRequests() {
   // ── COR (EDOC-2026-000004) — Released ────────────────────────────────────
   // COR has no clearance_requirements rows, so no clearance tasks are seeded.
 
+  // ── TOR (EDOC-2026-000006) — Carlo — Pending ─────────────────────────────
+  // Reusing TOR's parallel requirements; all tasks pending.
+  const torTasksCarlo = torReqs
+    .filter((r) => r.sequence_order === null)
+    .map((r) => ({
+      request_id: reqMap['EDOC-2026-000006'],
+      office_id: r.office_id,
+      status: 'Pending',
+      sequence_order: null,
+    }));
+
+  if (torTasksCarlo.length > 0) {
+    await db.insert(clearance_tasks).values(torTasksCarlo).onConflictDoNothing();
+    totalTasks += torTasksCarlo.length;
+  }
+
   // ── COE Maria (EDOC-2026-000005) — Pending ───────────────────────────────
   // Reusing COE requirements; all tasks pending.
   const coe2Tasks = coeReqs.map((r) => ({
@@ -179,6 +238,36 @@ export async function seedRequests() {
   if (coe2Tasks.length > 0) {
     await db.insert(clearance_tasks).values(coe2Tasks).onConflictDoNothing();
     totalTasks += coe2Tasks.length;
+  }
+
+  // ── TOR (EDOC-2026-000007) — Maria — Pending ─────────────────────────────
+  // Reusing TOR's parallel requirements; all tasks pending.
+  const torTasksMaria = torReqs
+    .filter((r) => r.sequence_order === null)
+    .map((r) => ({
+      request_id: reqMap['EDOC-2026-000007'],
+      office_id: r.office_id,
+      status: 'Pending',
+      sequence_order: null,
+    }));
+
+  if (torTasksMaria.length > 0) {
+    await db.insert(clearance_tasks).values(torTasksMaria).onConflictDoNothing();
+    totalTasks += torTasksMaria.length;
+  }
+
+  // ── COG (EDOC-2026-000008) — Carlo — Pending ─────────────────────────────
+  // Reusing COG requirements; all tasks pending.
+  const cogTasksCarlo = cogReqs.map((r) => ({
+    request_id: reqMap['EDOC-2026-000008'],
+    office_id: r.office_id,
+    status: 'Pending',
+    sequence_order: r.sequence_order,
+  }));
+
+  if (cogTasksCarlo.length > 0) {
+    await db.insert(clearance_tasks).values(cogTasksCarlo).onConflictDoNothing();
+    totalTasks += cogTasksCarlo.length;
   }
 
   // ─── 4. Summary ──────────────────────────────────────────────────────────────
