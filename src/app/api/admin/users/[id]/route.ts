@@ -46,6 +46,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         course_major: courses.major,
         course_other_note: users.course_other_note,
         verification_status: users.verification_status,
+        rejection_reason: users.rejection_reason,
         created_at: users.created_at,
       })
       .from(users)
@@ -65,9 +66,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-const updateSchema = z.object({
-  verification_status: z.enum(['pending', 'approved', 'rejected']).optional(),
-});
+const updateSchema = z
+  .object({
+    verification_status: z.enum(['pending', 'approved', 'rejected']).optional(),
+    rejection_reason: z.string().trim().min(1).max(1000).optional(),
+  })
+  .refine((data) => data.verification_status !== 'rejected' || !!data.rejection_reason, {
+    message: 'A rejection reason is required',
+    path: ['rejection_reason'],
+  });
 
 // ── PATCH /api/admin/users/[id] — approve / reject a registration ──────────────
 
@@ -90,9 +97,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ message: 'No changes provided' }, { status: 400 });
     }
 
+    const updateData = {
+      ...parsed.data,
+      // Clear out any prior rejection reason once a registration is approved
+      ...(parsed.data.verification_status === 'approved' ? { rejection_reason: null } : {}),
+    };
+
     const [updated] = await db
       .update(users)
-      .set(parsed.data)
+      .set(updateData)
       .where(eq(users.id, id))
       .returning({
         id: users.id,
@@ -102,6 +115,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         last_name: users.last_name,
         name_suffix: users.name_suffix,
         verification_status: users.verification_status,
+        rejection_reason: users.rejection_reason,
       });
 
     if (!updated) {
@@ -123,7 +137,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                   userName,
                   signinUrl: `${process.env.NEXT_PUBLIC_APP_URL}/signin`,
                 })
-              : RegistrationRejectedEmail({ userName }),
+              : RegistrationRejectedEmail({ userName, reason: updated.rejection_reason }),
           );
 
           await sendMail({

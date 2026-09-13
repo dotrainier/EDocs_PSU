@@ -4,9 +4,10 @@ import * as React from 'react';
 
 interface RegistrationRejectedEmailProps {
   userName: string;
+  reason?: string | null;
 }
 
-export const RegistrationRejectedEmail = ({ userName }: RegistrationRejectedEmailProps) => (
+export const RegistrationRejectedEmail = ({ userName, reason }: RegistrationRejectedEmailProps) => (
   <Html>
     <Head />
     <Preview>An update on your e-Docs registration</Preview>
@@ -31,9 +32,8 @@ export const RegistrationRejectedEmail = ({ userName }: RegistrationRejectedEmai
           <Section style={statusCard}>
             <Text style={statusTitle}>Registration Not Approved</Text>
             <Text style={statusText}>
-              This is usually due to details that could not be verified against university
-              records (e.g. Student ID, name, or program). Please contact the registrar or MIS
-              office to clarify or correct your information.
+              {reason ||
+                'This is usually due to details that could not be verified against university records (e.g. Student ID, name, or program). Please contact the registrar or MIS office to clarify or correct your information.'}
             </Text>
           </Section>
 

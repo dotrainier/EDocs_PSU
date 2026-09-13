@@ -38,6 +38,8 @@ export const users = pgTable(
     verification_status: varchar('verification_status', { length: 20 })
       .notNull()
       .default('pending'),
+    // Reason an admin gave when rejecting the registration; shown to the applicant by email
+    rejection_reason: text('rejection_reason'),
     created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [

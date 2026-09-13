@@ -15,6 +15,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { cn, formatDateTime } from '@/lib/utils';
 import { api } from '@/lib/axios';
+import { RejectReasonDialog } from './RejectReasonDialog';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,6 +39,7 @@ export type UserDetail = {
   course_major: string | null;
   course_other_note: string | null;
   verification_status: string;
+  rejection_reason: string | null;
   created_at: string;
 };
 
@@ -70,6 +72,7 @@ export function UserDetailSheet({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!open || !userId) return;
@@ -101,13 +104,17 @@ export function UserDetailSheet({
     };
   }, [open, userId]);
 
-  async function handleDecision(newStatus: VerificationStatus) {
+  async function handleDecision(newStatus: VerificationStatus, reason?: string) {
     if (!detailUser) return;
     setActionLoading(true);
     try {
-      await api.patch(`/admin/users/${detailUser.id}`, { verification_status: newStatus });
+      await api.patch(`/admin/users/${detailUser.id}`, {
+        verification_status: newStatus,
+        ...(reason ? { rejection_reason: reason } : {}),
+      });
       setDetailUser((prev) => (prev ? { ...prev, verification_status: newStatus } : prev));
       onStatusChange?.(detailUser.id, newStatus);
+      if (newStatus === 'rejected') setRejectDialogOpen(false);
     } catch (err: unknown) {
       const message =
         err && typeof err === 'object' && 'message' in err
@@ -189,6 +196,19 @@ export function UserDetailSheet({
                   className='capitalize'
                 />
                 <DetailRow label='Registered' value={formatDateTime(detailUser.created_at)} />
+                {detailUser.verification_status === 'rejected' && detailUser.rejection_reason && (
+                  <>
+                    <Separator />
+                    <div className='space-y-1'>
+                      <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                        Rejection Reason
+                      </span>
+                      <p className='text-sm font-medium text-foreground'>
+                        {detailUser.rejection_reason}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             )
           )}
@@ -200,7 +220,7 @@ export function UserDetailSheet({
               variant='outline'
               className='border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive'
               disabled={actionLoading}
-              onClick={() => handleDecision('rejected')}
+              onClick={() => setRejectDialogOpen(true)}
             >
               <X className='mr-1.5 h-4 w-4' />
               Reject
@@ -216,6 +236,14 @@ export function UserDetailSheet({
           </SheetFooter>
         )}
       </SheetContent>
+
+      <RejectReasonDialog
+        open={rejectDialogOpen}
+        onOpenChange={setRejectDialogOpen}
+        userName={detailUser?.full_name}
+        submitting={actionLoading}
+        onConfirm={(reason) => handleDecision('rejected', reason)}
+      />
     </Sheet>
   );
 }

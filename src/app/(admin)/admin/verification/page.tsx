@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/axios';
 import { UserDetailSheet, type VerificationStatus } from '../_components/UserDetailSheet';
+import { RejectReasonDialog } from '../_components/RejectReasonDialog';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,6 +48,8 @@ export default function AdminVerificationPage() {
 
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
+
+  const [rejectTarget, setRejectTarget] = useState<PendingUser | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -91,12 +94,16 @@ export default function AdminVerificationPage() {
     setDetailOpen(true);
   }
 
-  async function decide(userId: string, newStatus: VerificationStatus) {
+  async function decide(userId: string, newStatus: VerificationStatus, reason?: string) {
     setActionError('');
     setActionLoadingId(userId);
     try {
-      await api.patch(`/admin/users/${userId}`, { verification_status: newStatus });
+      await api.patch(`/admin/users/${userId}`, {
+        verification_status: newStatus,
+        ...(reason ? { rejection_reason: reason } : {}),
+      });
       removeFromQueue(userId);
+      if (newStatus === 'rejected') setRejectTarget(null);
     } catch (err: unknown) {
       const message =
         err && typeof err === 'object' && 'message' in err
@@ -238,7 +245,7 @@ export default function AdminVerificationPage() {
                       variant='outline'
                       size='sm'
                       disabled={busy}
-                      onClick={() => decide(user.id, 'rejected')}
+                      onClick={() => setRejectTarget(user)}
                       className='gap-1.5 border-destructive/30 font-sans text-destructive hover:bg-destructive/10 hover:text-destructive'
                     >
                       <X className='h-3.5 w-3.5' />
@@ -270,6 +277,16 @@ export default function AdminVerificationPage() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
         onStatusChange={(userId) => removeFromQueue(userId)}
+      />
+
+      <RejectReasonDialog
+        open={!!rejectTarget}
+        onOpenChange={(open) => {
+          if (!open) setRejectTarget(null);
+        }}
+        userName={rejectTarget?.full_name}
+        submitting={actionLoadingId === rejectTarget?.id}
+        onConfirm={(reason) => rejectTarget && decide(rejectTarget.id, 'rejected', reason)}
       />
     </div>
   );
