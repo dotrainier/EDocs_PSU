@@ -41,6 +41,7 @@ export async function seedDocuments() {
       sla_working_days: 7,
       requires_clearance: true,
       period_type: null,
+      eligible_student_types: null,
       is_active: true,
     },
     {
@@ -54,6 +55,7 @@ export async function seedDocuments() {
       sla_working_days: 3,
       requires_clearance: true,
       period_type: null,
+      eligible_student_types: 'active_only',
       is_active: true,
     },
     {
@@ -66,6 +68,7 @@ export async function seedDocuments() {
       sla_working_days: 3,
       requires_clearance: true,
       period_type: 'semester_past_only',
+      eligible_student_types: null,
       is_active: true,
     },
     {
@@ -79,6 +82,7 @@ export async function seedDocuments() {
       sla_working_days: 1,
       requires_clearance: false,
       period_type: null,
+      eligible_student_types: 'active_only',
       is_active: true,
     },
   ];
@@ -115,6 +119,7 @@ export async function seedDocuments() {
       sla_working_days: sql`excluded.sla_working_days`,
       requires_clearance: sql`excluded.requires_clearance`,
       period_type: sql`excluded.period_type`,
+      eligible_student_types: sql`excluded.eligible_student_types`,
       is_active: sql`excluded.is_active`,
     },
   });

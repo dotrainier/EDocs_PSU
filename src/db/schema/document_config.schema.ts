@@ -28,6 +28,10 @@ export const document_types = pgTable(
     // 'semester_past_only' → school_year + semester required, restricted to past terms (COG)
     // null                 → no period fields, uses the current period (COR, COE, TOR)
     period_type: varchar('period_type', { length: 30 }),
+    // Restricts who may request this document type:
+    // 'active_only' → only users with users.student_type = 'active' (COE, COR — they certify current enrollment)
+    // null          → available to both active students and alumni (TOR, COG)
+    eligible_student_types: varchar('eligible_student_types', { length: 20 }),
     is_active: boolean('is_active').notNull().default(true),
   },
   (table) => [

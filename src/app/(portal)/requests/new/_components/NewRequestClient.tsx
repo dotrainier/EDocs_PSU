@@ -40,6 +40,7 @@ export interface DocumentType {
   requires_clearance: boolean;
   handling_pattern: string;
   period_type: string | null;
+  eligible_student_types: string | null;
   issuing_office: string;
 }
 

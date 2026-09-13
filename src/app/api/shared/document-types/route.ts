@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { document_types, offices, roles, document_type_roles } from '@/db/schema';
+import { document_types, offices, roles, document_type_roles, users } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
 
 export async function GET(request: Request) {
@@ -11,6 +11,13 @@ export async function GET(request: Request) {
     if (!session) {
       return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
     }
+
+    const userResult = await db
+      .select({ student_type: users.student_type })
+      .from(users)
+      .where(eq(users.id, session.userId))
+      .limit(1);
+    const studentType = userResult[0]?.student_type ?? null;
 
     const roleResult = await db
       .select({ id: roles.id })
@@ -46,6 +53,7 @@ export async function GET(request: Request) {
         requires_clearance: document_types.requires_clearance,
         handling_pattern: document_types.handling_pattern,
         period_type: document_types.period_type,
+        eligible_student_types: document_types.eligible_student_types,
         issuing_office: offices.name,
       })
       .from(document_types)
@@ -53,7 +61,11 @@ export async function GET(request: Request) {
       .where(eq(document_types.is_active, true))
       .orderBy(document_types.name);
 
-    const filtered = docs.filter((d) => ids.includes(d.id));
+    const filtered = docs.filter(
+      (d) =>
+        ids.includes(d.id) &&
+        (d.eligible_student_types !== 'active_only' || studentType === 'active'),
+    );
 
     return NextResponse.json({ docs: filtered }, { status: 200 });
   } catch (err: unknown) {

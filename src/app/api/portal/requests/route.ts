@@ -93,6 +93,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Document type not found or inactive' }, { status: 404 });
     }
 
+    if (docType.eligible_student_types === 'active_only') {
+      const userResult = await db
+        .select({ student_type: users.student_type })
+        .from(users)
+        .where(eq(users.id, session.userId))
+        .limit(1);
+      const studentType = userResult[0]?.student_type ?? null;
+
+      if (studentType !== 'active') {
+        return NextResponse.json(
+          { message: `${docType.name} is only available to currently enrolled students.` },
+          { status: 403 },
+        );
+      }
+    }
+
     // Validate period fields driven by period_type on the document type record
     if (docType.period_type === 'semester_past_only') {
       if (!schoolYear || !semester) {
@@ -176,7 +192,7 @@ export async function POST(request: Request) {
         }
 
         const staffRows = await db
-          .select({ user_id: office_staff.user_id, email: users.email, full_name: users.full_name })
+          .select({ user_id: office_staff.user_id, email: users.email })
           .from(office_staff)
           .innerJoin(users, eq(office_staff.user_id, users.id))
           .where(inArray(office_staff.office_id, [...involvedOfficeIds]));
