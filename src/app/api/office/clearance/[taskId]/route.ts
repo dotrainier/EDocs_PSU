@@ -9,6 +9,7 @@ import { sendMail } from '@/lib/lib-mailer';
 import { ClearanceApprovedEmail } from '@/email-templates/ClearanceApproved';
 import { render } from 'react-email';
 import { createNotification } from '@/lib/notification';
+import { composeFullName } from '@/lib/user-name';
 
 export async function PATCH(
   request: NextRequest,
@@ -133,7 +134,13 @@ export async function PATCH(
       try {
         const [requestor, officeResult] = await Promise.all([
           db
-            .select({ name: users.full_name, email: users.email })
+            .select({
+              given_name: users.given_name,
+              middle_name: users.middle_name,
+              last_name: users.last_name,
+              name_suffix: users.name_suffix,
+              email: users.email,
+            })
             .from(users)
             .where(eq(users.id, docRequest.user_id))
             .limit(1),
@@ -145,6 +152,7 @@ export async function PATCH(
         ]);
 
         if (!requestor[0]) return;
+        const requestorName = composeFullName(requestor[0]);
         const officeName = officeResult[0]?.name || 'Office';
 
         const notif = {
@@ -175,7 +183,7 @@ export async function PATCH(
         if (requestor[0].email) {
           const emailHtml = await render(
             ClearanceApprovedEmail({
-              userName: requestor[0].name,
+              userName: requestorName,
               documentType: docRequest.document_name,
               trackingUrl: `${process.env.NEXT_PUBLIC_APP_URL}/requests/${docRequest.tracking_number}`,
               officeName,

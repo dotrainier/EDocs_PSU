@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { clearance_tasks, document_requests, document_types, users } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
 import { getSlaStatus } from '@/lib/server_utils';
+import { composeFullName } from '@/lib/user-name';
 
 // ── GET /api/office/queue ─────────────────────────────────────────────────────
 
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
     }
 
     // 4. Fetch pending tasks for this office
-    const tasks = await db
+    const taskRows = await db
       .select({
         // Task info
         task_id: clearance_tasks.id,
@@ -50,7 +51,10 @@ export async function GET(request: Request) {
         handling_pattern: document_types.handling_pattern,
 
         // Requestor
-        requestor_name: users.full_name,
+        requestor_given_name: users.given_name,
+        requestor_middle_name: users.middle_name,
+        requestor_last_name: users.last_name,
+        requestor_name_suffix: users.name_suffix,
         requestor_school_id: users.school_id,
       })
       .from(clearance_tasks)
@@ -64,6 +68,24 @@ export async function GET(request: Request) {
         ),
       )
       .orderBy(desc(document_requests.created_at));
+
+    const tasks = taskRows.map(
+      ({
+        requestor_given_name,
+        requestor_middle_name,
+        requestor_last_name,
+        requestor_name_suffix,
+        ...task
+      }) => ({
+        ...task,
+        requestor_name: composeFullName({
+          given_name: requestor_given_name,
+          middle_name: requestor_middle_name,
+          last_name: requestor_last_name,
+          name_suffix: requestor_name_suffix,
+        }),
+      }),
+    );
 
     // 5. Add SLA status to each task
     const tasksWithSla = tasks.map((t) => ({

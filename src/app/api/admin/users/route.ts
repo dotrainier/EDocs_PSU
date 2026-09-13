@@ -3,6 +3,7 @@ import { desc, eq, and, type SQL } from 'drizzle-orm';
 import { db } from '@/db';
 import { users, roles, courses } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
+import { composeFullName } from '@/lib/user-name';
 
 const VALID_VERIFICATION_STATUSES = ['pending', 'approved', 'rejected'];
 
@@ -31,7 +32,6 @@ export async function GET(request: Request) {
     const rows = await db
       .select({
         id: users.id,
-        full_name: users.full_name,
         given_name: users.given_name,
         middle_name: users.middle_name,
         last_name: users.last_name,
@@ -56,7 +56,9 @@ export async function GET(request: Request) {
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(users.created_at));
 
-    return NextResponse.json({ users: rows }, { status: 200 });
+    const usersWithFullName = rows.map((row) => ({ ...row, full_name: composeFullName(row) }));
+
+    return NextResponse.json({ users: usersWithFullName }, { status: 200 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'An unexpected error occurred';
     return NextResponse.json({ message }, { status: 500 });

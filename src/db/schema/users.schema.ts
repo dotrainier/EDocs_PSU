@@ -21,7 +21,6 @@ export const users = pgTable(
       .notNull()
       .references(() => roles.id, { onDelete: 'cascade' }),
     status: varchar('status', { length: 50 }).notNull().default('active'),
-    full_name: varchar('full_name', { length: 255 }).notNull(),
     given_name: varchar('given_name', { length: 100 }),
     middle_name: varchar('middle_name', { length: 100 }),
     last_name: varchar('last_name', { length: 100 }),

@@ -8,6 +8,7 @@ import { getAccessTokenPayload } from '@/lib/auth';
 import { sendMail } from '@/lib/lib-mailer';
 import { RegistrationApprovedEmail } from '@/email-templates/RegistrationApproved';
 import { RegistrationRejectedEmail } from '@/email-templates/RegistrationRejected';
+import { composeFullName } from '@/lib/user-name';
 
 async function requireAdmin(request: Request) {
   const session = await getAccessTokenPayload(request);
@@ -30,7 +31,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const [row] = await db
       .select({
         id: users.id,
-        full_name: users.full_name,
         given_name: users.given_name,
         middle_name: users.middle_name,
         last_name: users.last_name,
@@ -58,7 +58,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ user: row }, { status: 200 });
+    return NextResponse.json({ user: { ...row, full_name: composeFullName(row) } }, { status: 200 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'An unexpected error occurred';
     return NextResponse.json({ message }, { status: 500 });
@@ -97,7 +97,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       .returning({
         id: users.id,
         email: users.email,
-        full_name: users.full_name,
+        given_name: users.given_name,
+        middle_name: users.middle_name,
+        last_name: users.last_name,
+        name_suffix: users.name_suffix,
         verification_status: users.verification_status,
       });
 
@@ -113,13 +116,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       void (async () => {
         try {
           const isApproved = updated.verification_status === 'approved';
+          const userName = composeFullName(updated);
           const html = await render(
             isApproved
               ? RegistrationApprovedEmail({
-                  userName: updated.full_name,
+                  userName,
                   signinUrl: `${process.env.NEXT_PUBLIC_APP_URL}/signin`,
                 })
-              : RegistrationRejectedEmail({ userName: updated.full_name }),
+              : RegistrationRejectedEmail({ userName }),
           );
 
           await sendMail({

@@ -11,6 +11,7 @@ import {
   setAuthCookies,
 } from '@/lib/auth';
 import type { UserRole } from '@/types/user.type';
+import { composeFullName } from '@/lib/user-name';
 
 const signinSchema = z.object({
   username: z.string().min(1, 'Username is required').trim(),
@@ -38,7 +39,10 @@ export async function POST(request: Request) {
         password_hash: users.password_hash,
         status: users.status,
         verification_status: users.verification_status,
-        full_name: users.full_name,
+        given_name: users.given_name,
+        middle_name: users.middle_name,
+        last_name: users.last_name,
+        name_suffix: users.name_suffix,
         role_id: users.role_id,
         role_name: roles.name,
         office_id: office_staff.office_id,
@@ -114,14 +118,16 @@ export async function POST(request: Request) {
 
     await setAuthCookies(accessToken, refreshToken);
 
-    console.log('[signin] Login successful for:', user.full_name);
+    const full_name = composeFullName(user);
+
+    console.log('[signin] Login successful for:', full_name);
 
     return NextResponse.json(
       {
         message: 'Login successful',
         user: {
           id: user.id,
-          full_name: user.full_name,
+          full_name,
           email: user.email,
           role: user.role_name,
         },

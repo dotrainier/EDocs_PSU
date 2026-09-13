@@ -5,6 +5,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import { db } from '@/db';
 import { clearance_tasks, document_requests, document_types, users } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
+import { composeFullName } from '@/lib/user-name';
 
 const requestor = alias(users, 'requestor');
 const clearedBy = alias(users, 'cleared_by_user');
@@ -24,14 +25,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'No office assigned to this account' }, { status: 403 });
     }
 
-    const tasks = await db
+    const taskRows = await db
       .select({
         task_id: clearance_tasks.id,
         task_status: clearance_tasks.status,
         sequence_order: clearance_tasks.sequence_order,
         remarks: clearance_tasks.remarks,
         cleared_at: clearance_tasks.cleared_at,
-        cleared_by_name: clearedBy.full_name,
+        cleared_by_given_name: clearedBy.given_name,
+        cleared_by_middle_name: clearedBy.middle_name,
+        cleared_by_last_name: clearedBy.last_name,
+        cleared_by_name_suffix: clearedBy.name_suffix,
         request_id: document_requests.id,
         tracking_number: document_requests.tracking_number,
         status: document_requests.status,
@@ -39,7 +43,10 @@ export async function GET(request: Request) {
         sla_due_at: document_requests.sla_due_at,
         created_at: document_requests.created_at,
         document_type: document_types.name,
-        requestor_name: requestor.full_name,
+        requestor_given_name: requestor.given_name,
+        requestor_middle_name: requestor.middle_name,
+        requestor_last_name: requestor.last_name,
+        requestor_name_suffix: requestor.name_suffix,
         requestor_school_id: requestor.school_id,
       })
       .from(clearance_tasks)
@@ -54,6 +61,34 @@ export async function GET(request: Request) {
         ),
       )
       .orderBy(desc(clearance_tasks.cleared_at));
+
+    const tasks = taskRows.map(
+      ({
+        cleared_by_given_name,
+        cleared_by_middle_name,
+        cleared_by_last_name,
+        cleared_by_name_suffix,
+        requestor_given_name,
+        requestor_middle_name,
+        requestor_last_name,
+        requestor_name_suffix,
+        ...task
+      }) => ({
+        ...task,
+        cleared_by_name: composeFullName({
+          given_name: cleared_by_given_name,
+          middle_name: cleared_by_middle_name,
+          last_name: cleared_by_last_name,
+          name_suffix: cleared_by_name_suffix,
+        }),
+        requestor_name: composeFullName({
+          given_name: requestor_given_name,
+          middle_name: requestor_middle_name,
+          last_name: requestor_last_name,
+          name_suffix: requestor_name_suffix,
+        }),
+      }),
+    );
 
     return NextResponse.json({ tasks }, { status: 200 });
   } catch (err: unknown) {

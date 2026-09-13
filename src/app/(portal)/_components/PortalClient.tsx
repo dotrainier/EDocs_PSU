@@ -48,7 +48,15 @@ interface User {
   fullName: string;
   schoolId: string | null;
   role: string;
+  studentType: string | null;
   initials: string;
+}
+
+// Display-only: an Alumni account is still role 'Student' for auth purposes,
+// but the sidebar should read "Alumni" instead of "Student" for them.
+function displayRole(user: User): string {
+  if (user.role === 'Student' && user.studentType === 'alumni') return 'Alumni';
+  return user.role;
 }
 
 // ─── Nav config ───────────────────────────────────────────────────────────────
@@ -511,7 +519,7 @@ function ExpandedSidebar({
           <div className='min-w-0 flex-1'>
             <p className='truncate text-sm font-semibold text-foreground'>{user.fullName}</p>
             <Badge variant='secondary' className='mt-0.5 h-4 rounded-sm px-1.5 text-[10px] font-medium'>
-              {user.role}
+              {displayRole(user)}
             </Badge>
           </div>
         </div>
@@ -570,7 +578,7 @@ function CollapsedRail({ user }: { user: User }) {
           </TooltipTrigger>
           <TooltipContent side='right' sideOffset={8} className='text-xs'>
             <p className='font-semibold'>{user.fullName}</p>
-            <p className='text-muted-foreground'>{user.role}</p>
+            <p className='text-muted-foreground'>{displayRole(user)}</p>
           </TooltipContent>
         </Tooltip>
 

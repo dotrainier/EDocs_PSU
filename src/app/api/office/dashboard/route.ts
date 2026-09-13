@@ -4,6 +4,7 @@ import { eq, and, desc, sql, gte } from 'drizzle-orm';
 import { db } from '@/db';
 import { clearance_tasks, document_requests, document_types, users, offices } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
+import { composeFullName } from '@/lib/user-name';
 
 export async function GET(request: Request) {
   try {
@@ -28,12 +29,15 @@ export async function GET(request: Request) {
     // 1. GET ALL PENDING TASKS FOR THIS OFFICE (+ SLA status)
     // ─────────────────────────────────────────────────────────────────────────
 
-    const pendingTasks = await db
+    const pendingTaskRows = await db
       .select({
         request_id: document_requests.id,
         tracking_number: document_requests.tracking_number,
         document_type: document_types.name,
-        requestor_name: users.full_name,
+        requestor_given_name: users.given_name,
+        requestor_middle_name: users.middle_name,
+        requestor_last_name: users.last_name,
+        requestor_name_suffix: users.name_suffix,
         created_at: document_requests.created_at,
         sla_due_at: document_requests.sla_due_at,
         status: document_requests.status,
@@ -45,6 +49,22 @@ export async function GET(request: Request) {
       .innerJoin(users, eq(document_requests.user_id, users.id))
       .where(and(eq(clearance_tasks.office_id, officeId), eq(clearance_tasks.status, 'Pending')))
       .orderBy(desc(document_requests.created_at));
+
+    const pendingTasks = pendingTaskRows.map((task) => ({
+      request_id: task.request_id,
+      tracking_number: task.tracking_number,
+      document_type: task.document_type,
+      requestor_name: composeFullName({
+        given_name: task.requestor_given_name,
+        middle_name: task.requestor_middle_name,
+        last_name: task.requestor_last_name,
+        name_suffix: task.requestor_name_suffix,
+      }),
+      created_at: task.created_at,
+      sla_due_at: task.sla_due_at,
+      status: task.status,
+      payment_status: task.payment_status,
+    }));
 
     // Helper: calculate SLA status from dates
     const calculateSlaStatus = (createdAt: Date, slaDueAt: Date | null): string => {

@@ -12,6 +12,7 @@ import {
 } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
 import { getSlaStatus } from '@/lib/server_utils';
+import { composeFullName } from '@/lib/user-name';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -56,20 +57,37 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
-    const tasks = await db
+    const clearanceTaskRows = await db
       .select({
         office_name: offices.name,
         status: clearance_tasks.status,
         sequence_order: clearance_tasks.sequence_order,
         remarks: clearance_tasks.remarks,
         cleared_at: clearance_tasks.cleared_at,
-        cleared_by: users.full_name,
+        cleared_by_given_name: users.given_name,
+        cleared_by_middle_name: users.middle_name,
+        cleared_by_last_name: users.last_name,
+        cleared_by_name_suffix: users.name_suffix,
       })
       .from(clearance_tasks)
       .innerJoin(offices, eq(clearance_tasks.office_id, offices.id))
       .leftJoin(users, eq(clearance_tasks.cleared_by, users.id))
       .where(eq(clearance_tasks.request_id, req.id))
       .orderBy(clearance_tasks.sequence_order);
+
+    const tasks = clearanceTaskRows.map((task) => ({
+      office_name: task.office_name,
+      status: task.status,
+      sequence_order: task.sequence_order,
+      remarks: task.remarks,
+      cleared_at: task.cleared_at,
+      cleared_by: composeFullName({
+        given_name: task.cleared_by_given_name,
+        middle_name: task.cleared_by_middle_name,
+        last_name: task.cleared_by_last_name,
+        name_suffix: task.cleared_by_name_suffix,
+      }),
+    }));
 
     const slaStatus = req.sla_due_at ? getSlaStatus(req.created_at, req.sla_due_at) : 'OnTrack';
 
@@ -94,18 +112,34 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .filter((event) => !!event.at)
       .sort((a, b) => toTimestamp(b.at) - toTimestamp(a.at));
 
-    const auditEvents = await db
+    const auditEventRows = await db
       .select({
         id: audit_log.id,
         action: audit_log.action,
         details: audit_log.details,
         timestamp: audit_log.timestamp,
-        actor: users.full_name,
+        actor_given_name: users.given_name,
+        actor_middle_name: users.middle_name,
+        actor_last_name: users.last_name,
+        actor_name_suffix: users.name_suffix,
       })
       .from(audit_log)
       .leftJoin(users, eq(audit_log.user_id, users.id))
       .where(sql`${audit_log.details} ->> 'requestId' = ${req.id}`)
       .orderBy(audit_log.timestamp);
+
+    const auditEvents = auditEventRows.map((event) => ({
+      id: event.id,
+      action: event.action,
+      details: event.details,
+      timestamp: event.timestamp,
+      actor: composeFullName({
+        given_name: event.actor_given_name,
+        middle_name: event.actor_middle_name,
+        last_name: event.actor_last_name,
+        name_suffix: event.actor_name_suffix,
+      }),
+    }));
 
     const auditTimeline = auditEvents.map((event) => {
       const details = (event.details ?? {}) as Record<string, unknown>;

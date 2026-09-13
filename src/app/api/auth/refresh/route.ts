@@ -26,7 +26,6 @@ export async function GET(request: Request) {
       .select({
         session_id: sessions.id,
         user_id: users.id,
-        full_name: users.full_name,
         status: users.status,
         role_name: roles.name,
         office_id: office_staff.office_id,

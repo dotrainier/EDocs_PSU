@@ -5,6 +5,7 @@ import { verifyAccessToken } from '@/lib/auth';
 import { db } from '@/db';
 import { users, roles, office_staff, offices } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { composeFullName } from '@/lib/user-name';
 
 export type SessionUser = {
   id: string;
@@ -12,6 +13,7 @@ export type SessionUser = {
   firstName: string;
   schoolId: string | null;
   role: string;
+  studentType: string | null;
   officeId: string | null;
   initials: string;
   officeCode: string;
@@ -27,8 +29,12 @@ export async function requireSession(): Promise<SessionUser> {
   const result = await db
     .select({
       id: users.id,
-      full_name: users.full_name,
+      given_name: users.given_name,
+      middle_name: users.middle_name,
+      last_name: users.last_name,
+      name_suffix: users.name_suffix,
       school_id: users.school_id,
+      student_type: users.student_type,
       role_name: roles.name,
       office_id: office_staff.office_id,
       office_code: offices.code,
@@ -43,7 +49,8 @@ export async function requireSession(): Promise<SessionUser> {
   const user = result[0];
   if (!user) redirect('/signin');
 
-  const initials = user.full_name
+  const fullName = composeFullName(user);
+  const initials = fullName
     .split(' ')
     .map((n) => n[0])
     .slice(0, 2)
@@ -52,10 +59,11 @@ export async function requireSession(): Promise<SessionUser> {
 
   return {
     id: user.id,
-    fullName: user.full_name,
-    firstName: user.full_name.split(' ')[0],
+    fullName,
+    firstName: user.given_name ?? fullName.split(' ')[0],
     schoolId: user.school_id,
     role: user.role_name,
+    studentType: user.student_type,
     officeId: user.office_id ? String(user.office_id) : null,
     initials,
     officeCode: user.office_code ?? '',

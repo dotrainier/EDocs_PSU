@@ -64,19 +64,6 @@ const registerSchema = z
     }
   });
 
-function composeFullName(parts: {
-  given_name: string;
-  middle_name: string;
-  last_name: string;
-  name_suffix?: string;
-}): string {
-  return [parts.given_name, parts.middle_name, parts.last_name, parts.name_suffix]
-    .filter(Boolean)
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -133,13 +120,11 @@ export async function POST(request: Request) {
     }
 
     const password_hash = await bcrypt.hash(data.password, 12);
-    const full_name = composeFullName(data);
 
     await db.insert(users).values({
       email: data.email,
       password_hash,
       role_id: studentRole.id,
-      full_name,
       given_name: data.given_name,
       middle_name: data.middle_name,
       last_name: data.last_name,
