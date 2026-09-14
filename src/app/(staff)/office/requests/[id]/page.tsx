@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import {
   ArrowLeft,
@@ -15,7 +14,6 @@ import {
   Shield,
   Activity,
   Building2,
-  ImageIcon,
   ClipboardList,
   Loader2,
 } from 'lucide-react';
@@ -142,6 +140,7 @@ export default function OfficeRequestDetailPage() {
   const [remarks, setRemarks] = useState('');
   const [actionTaken, setActionTaken] = useState<'Cleared' | 'Rejected' | null>(null);
   const [submittingAction, setSubmittingAction] = useState<'Cleared' | 'Rejected' | null>(null);
+  const [markingPaid, setMarkingPaid] = useState(false);
 
   const params = useParams<{ id: string }>();
   const requestId = params?.id ?? '';
@@ -154,13 +153,23 @@ export default function OfficeRequestDetailPage() {
   const slaCfg = SLA_CONFIG[slaStatus];
   const SLAIcon = slaCfg.icon;
 
-  const officeName = req?.my_task?.office_name ?? '';
-  const isCashier = officeName.toLowerCase().includes('cashier');
   const myTaskStatus = req?.my_task?.status ?? null;
   const isTaskPending = myTaskStatus === 'Pending';
   const displayStatus = actionTaken ?? (!isTaskPending ? myTaskStatus : null);
   const displayBy = req?.my_task?.cleared_by ?? null;
   const displayAt = req?.my_task?.cleared_at ?? null;
+
+  async function handleMarkPaid() {
+    setMarkingPaid(true);
+    try {
+      await api.patch(`/office/requests/${requestId}/payment`, {});
+      await refetch();
+    } catch (err) {
+      console.error('Mark paid error:', err);
+    } finally {
+      setMarkingPaid(false);
+    }
+  }
 
   async function handleClear() {
     if (!req?.my_task?.task_id) return;
@@ -319,44 +328,26 @@ export default function OfficeRequestDetailPage() {
             </CardHeader>
             <CardContent className='space-y-3'>
               {req.payment_status === 'Unpaid' && (
-                <div className='flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400'>
-                  <AlertTriangle className='h-4 w-4 shrink-0' />
-                  Payment not yet received. This request cannot be processed until payment is
-                  confirmed.
-                </div>
-              )}
-
-              {req.payment_status === 'Pending Verification' && (
                 <div className='space-y-3'>
                   <div className='flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400'>
-                    <Clock className='h-4 w-4 shrink-0' />
-                    Payment proof uploaded — awaiting Cashier verification.
+                    <AlertTriangle className='h-4 w-4 shrink-0' />
+                    Payment not yet received. This request cannot be cleared until payment is
+                    confirmed.
                   </div>
-                  {isCashier && (
-                    <>
-                      <div className='relative h-48 overflow-hidden rounded-lg border border-border'>
-                        {req.payment_proof_path ? (
-                          <Image
-                            src={req.payment_proof_path}
-                            alt='Payment proof'
-                            fill
-                            className='object-cover'
-                            sizes='(min-width: 1280px) 50vw, 100vw'
-                          />
-                        ) : (
-                          <div className='flex h-48 items-center justify-center bg-muted'>
-                            <div className='flex flex-col items-center gap-2 text-muted-foreground'>
-                              <ImageIcon className='h-8 w-8' />
-                              <p className='text-xs'>Payment proof image</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <Button className='gap-2' size='sm'>
+                  {isTaskPending && (
+                    <Button
+                      onClick={handleMarkPaid}
+                      disabled={markingPaid}
+                      size='sm'
+                      className='gap-2'
+                    >
+                      {markingPaid ? (
+                        <Loader2 className='h-4 w-4 animate-spin' />
+                      ) : (
                         <CheckCircle2 className='h-4 w-4' />
-                        Confirm Payment
-                      </Button>
-                    </>
+                      )}
+                      {markingPaid ? 'Marking as paid...' : 'Mark as Paid'}
+                    </Button>
                   )}
                 </div>
               )}

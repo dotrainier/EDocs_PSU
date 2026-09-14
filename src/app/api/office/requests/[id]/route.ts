@@ -215,6 +215,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         };
       }
 
+      if (event.action === 'PAYMENT_CONFIRMED') {
+        return {
+          id: event.id,
+          title: 'Payment confirmed',
+          at: event.timestamp,
+          subtitle: event.actor ? `By ${event.actor}` : null,
+        };
+      }
+
       return {
         id: event.id,
         title: event.action,

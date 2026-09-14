@@ -10,4 +10,4 @@ export type ClearanceStatus = 'Pending' | 'Cleared' | 'Rejected';
 
 export type SLAStatus = 'On Track' | 'At Risk' | 'Breached';
 export type ApiSLAStatus = 'OnTrack' | 'AtRisk' | 'Breached';
-export type PaymentStatus = 'Paid' | 'Unpaid' | 'Pending Verification';
+export type PaymentStatus = 'Paid' | 'Unpaid';

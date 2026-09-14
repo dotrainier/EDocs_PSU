@@ -17,7 +17,6 @@ import {
   AlertCircle,
   RefreshCw,
   CreditCard,
-  ExternalLink,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -330,35 +329,16 @@ export default function TrackRequestPage() {
         </Alert>
       )}
 
-      {/* Payment — unpaid: link to Xendit payment page */}
+      {/* Payment — unpaid: pay onsite at the Registrar's Office */}
       {request.status !== 'Cancelled' && request.status !== 'Released' && request.paymentStatus === 'Unpaid' && (
         <div className='flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800'>
           <CreditCard className='h-4 w-4 mt-0.5 shrink-0' />
-          <div className='flex-1'>
+          <div>
             <p className='font-semibold'>Payment required</p>
-            <p className='text-amber-700 mt-0.5 mb-3'>
-              Your request cannot be processed until payment is completed.
+            <p className='text-amber-700 mt-0.5'>
+              A processing fee applies — pay at the Registrar&apos;s Office.
               {request.fee && ` Fee: ₱${request.fee}`}
             </p>
-            <Button
-              size='sm'
-              className='gap-2'
-              onClick={() => window.open(`/pay/${request.trackingNumber}`, '_blank')}
-            >
-              <ExternalLink className='h-3.5 w-3.5' />
-              Complete Payment{request.fee ? ` — ₱${request.fee}` : ''}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Payment — pending verification: simple notice */}
-      {request.status !== 'Cancelled' && request.status !== 'Released' && request.paymentStatus === 'Pending Verification' && (
-        <div className='flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800'>
-          <Clock className='h-4 w-4 mt-0.5 shrink-0' />
-          <div>
-            <p className='font-semibold'>Payment under review</p>
-            <p className='text-amber-700 mt-0.5'>Your payment proof has been submitted and is awaiting cashier verification.</p>
           </div>
         </div>
       )}

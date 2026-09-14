@@ -83,9 +83,6 @@ const SLA_CONFIG: Record<SLAStatus, { label: string; icon: React.ElementType; cl
 const PAYMENT_CONFIG: Record<PaymentStatus, { classes: string }> = {
   Paid: { classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
   Unpaid: { classes: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
-  'Pending Verification': {
-    classes: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-  },
 };
 
 function SLABadge({ status }: { status: SLAStatus }) {

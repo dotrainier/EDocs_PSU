@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Loader2, AlertCircle, RefreshCw, FileText, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Loader2, AlertCircle, RefreshCw, FileText, CreditCard, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -145,6 +145,7 @@ interface SuccessModalProps {
   documentName: string;
   feeAmount: string;
   onViewRequest: () => void;
+  onClose: () => void;
 }
 
 function SuccessModal({
@@ -153,12 +154,21 @@ function SuccessModal({
   documentName,
   feeAmount,
   onViewRequest,
+  onClose,
 }: SuccessModalProps) {
   const hasFee = feeAmount && feeAmount !== '0.00';
 
   return (
-    <AlertDialog open={open}>
-      <AlertDialogContent className='max-w-md'>
+    <AlertDialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <AlertDialogContent className='max-w-md relative'>
+        <button
+          type='button'
+          onClick={onClose}
+          aria-label='Close'
+          className='absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors'
+        >
+          <X className='h-4 w-4' />
+        </button>
         <AlertDialogHeader>
           <div className='flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mx-auto mb-3'>
             <CheckCircle2 className='h-7 w-7 text-primary' />
@@ -196,17 +206,15 @@ function SuccessModal({
           )}
         </div>
 
+        {hasFee && (
+          <div className='flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800'>
+            <CreditCard className='h-3.5 w-3.5 mt-0.5 shrink-0' />
+            <p>A processing fee of ₱{feeAmount} applies — pay at the Registrar&apos;s Office.</p>
+          </div>
+        )}
+
         <AlertDialogFooter className='mt-2 flex-col gap-2 sm:flex-col'>
-          {hasFee && (
-            <button
-              onClick={() => window.open(`/pay/${trackingNumber}`, '_blank')}
-              className='inline-flex items-center justify-center w-full h-10 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors'
-            >
-              <ExternalLink className='mr-2 h-4 w-4' />
-              Complete Payment — ₱{feeAmount}
-            </button>
-          )}
-          <AlertDialogAction onClick={onViewRequest} className='w-full h-10' variant={hasFee ? 'outline' : undefined}>
+          <AlertDialogAction onClick={onViewRequest} className='w-full h-10'>
             <FileText className='mr-2 h-4 w-4' />
             View My Request
           </AlertDialogAction>
@@ -593,6 +601,7 @@ export default function NewRequestClient() {
         documentName={selectedDoc?.name ?? ''}
         feeAmount={submittedFee}
         onViewRequest={() => router.push(`/requests/${submittedTracking}`)}
+        onClose={() => setShowSuccess(false)}
       />
     </>
   );
