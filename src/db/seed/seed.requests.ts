@@ -84,9 +84,10 @@ export async function seedRequests() {
       document_type_id: docMap['COR'],
       purpose: 'Scholarship Application',
       copies: 1,
-      // COR requires no clearance — goes straight to Released.
-      status: 'Released',
-      fee_amount: '0.00',
+      // COR now mirrors COE (single OUR clearance requirement) — all
+      // requirements cleared, consistent with 'Ready for Release'.
+      status: 'Ready for Release',
+      fee_amount: '50.00',
       payment_status: 'Paid',
       sla_due_at: daysFromNow(-6), // completed — for historical data
     },
@@ -205,8 +206,21 @@ export async function seedRequests() {
     totalTasks += cogTasks.length;
   }
 
-  // ── COR (EDOC-2026-000004) — Released ────────────────────────────────────
-  // COR has no clearance_requirements rows, so no clearance tasks are seeded.
+  // ── COR (EDOC-2026-000004) — Ready for Release ───────────────────────────
+  // All requirements cleared — consistent with 'Ready for Release' status,
+  // same pattern as COE's EDOC-2026-000002 above.
+  const corReqs = existingOffices.filter((r) => r.document_type_id === docMap['COR']);
+  const corTasks = corReqs.map((r) => ({
+    request_id: reqMap['EDOC-2026-000004'],
+    office_id: r.office_id,
+    status: 'Cleared',
+    sequence_order: r.sequence_order,
+  }));
+
+  if (corTasks.length > 0) {
+    await db.insert(clearance_tasks).values(corTasks).onConflictDoNothing();
+    totalTasks += corTasks.length;
+  }
 
   // ── TOR (EDOC-2026-000006) — Carlo — Pending ─────────────────────────────
   // Reusing TOR's (Registrar-only) requirement; task pending.

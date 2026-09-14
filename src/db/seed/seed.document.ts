@@ -78,9 +78,9 @@ export async function seedDocuments() {
         'Certifies the courses and units a student is officially registered for in the current semester.',
       issuing_office_id: officeMap['OUR'],
       handling_pattern: 'GENERATE',
-      fee_amount: '0.00',
+      fee_amount: '50.00',
       sla_working_days: 1,
-      requires_clearance: false,
+      requires_clearance: true,
       period_type: null,
       eligible_student_types: 'active_only',
       is_active: true,
@@ -195,7 +195,13 @@ export async function seedDocuments() {
       is_required: true,
     },
 
-    // ── COR: no clearance required ──
+    // ── COR: OUR head approval only — same single-office pattern as COE/COG ──
+    {
+      document_type_id: docMap['COR'],
+      office_id: officeMap['OUR'],
+      sequence_order: 1,
+      is_required: true,
+    },
   ];
 
   await db.insert(clearance_requirements).values(clearanceData).onConflictDoNothing();
