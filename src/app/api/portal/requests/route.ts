@@ -256,12 +256,20 @@ export async function POST(request: Request) {
           .innerJoin(users, eq(office_staff.user_id, users.id))
           .where(inArray(office_staff.office_id, [...involvedOfficeIds]));
 
+        // A staff member can legitimately be linked to more than one involved
+        // office (e.g. a multi-office document) — dedupe by user_id so each
+        // person is notified/emailed exactly once, regardless of how many
+        // office rows matched.
+        const uniqueStaffRows = Array.from(
+          new Map(staffRows.map((r) => [r.user_id, r])).values(),
+        );
+
         const staffNotif = {
           title: `New ${docType.name} request`,
           message: `A new ${docType.name} request has been submitted. Tracking: ${trackingNumber}.`,
         };
 
-        const staffEmails = staffRows.map((r) => r.email);
+        const staffEmails = uniqueStaffRows.map((r) => r.email);
         if (staffEmails.length > 0) {
           const emailHtml = await render(
             NewRequestStaffEmail({
@@ -278,7 +286,7 @@ export async function POST(request: Request) {
         }
 
         await Promise.all(
-          staffRows.map(async ({ user_id }) => {
+          uniqueStaffRows.map(async ({ user_id }) => {
             await createNotification({
               userId: user_id,
               title: staffNotif.title,
