@@ -204,7 +204,15 @@ export async function seedDocuments() {
     },
   ];
 
-  await db.insert(clearance_requirements).values(clearanceData).onConflictDoNothing();
+  // Upsert on (document_type_id, office_id) so re-running the seed keeps
+  // sequence_order/is_required in sync — same reasoning as document_types above.
+  await db.insert(clearance_requirements).values(clearanceData).onConflictDoUpdate({
+    target: [clearance_requirements.document_type_id, clearance_requirements.office_id],
+    set: {
+      sequence_order: sql`excluded.sequence_order`,
+      is_required: sql`excluded.is_required`,
+    },
+  });
 
   console.log('Done! Document seed summary:');
   console.log(`  Document types:         ${documentTypeData.length}`);

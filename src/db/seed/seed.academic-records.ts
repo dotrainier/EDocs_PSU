@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 // Seeding is part of standing up the placeholder academic-records data set
@@ -30,7 +31,15 @@ export async function seedAcademicRecords() {
     { user_id: carloId, overall_status: 'transferred', graduation_date: null },
   ];
 
-  await db.insert(student_status).values(statusData).onConflictDoNothing();
+  // Upsert on user_id (the primary key) so re-running the seed keeps status
+  // in sync as it evolves — same reasoning as document_requests.
+  await db.insert(student_status).values(statusData).onConflictDoUpdate({
+    target: student_status.user_id,
+    set: {
+      overall_status: sql`excluded.overall_status`,
+      graduation_date: sql`excluded.graduation_date`,
+    },
+  });
 
   // ─── 2. Per-term enrollment history ──────────────────────────────────────────
   const termData = [
@@ -60,7 +69,12 @@ export async function seedAcademicRecords() {
     { user_id: carloId, school_year: '2023-2024', semester: '2nd Semester', status: 'loa' },
   ];
 
-  await db.insert(academic_terms).values(termData).onConflictDoNothing();
+  // Upsert on (user_id, school_year, semester) so re-running the seed keeps
+  // status in sync as it evolves.
+  await db.insert(academic_terms).values(termData).onConflictDoUpdate({
+    target: [academic_terms.user_id, academic_terms.school_year, academic_terms.semester],
+    set: { status: sql`excluded.status` },
+  });
 
   console.log('Done! Academic records seed summary:');
   console.log(`  Student status rows: ${statusData.length}`);

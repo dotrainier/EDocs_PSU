@@ -1,4 +1,4 @@
-import { inArray } from 'drizzle-orm';
+import { inArray, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   document_requests,
@@ -143,7 +143,25 @@ export async function seedRequests() {
     },
   ];
 
-  await db.insert(document_requests).values(requestData).onConflictDoNothing();
+  // Upsert on tracking_number so re-running the seed (without db:fresh) keeps
+  // these demo requests in sync as their fields evolve — same pattern as
+  // users/document_types in the other seed files.
+  await db.insert(document_requests).values(requestData).onConflictDoUpdate({
+    target: document_requests.tracking_number,
+    set: {
+      user_id: sql`excluded.user_id`,
+      document_type_id: sql`excluded.document_type_id`,
+      purpose: sql`excluded.purpose`,
+      copies: sql`excluded.copies`,
+      status: sql`excluded.status`,
+      fee_amount: sql`excluded.fee_amount`,
+      payment_status: sql`excluded.payment_status`,
+      sla_due_at: sql`excluded.sla_due_at`,
+      school_year: sql`excluded.school_year`,
+      semester: sql`excluded.semester`,
+      updated_at: new Date(),
+    },
+  });
 
   // ─── 3. Clearance tasks ───────────────────────────────────────────────────────
 
@@ -172,7 +190,10 @@ export async function seedRequests() {
   }));
 
   if (torTasks.length > 0) {
-    await db.insert(clearance_tasks).values(torTasks).onConflictDoNothing();
+    await db.insert(clearance_tasks).values(torTasks).onConflictDoUpdate({
+      target: [clearance_tasks.request_id, clearance_tasks.office_id],
+      set: { status: sql`excluded.status`, sequence_order: sql`excluded.sequence_order` },
+    });
     totalTasks += torTasks.length;
   }
 
@@ -187,7 +208,10 @@ export async function seedRequests() {
   }));
 
   if (coeTasks.length > 0) {
-    await db.insert(clearance_tasks).values(coeTasks).onConflictDoNothing();
+    await db.insert(clearance_tasks).values(coeTasks).onConflictDoUpdate({
+      target: [clearance_tasks.request_id, clearance_tasks.office_id],
+      set: { status: sql`excluded.status`, sequence_order: sql`excluded.sequence_order` },
+    });
     totalTasks += coeTasks.length;
   }
 
@@ -202,7 +226,10 @@ export async function seedRequests() {
   }));
 
   if (cogTasks.length > 0) {
-    await db.insert(clearance_tasks).values(cogTasks).onConflictDoNothing();
+    await db.insert(clearance_tasks).values(cogTasks).onConflictDoUpdate({
+      target: [clearance_tasks.request_id, clearance_tasks.office_id],
+      set: { status: sql`excluded.status`, sequence_order: sql`excluded.sequence_order` },
+    });
     totalTasks += cogTasks.length;
   }
 
@@ -218,7 +245,10 @@ export async function seedRequests() {
   }));
 
   if (corTasks.length > 0) {
-    await db.insert(clearance_tasks).values(corTasks).onConflictDoNothing();
+    await db.insert(clearance_tasks).values(corTasks).onConflictDoUpdate({
+      target: [clearance_tasks.request_id, clearance_tasks.office_id],
+      set: { status: sql`excluded.status`, sequence_order: sql`excluded.sequence_order` },
+    });
     totalTasks += corTasks.length;
   }
 
@@ -232,7 +262,10 @@ export async function seedRequests() {
   }));
 
   if (torTasksCarlo.length > 0) {
-    await db.insert(clearance_tasks).values(torTasksCarlo).onConflictDoNothing();
+    await db.insert(clearance_tasks).values(torTasksCarlo).onConflictDoUpdate({
+      target: [clearance_tasks.request_id, clearance_tasks.office_id],
+      set: { status: sql`excluded.status`, sequence_order: sql`excluded.sequence_order` },
+    });
     totalTasks += torTasksCarlo.length;
   }
 
@@ -246,7 +279,10 @@ export async function seedRequests() {
   }));
 
   if (coe2Tasks.length > 0) {
-    await db.insert(clearance_tasks).values(coe2Tasks).onConflictDoNothing();
+    await db.insert(clearance_tasks).values(coe2Tasks).onConflictDoUpdate({
+      target: [clearance_tasks.request_id, clearance_tasks.office_id],
+      set: { status: sql`excluded.status`, sequence_order: sql`excluded.sequence_order` },
+    });
     totalTasks += coe2Tasks.length;
   }
 
@@ -260,7 +296,10 @@ export async function seedRequests() {
   }));
 
   if (torTasksMaria.length > 0) {
-    await db.insert(clearance_tasks).values(torTasksMaria).onConflictDoNothing();
+    await db.insert(clearance_tasks).values(torTasksMaria).onConflictDoUpdate({
+      target: [clearance_tasks.request_id, clearance_tasks.office_id],
+      set: { status: sql`excluded.status`, sequence_order: sql`excluded.sequence_order` },
+    });
     totalTasks += torTasksMaria.length;
   }
 
@@ -274,7 +313,10 @@ export async function seedRequests() {
   }));
 
   if (cogTasksCarlo.length > 0) {
-    await db.insert(clearance_tasks).values(cogTasksCarlo).onConflictDoNothing();
+    await db.insert(clearance_tasks).values(cogTasksCarlo).onConflictDoUpdate({
+      target: [clearance_tasks.request_id, clearance_tasks.office_id],
+      set: { status: sql`excluded.status`, sequence_order: sql`excluded.sequence_order` },
+    });
     totalTasks += cogTasksCarlo.length;
   }
 
