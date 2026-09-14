@@ -238,7 +238,12 @@ export async function seedBase() {
     { user_id: userMap['EMP-2015-001'], office_id: officeMap['OUR'], is_office_head: true },
   ];
 
-  await db.insert(office_staff).values(officeStaffData).onConflictDoNothing();
+  // Upsert on (user_id, office_id) so re-running the seed keeps
+  // is_office_head in sync instead of silently duplicating assignments.
+  await db.insert(office_staff).values(officeStaffData).onConflictDoUpdate({
+    target: [office_staff.user_id, office_staff.office_id],
+    set: { is_office_head: sql`excluded.is_office_head` },
+  });
 
   console.log('Done! Seed summary:');
   console.log(`  Roles:        ${roleData.length}`);
