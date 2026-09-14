@@ -17,6 +17,11 @@ export const document_requests = pgTable('document_requests', {
   fee_amount: varchar('fee_amount', { length: 20 }),
   payment_status: varchar('payment_status', { length: 20 }).notNull().default('Unpaid'),
   payment_proof_path: varchar('payment_proof_path', { length: 500 }),
+  // Cloudinary public_id (plus format, e.g. "clearance-forms/abc123.pdf") of the
+  // student-uploaded clearance form — required for TOR requests, reviewed by
+  // Registrar staff. Never a URL: the file is resolved through a signed,
+  // authenticated Cloudinary request at view time (see src/lib/cloudinary.ts).
+  clearance_form_public_id: varchar('clearance_form_public_id', { length: 500 }),
   sla_due_at: timestamp('sla_due_at', { withTimezone: true }),
   // Period fields — populated when the document type's period_type is 'semester_past_only' (COG)
   school_year: varchar('school_year', { length: 20 }),   // e.g. '2024-2025'

@@ -1,6 +1,7 @@
 'use client';
 
-import { MapPin } from 'lucide-react';
+import { useState } from 'react';
+import { MapPin, Upload, FileText, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -11,13 +12,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { type DocumentType, type RequestFormData } from './NewRequestClient';
 
 interface Step2Props {
   formData: RequestFormData;
   onChange: (field: keyof RequestFormData, value: string) => void;
   selectedDoc?: DocumentType;
+  clearanceFile?: File | null;
+  onClearanceFileChange?: (file: File | null) => void;
 }
+
+const CLEARANCE_FORM_MAX_BYTES = 5 * 1024 * 1024;
+const CLEARANCE_FORM_ACCEPT = '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png';
 
 const PURPOSES = [
   'Employment',
@@ -43,7 +50,13 @@ function generatePastSchoolYears(): string[] {
   });
 }
 
-export default function Step2RequestDetails({ formData, onChange, selectedDoc }: Step2Props) {
+export default function Step2RequestDetails({
+  formData,
+  onChange,
+  selectedDoc,
+  clearanceFile,
+  onClearanceFileChange,
+}: Step2Props) {
   const isKnownPurpose = PURPOSES.includes(formData.purpose);
   const purposeSelectValue = isKnownPurpose
     ? formData.purpose
@@ -54,6 +67,28 @@ export default function Step2RequestDetails({ formData, onChange, selectedDoc }:
 
   const periodType = selectedDoc?.period_type ?? null;
   const schoolYears = generatePastSchoolYears();
+  const requiresClearanceUpload = selectedDoc?.code === 'TOR';
+  const [clearanceError, setClearanceError] = useState<string | null>(null);
+
+  function handleClearanceFileSelect(file: File | null) {
+    setClearanceError(null);
+    if (!file) {
+      onClearanceFileChange?.(null);
+      return;
+    }
+    const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowed.includes(file.type)) {
+      setClearanceError('Please upload a PDF, JPG, or PNG file.');
+      onClearanceFileChange?.(null);
+      return;
+    }
+    if (file.size > CLEARANCE_FORM_MAX_BYTES) {
+      setClearanceError('File must be 5MB or smaller.');
+      onClearanceFileChange?.(null);
+      return;
+    }
+    onClearanceFileChange?.(file);
+  }
 
   return (
     <div className='space-y-8'>
@@ -107,6 +142,59 @@ export default function Step2RequestDetails({ formData, onChange, selectedDoc }:
               </Select>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Section: Clearance Form Upload (TOR only) */}
+      {requiresClearanceUpload && (
+        <div className='space-y-2'>
+          <Label htmlFor='clearance-form'>
+            Clearance Form <span className='text-destructive'>*</span>
+          </Label>
+          <p className='text-xs text-muted-foreground'>
+            Upload your completed clearance form. This will be reviewed by the Registrar before
+            your transcript is released. Accepted formats: PDF, JPG, PNG (max 5MB).
+          </p>
+
+          {!clearanceFile ? (
+            <label
+              htmlFor='clearance-form'
+              className='flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-4 py-8 text-center hover:bg-muted/50'
+            >
+              <Upload className='h-6 w-6 text-muted-foreground' />
+              <span className='text-sm font-medium text-foreground'>
+                Click to upload your clearance form
+              </span>
+              <span className='text-xs text-muted-foreground'>PDF, JPG, or PNG — up to 5MB</span>
+              <input
+                id='clearance-form'
+                type='file'
+                accept={CLEARANCE_FORM_ACCEPT}
+                className='hidden'
+                onChange={(e) => handleClearanceFileSelect(e.target.files?.[0] ?? null)}
+              />
+            </label>
+          ) : (
+            <div className='flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3'>
+              <div className='flex items-center gap-2 overflow-hidden'>
+                <FileText className='h-4 w-4 shrink-0 text-primary' />
+                <span className='truncate text-sm text-foreground'>{clearanceFile.name}</span>
+                <span className='shrink-0 text-xs text-muted-foreground'>
+                  ({(clearanceFile.size / (1024 * 1024)).toFixed(2)} MB)
+                </span>
+              </div>
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='h-7 w-7 shrink-0'
+                onClick={() => handleClearanceFileSelect(null)}
+              >
+                <X className='h-4 w-4' />
+              </Button>
+            </div>
+          )}
+          {clearanceError && <p className='text-xs text-destructive'>{clearanceError}</p>}
         </div>
       )}
 

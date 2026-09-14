@@ -8,6 +8,7 @@ import { createNotification } from '@/lib/notification';
 import { sendMailToMultiple } from '@/lib/lib-mailer';
 import { NewRequestStaffEmail } from '@/email-templates/NewRequestStaff';
 import { render } from 'react-email';
+import { uploadClearanceForm } from '@/lib/cloudinary';
 
 import {
   document_requests,
@@ -20,13 +21,43 @@ import {
 import { getAccessTokenPayload } from '@/lib/auth';
 
 const createRequestSchema = z.object({
-  documentTypeId: z.number().int().positive(),
+  documentTypeId: z.coerce.number().int().positive(),
   purpose: z.string().min(1).max(255),
-  copies: z.number().int().min(1).max(10),
+  copies: z.coerce.number().int().min(1).max(10),
   additionalNotes: z.string().max(1000).optional(),
   schoolYear: z.string().max(20).optional(),
   semester: z.string().max(30).optional(),
 });
+
+// TOR requests are cleared by the Registrar reviewing a student-uploaded
+// clearance form (see clearance_requirements seed) rather than by routing
+// through separate offices — so a file is required at submission time.
+const CLEARANCE_FORM_MAX_BYTES = 5 * 1024 * 1024;
+const CLEARANCE_FORM_ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+
+async function readRequestBody(
+  request: Request,
+): Promise<{ raw: Record<string, unknown>; clearanceFormFile: File | null }> {
+  const contentType = request.headers.get('content-type') ?? '';
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await request.formData();
+    const raw: Record<string, unknown> = {
+      documentTypeId: formData.get('documentTypeId'),
+      purpose: formData.get('purpose'),
+      copies: formData.get('copies'),
+      additionalNotes: formData.get('additionalNotes') || undefined,
+      schoolYear: formData.get('schoolYear') || undefined,
+      semester: formData.get('semester') || undefined,
+    };
+    const fileEntry = formData.get('clearanceForm');
+    const clearanceFormFile = fileEntry instanceof File && fileEntry.size > 0 ? fileEntry : null;
+    return { raw, clearanceFormFile };
+  }
+
+  const raw = (await request.json()) as Record<string, unknown>;
+  return { raw, clearanceFormFile: null };
+}
 
 async function createClearanceTasks(requestId: string, documentTypeId: number): Promise<void> {
   const requirements = await db
@@ -74,8 +105,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const parsed = createRequestSchema.safeParse(body);
+    const { raw, clearanceFormFile } = await readRequestBody(request);
+    const parsed = createRequestSchema.safeParse(raw);
     if (!parsed.success) {
       return NextResponse.json({ message: 'Invalid input' }, { status: 400 });
     }
@@ -119,6 +150,33 @@ export async function POST(request: Request) {
       }
     }
 
+    // TOR requires an uploaded clearance form — validate server-side even
+    // though the client already enforces this, since the client can't be trusted.
+    let clearanceFormPublicId: string | null = null;
+    if (docType.code === 'TOR') {
+      if (!clearanceFormFile) {
+        return NextResponse.json(
+          { message: 'A clearance form upload is required for Transcript of Records requests.' },
+          { status: 400 },
+        );
+      }
+      if (!CLEARANCE_FORM_ALLOWED_TYPES.includes(clearanceFormFile.type)) {
+        return NextResponse.json(
+          { message: 'Clearance form must be a PDF, JPG, or PNG file.' },
+          { status: 400 },
+        );
+      }
+      if (clearanceFormFile.size > CLEARANCE_FORM_MAX_BYTES) {
+        return NextResponse.json(
+          { message: 'Clearance form must be 5MB or smaller.' },
+          { status: 400 },
+        );
+      }
+
+      const buffer = Buffer.from(await clearanceFormFile.arrayBuffer());
+      clearanceFormPublicId = await uploadClearanceForm(buffer);
+    }
+
     const trackingNumber = await generateTrackingNumber();
     const slaDeadline = calculateSlaDeadline(docType.sla_working_days);
 
@@ -139,6 +197,7 @@ export async function POST(request: Request) {
         sla_due_at: slaDeadline,
         school_year: hasSemester ? (schoolYear ?? null) : null,
         semester: hasSemester ? (semester ?? null) : null,
+        clearance_form_public_id: clearanceFormPublicId,
       })
       .returning({ id: document_requests.id });
 

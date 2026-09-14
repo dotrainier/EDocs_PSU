@@ -7,9 +7,10 @@ import { type DocumentType, type RequestFormData } from './NewRequestClient';
 interface Step4Props {
   formData: RequestFormData;
   documentType: DocumentType | undefined;
+  clearanceFile?: File | null;
 }
 
-export default function Step4Review({ formData, documentType }: Step4Props) {
+export default function Step4Review({ formData, documentType, clearanceFile }: Step4Props) {
   if (!documentType) return null;
 
   const periodType = documentType.period_type ?? null;
@@ -20,10 +21,16 @@ export default function Step4Review({ formData, documentType }: Step4Props) {
     periodRows.push({ label: 'Semester', value: formData.semester });
   }
 
+  const clearanceRows =
+    documentType.code === 'TOR' && clearanceFile
+      ? [{ label: 'Clearance Form', value: clearanceFile.name }]
+      : [];
+
   const rows = [
     { label: 'Document Type', value: documentType.name },
     { label: 'Issuing Office', value: documentType.issuing_office },
     ...periodRows,
+    ...clearanceRows,
     { label: 'Purpose', value: formData.purpose },
     { label: 'Number of Copies', value: formData.copies },
     { label: 'Release Method', value: 'Physical Pickup Only' },

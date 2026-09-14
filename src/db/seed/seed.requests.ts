@@ -159,18 +159,16 @@ export async function seedRequests() {
   let totalTasks = 0;
 
   // ── TOR (EDOC-2026-000001) — Pending ──────────────────────────────────────
-  // Seeding only parallel requirements (sequence_order === null).
-  // Sequential requirements are intentionally excluded for TOR; they are
-  // created programmatically after all parallel offices have cleared.
+  // TOR is Registrar-only (single sequential requirement at OUR) — mirrors
+  // what createClearanceTasks() does for real requests since there are no
+  // parallel requirements to wait on.
   const torReqs = existingOffices.filter((r) => r.document_type_id === docMap['TOR']);
-  const torTasks = torReqs
-    .filter((r) => r.sequence_order === null)
-    .map((r) => ({
-      request_id: reqMap['EDOC-2026-000001'],
-      office_id: r.office_id,
-      status: 'Pending',
-      sequence_order: null,
-    }));
+  const torTasks = torReqs.map((r) => ({
+    request_id: reqMap['EDOC-2026-000001'],
+    office_id: r.office_id,
+    status: 'Pending',
+    sequence_order: r.sequence_order,
+  }));
 
   if (torTasks.length > 0) {
     await db.insert(clearance_tasks).values(torTasks).onConflictDoNothing();
@@ -211,15 +209,13 @@ export async function seedRequests() {
   // COR has no clearance_requirements rows, so no clearance tasks are seeded.
 
   // ── TOR (EDOC-2026-000006) — Carlo — Pending ─────────────────────────────
-  // Reusing TOR's parallel requirements; all tasks pending.
-  const torTasksCarlo = torReqs
-    .filter((r) => r.sequence_order === null)
-    .map((r) => ({
-      request_id: reqMap['EDOC-2026-000006'],
-      office_id: r.office_id,
-      status: 'Pending',
-      sequence_order: null,
-    }));
+  // Reusing TOR's (Registrar-only) requirement; task pending.
+  const torTasksCarlo = torReqs.map((r) => ({
+    request_id: reqMap['EDOC-2026-000006'],
+    office_id: r.office_id,
+    status: 'Pending',
+    sequence_order: r.sequence_order,
+  }));
 
   if (torTasksCarlo.length > 0) {
     await db.insert(clearance_tasks).values(torTasksCarlo).onConflictDoNothing();
@@ -241,15 +237,13 @@ export async function seedRequests() {
   }
 
   // ── TOR (EDOC-2026-000007) — Maria — Pending ─────────────────────────────
-  // Reusing TOR's parallel requirements; all tasks pending.
-  const torTasksMaria = torReqs
-    .filter((r) => r.sequence_order === null)
-    .map((r) => ({
-      request_id: reqMap['EDOC-2026-000007'],
-      office_id: r.office_id,
-      status: 'Pending',
-      sequence_order: null,
-    }));
+  // Reusing TOR's (Registrar-only) requirement; task pending.
+  const torTasksMaria = torReqs.map((r) => ({
+    request_id: reqMap['EDOC-2026-000007'],
+    office_id: r.office_id,
+    status: 'Pending',
+    sequence_order: r.sequence_order,
+  }));
 
   if (torTasksMaria.length > 0) {
     await db.insert(clearance_tasks).values(torTasksMaria).onConflictDoNothing();

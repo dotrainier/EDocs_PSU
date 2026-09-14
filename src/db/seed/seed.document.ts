@@ -1,4 +1,4 @@
-import { sql, inArray, notInArray } from 'drizzle-orm';
+import { sql, inArray, notInArray, and, eq, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   document_types,
@@ -155,32 +155,23 @@ export async function seedDocuments() {
   // ─── 3. Clearance requirements ───────────────────────────────────────────────
   console.log('Seeding clearance requirements...');
 
+  // TOR moved from multi-office routing (Library/Cashier/Property/Guidance) to
+  // Registrar-only. Drop its old office rows so re-running the seed without a
+  // full reset (db:fresh) still converges to the current model, same as the
+  // stale-document-types cleanup above.
+  await db
+    .delete(clearance_requirements)
+    .where(
+      and(
+        eq(clearance_requirements.document_type_id, docMap['TOR']),
+        ne(clearance_requirements.office_id, officeMap['OUR']),
+      ),
+    );
+
   const clearanceData = [
-    // ── TOR: parallel clearances → OUR final ──
-    {
-      document_type_id: docMap['TOR'],
-      office_id: officeMap['LIB'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['TOR'],
-      office_id: officeMap['UCF'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['TOR'],
-      office_id: officeMap['PSO'],
-      sequence_order: null,
-      is_required: true,
-    },
-    {
-      document_type_id: docMap['TOR'],
-      office_id: officeMap['OSAS'],
-      sequence_order: null,
-      is_required: true,
-    },
+    // ── TOR: Registrar-only. Clearance is satisfied by the student uploading a
+    // clearance form (reviewed by Registrar staff), not by routing through
+    // Library/Cashier/Property/Guidance — same single-office pattern as COE/COG. ──
     {
       document_type_id: docMap['TOR'],
       office_id: officeMap['OUR'],

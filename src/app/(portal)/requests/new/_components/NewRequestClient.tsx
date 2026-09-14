@@ -227,6 +227,7 @@ export default function NewRequestClient() {
 
   const [submittedTracking, setSubmittedTracking] = useState('');
   const [submittedFee, setSubmittedFee] = useState('');
+  const [clearanceFile, setClearanceFile] = useState<File | null>(null);
   const [aiValidation, setAiValidation] = useState<AIValidationResult | null>(null);
   const [purposeQuality, setPurposeQuality] = useState<PurposeQualityResult | null>(null);
   const [aiChecking, setAiChecking] = useState(false);
@@ -263,6 +264,7 @@ export default function NewRequestClient() {
       if (!formData.purpose || !formData.copies || qualityBlocking) return false;
       const pt = selectedDoc?.period_type ?? null;
       if (pt === 'semester_past_only' && (!formData.schoolYear || !formData.semester)) return false;
+      if (selectedDoc?.code === 'TOR' && !clearanceFile) return false;
       return true;
     }
     if (currentStep === 3) return formData.agreedToPrivacy;
@@ -331,18 +333,37 @@ export default function NewRequestClient() {
     try {
       setSubmitting(true);
 
-      const res = await api.post<{
-        trackingNumber: string;
-        feeAmount: string;
-        paymentStatus: string;
-      }>('/portal/requests', {
-        documentTypeId: Number(formData.documentTypeId),
-        purpose: formData.purpose,
-        copies: Number(formData.copies),
-        additionalNotes: formData.additionalNotes || undefined,
-        schoolYear: formData.schoolYear || undefined,
-        semester: formData.semester || undefined,
-      });
+      type SubmitResult = { trackingNumber: string; feeAmount: string; paymentStatus: string };
+
+      let res: SubmitResult;
+      if (selectedDoc?.code === 'TOR' && clearanceFile) {
+        const body = new FormData();
+        body.append('documentTypeId', formData.documentTypeId);
+        body.append('purpose', formData.purpose);
+        body.append('copies', formData.copies);
+        if (formData.additionalNotes) body.append('additionalNotes', formData.additionalNotes);
+        if (formData.schoolYear) body.append('schoolYear', formData.schoolYear);
+        if (formData.semester) body.append('semester', formData.semester);
+        body.append('clearanceForm', clearanceFile);
+
+        // The axios instance defaults to Content-Type: application/json, which
+        // makes axios JSON-stringify FormData bodies instead of sending them as
+        // multipart (silently dropping the file). Clearing it here lets axios
+        // pass the FormData through untouched so the browser sets the correct
+        // multipart boundary itself.
+        res = await api.post<SubmitResult>('/portal/requests', body, {
+          headers: { 'Content-Type': undefined },
+        });
+      } else {
+        res = await api.post<SubmitResult>('/portal/requests', {
+          documentTypeId: Number(formData.documentTypeId),
+          purpose: formData.purpose,
+          copies: Number(formData.copies),
+          additionalNotes: formData.additionalNotes || undefined,
+          schoolYear: formData.schoolYear || undefined,
+          semester: formData.semester || undefined,
+        });
+      }
 
       setSubmittedTracking(res.trackingNumber);
       setSubmittedFee(res.feeAmount);
@@ -433,14 +454,15 @@ export default function NewRequestClient() {
               {!loading && !error && (
                 <Step1SelectDocument
                   selected={formData.documentTypeId}
-                  onSelect={(id) =>
+                  onSelect={(id) => {
                     setFormData((prev) => ({
                       ...prev,
                       documentTypeId: id,
                       schoolYear: '',
                       semester: '',
-                    }))
-                  }
+                    }));
+                    setClearanceFile(null);
+                  }}
                   documentTypes={DOCUMENT_TYPES}
                 />
               )}
@@ -448,7 +470,13 @@ export default function NewRequestClient() {
           )}
           {currentStep === 2 && (
             <div className='space-y-4'>
-              <Step2RequestDetails formData={formData} onChange={handleFieldChange} selectedDoc={selectedDoc} />
+              <Step2RequestDetails
+                formData={formData}
+                onChange={handleFieldChange}
+                selectedDoc={selectedDoc}
+                clearanceFile={clearanceFile}
+                onClearanceFileChange={setClearanceFile}
+              />
               <PurposeQualityDialog
                 open={!!purposeQuality && !purposeQuality.ai_failed && !purposeQuality.is_valid}
                 isVague={purposeQuality?.is_vague ?? false}
@@ -481,7 +509,9 @@ export default function NewRequestClient() {
               onToggle={(checked) => setFormData((prev) => ({ ...prev, agreedToPrivacy: checked }))}
             />
           )}
-          {currentStep === 4 && <Step4Review formData={formData} documentType={selectedDoc} />}
+          {currentStep === 4 && (
+            <Step4Review formData={formData} documentType={selectedDoc} clearanceFile={clearanceFile} />
+          )}
         </div>
 
         {/* Sticky bottom navigation */}

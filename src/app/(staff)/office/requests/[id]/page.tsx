@@ -36,6 +36,7 @@ import { ApiSLAStatus, ClearanceStatus, PaymentStatus, SLAStatus } from '@/types
 import AcademicSummaryPanel, {
   AcademicSummary,
 } from './_components/AcademicSummaryPanel';
+import ClearanceFormPanel from './_components/ClearanceFormPanel';
 
 interface ClearanceTask {
   task_id: string;
@@ -71,6 +72,7 @@ interface RequestDetailApiResponse {
     fee_amount: number | null;
     payment_status: PaymentStatus;
     payment_proof_path: string | null;
+    has_clearance_form: boolean;
     sla_due_at: string | null;
     sla_status: ApiSLAStatus;
     created_at: string;
@@ -467,6 +469,12 @@ export default function OfficeRequestDetailPage() {
               </CardContent>
             </Card>
           ) : null}
+
+          {/* Clearance form — TOR only, uploaded by the student and reviewed
+              by the Registrar in place of routing through separate offices */}
+          {req.document_type_code === 'TOR' && req.has_clearance_form && (
+            <ClearanceFormPanel trackingNumber={req.tracking_number} />
+          )}
 
           {/* Academic-records reference panel — Registrar staff only */}
           {req.academic_summary && (
