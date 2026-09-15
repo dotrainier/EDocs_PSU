@@ -11,7 +11,7 @@ import {
   users,
 } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
-import { getSlaStatus } from '@/lib/server_utils';
+import { calculateExpectedDateForRequest } from '@/lib/expected-date';
 import { getStudentAcademicSummary } from '@/lib/academic-records';
 import { composeFullName } from '@/lib/user-name';
 
@@ -47,7 +47,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         payment_status: document_requests.payment_status,
         payment_proof_path: document_requests.payment_proof_path,
         clearance_form_public_id: document_requests.clearance_form_public_id,
-        sla_due_at: document_requests.sla_due_at,
         created_at: document_requests.created_at,
         document_type: document_types.name,
         document_type_code: document_types.code,
@@ -127,8 +126,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       );
     }
 
-    // 6. SLA status
-    const slaStatus = req.sla_due_at ? getSlaStatus(req.created_at, req.sla_due_at) : 'OnTrack';
+    // 6. Live expected completion date
+    const expectedDate = await calculateExpectedDateForRequest(req.id);
 
     const toTimestamp = (value: Date | string | null) => (value ? new Date(value).getTime() : 0);
 
@@ -269,8 +268,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           payment_status: req.payment_status,
           payment_proof_path: req.payment_proof_path,
           has_clearance_form: !!req.clearance_form_public_id,
-          sla_due_at: req.sla_due_at,
-          sla_status: slaStatus,
+          expected_date: expectedDate,
           created_at: req.created_at,
           requestor_name: composeFullName({
             given_name: req.requestor_given_name,

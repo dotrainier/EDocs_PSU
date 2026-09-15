@@ -29,12 +29,6 @@ export async function seedRequests() {
 
   // ─── 2. Requests ─────────────────────────────────────────────────────────────
 
-  const daysFromNow = (n: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + n);
-    return d;
-  };
-
   const requestData = [
     // Juan — Student — multiple statuses for UI testing
     {
@@ -47,7 +41,6 @@ export async function seedRequests() {
       status: 'Pending',
       fee_amount: '150.00',
       payment_status: 'Paid',
-      sla_due_at: daysFromNow(-9), // overdue — SLA breached
     },
     {
       tracking_number: 'EDOC-2026-000002',
@@ -59,7 +52,6 @@ export async function seedRequests() {
       status: 'Ready for Release',
       fee_amount: '50.00',
       payment_status: 'Paid',
-      sla_due_at: daysFromNow(-12), // overdue — SLA breached
     },
     {
       tracking_number: 'EDOC-2026-000003',
@@ -76,7 +68,6 @@ export async function seedRequests() {
       status: 'Pending',
       fee_amount: '50.00',
       payment_status: 'Unpaid',
-      sla_due_at: daysFromNow(1), // due tomorrow — SLA warning
     },
     {
       tracking_number: 'EDOC-2026-000004',
@@ -89,7 +80,6 @@ export async function seedRequests() {
       status: 'Ready for Release',
       fee_amount: '50.00',
       payment_status: 'Paid',
-      sla_due_at: daysFromNow(-6), // completed — for historical data
     },
     // Maria — Student (graduated) — requesting a TOR for employment
     {
@@ -101,7 +91,6 @@ export async function seedRequests() {
       status: 'Pending',
       fee_amount: '50.00',
       payment_status: 'Unpaid',
-      sla_due_at: daysFromNow(3), // within SLA — comfortable
     },
     {
       tracking_number: 'EDOC-2026-000007',
@@ -112,7 +101,6 @@ export async function seedRequests() {
       status: 'Pending',
       fee_amount: '150.00',
       payment_status: 'Paid',
-      sla_due_at: daysFromNow(4), // within SLA
     },
     // Carlo — Student (transferred out) — requesting a TOR to transfer credits
     {
@@ -124,7 +112,6 @@ export async function seedRequests() {
       status: 'Pending',
       fee_amount: '150.00',
       payment_status: 'Paid',
-      sla_due_at: daysFromNow(2), // within SLA
     },
     // Carlo — requesting a COG for the last term he actually completed, for
     // credential evaluation at his new school.
@@ -139,7 +126,6 @@ export async function seedRequests() {
       status: 'Pending',
       fee_amount: '50.00',
       payment_status: 'Paid',
-      sla_due_at: daysFromNow(5), // within SLA
     },
   ];
 
@@ -156,7 +142,6 @@ export async function seedRequests() {
       status: sql`excluded.status`,
       fee_amount: sql`excluded.fee_amount`,
       payment_status: sql`excluded.payment_status`,
-      sla_due_at: sql`excluded.sla_due_at`,
       school_year: sql`excluded.school_year`,
       semester: sql`excluded.semester`,
       updated_at: new Date(),

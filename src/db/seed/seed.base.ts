@@ -11,7 +11,11 @@ const roleData = [
 ];
 
 const officeData = [
-  { name: 'Office of the University Registrar', code: 'OUR' },
+  // daily_capacity: placeholder assumption (40 capacity_weight units/day for
+  // OUR — adjust once real registrar throughput is known). Other offices are
+  // left null until the admin-editable capacity UI (a follow-up task) sets
+  // real values for them.
+  { name: 'Office of the University Registrar', code: 'OUR', daily_capacity: 40 },
   { name: 'University Cashier / Finance', code: 'UCF' },
   { name: 'University Library', code: 'LIB' },
   { name: 'Property / Supply Office', code: 'PSO' },
@@ -35,7 +39,15 @@ export async function seedBase() {
   // ─── 2. Offices ─────────────────────────────────────────────────────────────
   console.log('Seeding offices...');
 
-  await db.insert(offices).values(officeData).onConflictDoNothing();
+  // Upsert on code so re-running the seed (without db:fresh) keeps
+  // daily_capacity in sync as the placeholder value is adjusted.
+  await db.insert(offices).values(officeData).onConflictDoUpdate({
+    target: offices.code,
+    set: {
+      name: sql`excluded.name`,
+      daily_capacity: sql`excluded.daily_capacity`,
+    },
+  });
 
   const existingOffices = await db.select().from(offices);
   const officeMap: Record<string, number> = {};

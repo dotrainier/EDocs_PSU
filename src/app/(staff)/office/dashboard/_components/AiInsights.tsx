@@ -31,7 +31,6 @@ interface DashboardData {
     tracking_number: string;
     document_type: string;
     sla_status: string;
-    sla_due_at: string | null;
   }>;
   clearancePerformance: Array<{ office: string; cleared: number; pending: number; rejected: number }>;
   myStats: { my_cleared: number; my_rejected: number; my_pending: number };

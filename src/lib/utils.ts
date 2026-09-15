@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { RequestStatus, ClearanceStatus, ApiSLAStatus, SLAStatus } from '@/types/document.type';
+import { RequestStatus, ClearanceStatus } from '@/types/document.type';
 import type { UserRole } from '@/types/user.type';
 
 const OFFICE_ROLES: UserRole[] = ['OfficeStaff', 'OfficeHead'];
@@ -62,28 +62,6 @@ export function formatDateOptional(value: string | null, fallback = '') {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleDateString();
-}
-
-export function formatSLAStatus(status: ApiSLAStatus): SLAStatus {
-  if (status === 'OnTrack') return 'On Track';
-  if (status === 'AtRisk') return 'At Risk';
-  return 'Breached';
-}
-
-export function calculateDaysBetween(start: string, end: string | null) {
-  if (!end) return 0;
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
-  const diffMs = endDate.getTime() - startDate.getTime();
-  return Math.max(Math.ceil(diffMs / (1000 * 60 * 60 * 24)), 0);
-}
-
-export function calculateElapsedDays(start: string) {
-  const startDate = new Date(start);
-  if (Number.isNaN(startDate.getTime())) return 0;
-  const diffMs = Date.now() - startDate.getTime();
-  return Math.max(Math.ceil(diffMs / (1000 * 60 * 60 * 24)), 0);
 }
 
 export function getGreeting() {

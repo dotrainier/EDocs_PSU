@@ -25,12 +25,11 @@ import {
   cn,
   formatDateOptional,
   formatDateTime,
-  formatSLAStatus,
   normalizeClearanceStatus,
 } from '@/lib/utils';
 import { api } from '@/lib/axios';
 import { useFetch } from '@/hooks/useFetch';
-import { ApiSLAStatus, ClearanceStatus, PaymentStatus, SLAStatus } from '@/types/document.type';
+import { ClearanceStatus, PaymentStatus } from '@/types/document.type';
 import AcademicSummaryPanel, {
   AcademicSummary,
 } from './_components/AcademicSummaryPanel';
@@ -72,8 +71,7 @@ interface RequestDetailApiResponse {
     payment_status: PaymentStatus;
     payment_proof_path: string | null;
     has_clearance_form: boolean;
-    sla_due_at: string | null;
-    sla_status: ApiSLAStatus;
+    expected_date: string | null;
     created_at: string;
     requestor_name: string;
     requestor_school_id: string;
@@ -84,24 +82,6 @@ interface RequestDetailApiResponse {
     academic_summary: AcademicSummary | null;
   };
 }
-
-const SLA_CONFIG: Record<SLAStatus, { icon: React.ElementType; classes: string }> = {
-  'On Track': {
-    icon: CheckCircle2,
-    classes:
-      'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400',
-  },
-  'At Risk': {
-    icon: Clock,
-    classes:
-      'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400',
-  },
-  Breached: {
-    icon: AlertTriangle,
-    classes:
-      'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400',
-  },
-};
 
 const CLEARANCE_STATUS_CONFIG: Record<
   ClearanceStatus,
@@ -150,9 +130,6 @@ export default function OfficeRequestDetailPage() {
   );
 
   const req = data?.request;
-  const slaStatus: SLAStatus = req?.sla_status ? formatSLAStatus(req.sla_status) : 'On Track';
-  const slaCfg = SLA_CONFIG[slaStatus];
-  const SLAIcon = slaCfg.icon;
 
   const myTaskStatus = req?.my_task?.status ?? null;
   const isTaskPending = myTaskStatus === 'Pending';
@@ -284,11 +261,11 @@ export default function OfficeRequestDetailPage() {
           <span
             className={cn(
               'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold',
-              slaCfg.classes,
+              'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-400',
             )}
           >
-            <SLAIcon className='h-3.5 w-3.5' />
-            SLA: {slaStatus} · Due {formatDateOptional(req.sla_due_at, '—')}
+            <Clock className='h-3.5 w-3.5' />
+            Expected {formatDateOptional(req.expected_date, '—')}
           </span>
         </div>
       </div>

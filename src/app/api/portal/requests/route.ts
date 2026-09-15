@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { eq, desc, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '@/db';
-import { generateTrackingNumber, calculateSlaDeadline } from '@/lib/generate';
+import { generateTrackingNumber } from '@/lib/generate';
 import { logAudit } from '@/lib/audit';
 import { createNotification } from '@/lib/notification';
 import { sendMailToMultiple } from '@/lib/lib-mailer';
@@ -178,7 +178,6 @@ export async function POST(request: Request) {
     }
 
     const trackingNumber = await generateTrackingNumber();
-    const slaDeadline = calculateSlaDeadline(docType.sla_working_days);
 
     const hasSemester = docType.period_type === 'semester_past_only';
 
@@ -194,7 +193,6 @@ export async function POST(request: Request) {
         status: 'Pending',
         fee_amount: docType.fee_amount,
         payment_status: docType.fee_amount && docType.fee_amount !== '0.00' ? 'Unpaid' : 'Paid',
-        sla_due_at: slaDeadline,
         school_year: hasSemester ? (schoolYear ?? null) : null,
         semester: hasSemester ? (semester ?? null) : null,
         clearance_form_public_id: clearanceFormPublicId,

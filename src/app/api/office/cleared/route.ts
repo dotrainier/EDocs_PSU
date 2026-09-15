@@ -40,7 +40,6 @@ export async function GET(request: Request) {
         tracking_number: document_requests.tracking_number,
         status: document_requests.status,
         purpose: document_requests.purpose,
-        sla_due_at: document_requests.sla_due_at,
         created_at: document_requests.created_at,
         document_type: document_types.name,
         requestor_given_name: requestor.given_name,

@@ -11,7 +11,7 @@ import {
   users,
 } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
-import { getSlaStatus } from '@/lib/server_utils';
+import { calculateExpectedDateForRequest } from '@/lib/expected-date';
 import { composeFullName } from '@/lib/user-name';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -34,7 +34,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         fee_amount: document_requests.fee_amount,
         payment_status: document_requests.payment_status,
         payment_proof_path: document_requests.payment_proof_path,
-        sla_due_at: document_requests.sla_due_at,
         created_at: document_requests.created_at,
         user_id: document_requests.user_id,
         document_type: document_types.name,
@@ -89,7 +88,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       }),
     }));
 
-    const slaStatus = req.sla_due_at ? getSlaStatus(req.created_at, req.sla_due_at) : 'OnTrack';
+    const expectedDate = await calculateExpectedDateForRequest(req.id);
 
     const toTimestamp = (value: Date | string | null) => (value ? new Date(value).getTime() : 0);
 
@@ -200,8 +199,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           fee_amount: req.fee_amount,
           payment_status: req.payment_status,
           payment_proof_path: req.payment_proof_path,
-          sla_due_at: req.sla_due_at,
-          sla_status: slaStatus,
+          expected_date: expectedDate,
           created_at: req.created_at,
           clearance_tasks: tasks,
           timeline,

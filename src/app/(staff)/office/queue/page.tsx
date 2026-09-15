@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Clock,
   AlertTriangle,
-  CheckCircle2,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -30,8 +29,8 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { cn, formatDateOptional, formatSLAStatus } from '@/lib/utils';
-import type { ApiSLAStatus, PaymentStatus, SLAStatus } from '@/types/document.type';
+import { cn, formatDateOptional } from '@/lib/utils';
+import type { PaymentStatus } from '@/types/document.type';
 import { useFetch } from '@/hooks/useFetch';
 
 interface QueueApiTask {
@@ -40,8 +39,7 @@ interface QueueApiTask {
   document_type: string;
   requestor_name: string;
   created_at: string;
-  sla_due_at: string | null;
-  sla_status: ApiSLAStatus;
+  expected_date: string | null;
   payment_status: PaymentStatus;
 }
 
@@ -49,9 +47,6 @@ interface QueueApiResponse {
   tasks: QueueApiTask[];
   stats: {
     total_pending: number;
-    on_track: number;
-    at_risk: number;
-    breached: number;
   };
 }
 
@@ -59,47 +54,10 @@ interface QueueApiResponse {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-const SLA_CONFIG: Record<SLAStatus, { label: string; icon: React.ElementType; classes: string }> = {
-  'On Track': {
-    label: 'On Track',
-    icon: CheckCircle2,
-    classes:
-      'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400',
-  },
-  'At Risk': {
-    label: 'At Risk',
-    icon: Clock,
-    classes:
-      'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400',
-  },
-  Breached: {
-    label: 'Breached',
-    icon: AlertTriangle,
-    classes:
-      'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400',
-  },
-};
-
 const PAYMENT_CONFIG: Record<PaymentStatus, { classes: string }> = {
   Paid: { classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
   Unpaid: { classes: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
 };
-
-function SLABadge({ status }: { status: SLAStatus }) {
-  const cfg = SLA_CONFIG[status];
-  const Icon = cfg.icon;
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
-        cfg.classes,
-      )}
-    >
-      <Icon className='h-3 w-3' />
-      {cfg.label}
-    </span>
-  );
-}
 
 function PaymentBadge({ status }: { status: PaymentStatus }) {
   const cfg = PAYMENT_CONFIG[status];
@@ -117,7 +75,6 @@ function PaymentBadge({ status }: { status: PaymentStatus }) {
 export default function OfficeQueuePage() {
   const [search, setSearch] = useState('');
   const [docType, setDocType] = useState('All Types');
-  const [slaFilter, setSlaFilter] = useState('All');
 
   const { data, loading, error, refetch } = useFetch<QueueApiResponse>('/office/queue');
   const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks]);
@@ -133,11 +90,9 @@ export default function OfficeQueuePage() {
         t.tracking_number.toLowerCase().includes(search.toLowerCase()) ||
         t.requestor_name.toLowerCase().includes(search.toLowerCase());
       const matchDoc = docType === 'All Types' || t.document_type === docType;
-      const matchSla =
-        slaFilter === 'All' || formatSLAStatus(t.sla_status) === (slaFilter as SLAStatus);
-      return matchSearch && matchDoc && matchSla;
+      return matchSearch && matchDoc;
     });
-  }, [tasks, search, docType, slaFilter]);
+  }, [tasks, search, docType]);
 
   return (
     <div className='space-y-6 p-6 lg:p-8'>
@@ -173,20 +128,6 @@ export default function OfficeQueuePage() {
                 {documentTypes.map((t) => (
                   <SelectItem key={t} value={t} className='font-sans'>
                     {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={slaFilter} onValueChange={setSlaFilter}>
-              <SelectTrigger className='font-sans w-[160px]'>
-                <Clock className='mr-2 h-3.5 w-3.5 text-muted-foreground' />
-                <SelectValue placeholder='SLA status' />
-              </SelectTrigger>
-              <SelectContent>
-                {['All', 'On Track', 'At Risk', 'Breached'].map((s) => (
-                  <SelectItem key={s} value={s} className='font-sans'>
-                    {s}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -229,7 +170,7 @@ export default function OfficeQueuePage() {
               <div>
                 <p className='font-sans text-sm font-medium text-foreground'>No pending tasks</p>
                 <p className='font-sans mt-1 text-xs text-muted-foreground'>
-                  {search || docType !== 'All Types' || slaFilter !== 'All'
+                  {search || docType !== 'All Types'
                     ? 'Try adjusting your filters.'
                     : "You're all caught up! No requests in your queue."}
                 </p>
@@ -244,7 +185,7 @@ export default function OfficeQueuePage() {
                     'Document Type',
                     'Requestor',
                     'Date Submitted',
-                    'SLA Deadline',
+                    'Expected Date',
                     'Payment',
                     '',
                   ].map((h) => (
@@ -285,12 +226,10 @@ export default function OfficeQueuePage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className='flex flex-col gap-1'>
-                        <span className='font-sans text-xs text-muted-foreground'>
-                          {formatDateOptional(task.sla_due_at, '—')}
-                        </span>
-                        <SLABadge status={formatSLAStatus(task.sla_status)} />
-                      </div>
+                      <span className='font-sans inline-flex items-center gap-1.5 text-sm text-foreground'>
+                        <Clock className='h-3.5 w-3.5 text-muted-foreground' />
+                        {formatDateOptional(task.expected_date, '—')}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <PaymentBadge status={task.payment_status} />

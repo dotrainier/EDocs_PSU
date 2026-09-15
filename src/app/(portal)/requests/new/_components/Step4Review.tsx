@@ -2,6 +2,8 @@
 import { AlertCircle } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDateOptional } from '@/lib/utils';
+import { useFetch } from '@/hooks/useFetch';
 import { type DocumentType, type RequestFormData } from './NewRequestClient';
 
 interface Step4Props {
@@ -10,7 +12,17 @@ interface Step4Props {
   clearanceFile?: File | null;
 }
 
+interface ExpectedDateResponse {
+  expected_date: string;
+}
+
 export default function Step4Review({ formData, documentType, clearanceFile }: Step4Props) {
+  // Live pre-submission estimate: what the expected date would be if this
+  // request were submitted right now, given the current office queue.
+  const { data: expectedDateData } = useFetch<ExpectedDateResponse>(
+    documentType ? `/shared/expected-date?documentTypeId=${documentType.id}` : '',
+  );
+
   if (!documentType) return null;
 
   const periodType = documentType.period_type ?? null;
@@ -34,7 +46,10 @@ export default function Step4Review({ formData, documentType, clearanceFile }: S
     { label: 'Purpose', value: formData.purpose },
     { label: 'Number of Copies', value: formData.copies },
     { label: 'Release Method', value: 'Physical Pickup Only' },
-    { label: 'Estimated SLA', value: `${documentType.sla_working_days} working days` },
+    {
+      label: 'Estimated Completion',
+      value: expectedDateData ? formatDateOptional(expectedDateData.expected_date, '—') : 'Calculating…',
+    },
     {
       label: 'Fee',
       value: documentType.fee_amount ? `₱${documentType.fee_amount} per copy` : 'No fee',

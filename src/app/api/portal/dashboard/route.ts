@@ -33,7 +33,6 @@ export async function GET(request: Request) {
         payment_status: document_requests.payment_status,
         created_at: document_requests.created_at,
         updated_at: document_requests.updated_at,
-        sla_due_at: document_requests.sla_due_at,
       })
       .from(document_requests)
       .innerJoin(document_types, eq(document_requests.document_type_id, document_types.id))

@@ -49,7 +49,6 @@ interface ClearedTask {
   tracking_number: string;
   status: string;
   purpose: string;
-  sla_due_at: string | null;
   created_at: string;
   document_type: string;
   requestor_name: string;

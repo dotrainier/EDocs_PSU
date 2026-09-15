@@ -24,8 +24,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
-import { SLAStatus } from '@/types/document.type';
 import { AiInsights } from './_components/AiInsights';
+
+// Local placeholder mirroring the fixed-deadline SLA statuses the dashboard
+// route still emits (all "On Track" for now — see the NOTE in
+// src/app/api/office/dashboard/route.ts). Dashboard SLA visuals are a
+// separate follow-up task, not part of the expected-date rollout.
+type SLAStatus = 'On Track' | 'At Risk' | 'Breached';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -37,7 +42,6 @@ interface QueuePreviewItem {
   document_type: string;
   requestor_name: string;
   sla_status: SLAStatus;
-  sla_due_at: Date | null;
 }
 
 interface DashboardResponse {
@@ -52,7 +56,6 @@ interface DashboardResponse {
     tracking_number: string;
     document_type: string;
     requestor_name: string;
-    sla_due_at: string | null;
     sla_status: string;
     payment_status: string;
   }>;
@@ -147,7 +150,6 @@ export default function OfficeDashboardPage() {
       document_type: item.document_type,
       requestor_name: item.requestor_name,
       sla_status: item.sla_status as SLAStatus,
-      sla_due_at: item.sla_due_at ? new Date(item.sla_due_at) : null,
     })),
     [data?.tasks],
   );

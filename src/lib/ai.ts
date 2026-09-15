@@ -120,7 +120,7 @@ export async function generateDashboardInsights(data: {
   stats: { total_pending: number; on_track: number; at_risk: number; breached: number };
   slaWeeklyTrend: Array<{ week: string; onTrack: number; atRisk: number; breached: number }>;
   processingTime: Array<{ docType: string; target: number; actual: number }>;
-  tasks: Array<{ tracking_number: string; document_type: string; sla_status: string; sla_due_at?: string | null }>;
+  tasks: Array<{ tracking_number: string; document_type: string; sla_status: string }>;
   clearancePerformance: Array<{ office: string; cleared: number; pending: number; rejected: number }>;
   myStats: { my_cleared: number; my_rejected: number; my_pending: number };
 }): Promise<DashboardInsightsResult> {

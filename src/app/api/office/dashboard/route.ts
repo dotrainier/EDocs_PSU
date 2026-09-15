@@ -1,6 +1,6 @@
 // src/app/api/office/dashboard/route.ts
 import { NextResponse } from 'next/server';
-import { eq, and, desc, sql, gte } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { clearance_tasks, document_requests, document_types, users, offices } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
@@ -39,7 +39,6 @@ export async function GET(request: Request) {
         requestor_last_name: users.last_name,
         requestor_name_suffix: users.name_suffix,
         created_at: document_requests.created_at,
-        sla_due_at: document_requests.sla_due_at,
         status: document_requests.status,
         payment_status: document_requests.payment_status,
       })
@@ -61,83 +60,33 @@ export async function GET(request: Request) {
         name_suffix: task.requestor_name_suffix,
       }),
       created_at: task.created_at,
-      sla_due_at: task.sla_due_at,
       status: task.status,
       payment_status: task.payment_status,
     }));
 
-    // Helper: calculate SLA status from dates
-    const calculateSlaStatus = (createdAt: Date, slaDueAt: Date | null): string => {
-      if (!slaDueAt) return 'On Track';
-      const now = new Date();
-      const totalMs = slaDueAt.getTime() - createdAt.getTime();
-      const elapsedMs = now.getTime() - createdAt.getTime();
-      const percentElapsed = (elapsedMs / totalMs) * 100;
-
-      if (percentElapsed >= 100) return 'Breached';
-      if (percentElapsed >= 75) return 'At Risk';
-      return 'On Track';
-    };
-
-    // 2. Calculate stats
-    const tasksWithSla = pendingTasks.map((t) => ({
-      ...t,
-      sla_status: calculateSlaStatus(t.created_at, t.sla_due_at),
-    }));
+    // NOTE: On Track/At Risk/Breached SLA-status counts and the weekly SLA
+    // trend chart are retired along with the fixed-deadline SLA system. A
+    // live capacity-based number doesn't fit an "on track/breached" framing,
+    // so these are left as neutral placeholders pending a dedicated
+    // replacement concept for the dashboard (a separate follow-up task) —
+    // see calculateExpectedDate() in src/lib/expected-date.ts for the new
+    // per-request calculation used elsewhere.
+    const tasksWithSla = pendingTasks.map((t) => ({ ...t, sla_status: 'On Track' as const }));
 
     const stats = {
       total_pending: tasksWithSla.length,
-      on_track: tasksWithSla.filter((t) => t.sla_status === 'OnTrack').length,
-      at_risk: tasksWithSla.filter((t) => t.sla_status === 'AtRisk').length,
-      breached: tasksWithSla.filter((t) => t.sla_status === 'Breached').length,
+      on_track: tasksWithSla.length,
+      at_risk: 0,
+      breached: 0,
     };
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 2. SLA WEEKLY TREND (last 4 weeks)
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const fourWeeksAgo = new Date();
-    fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-
-    const allRequestsLast4Weeks = await db
-      .select({
-        request_id: document_requests.id,
-        created_at: document_requests.created_at,
-        sla_due_at: document_requests.sla_due_at,
-      })
-      .from(clearance_tasks)
-      .innerJoin(document_requests, eq(clearance_tasks.request_id, document_requests.id))
-      .where(
-        and(
-          eq(clearance_tasks.office_id, officeId),
-          gte(document_requests.created_at, fourWeeksAgo),
-        ),
-      );
-
-    // Group by week
-    const weeklyMap: Record<string, { onTrack: number; atRisk: number; breached: number }> = {};
-    allRequestsLast4Weeks.forEach((r) => {
-      const weekNum = Math.ceil(
-        (new Date().getTime() - r.created_at.getTime()) / (7 * 24 * 60 * 60 * 1000),
-      );
-      const weekKey = `Week ${5 - Math.floor(weekNum / 7)}`;
-
-      if (!weeklyMap[weekKey]) {
-        weeklyMap[weekKey] = { onTrack: 0, atRisk: 0, breached: 0 };
-      }
-
-      const status = calculateSlaStatus(r.created_at, r.sla_due_at);
-      if (status === 'OnTrack') weeklyMap[weekKey].onTrack++;
-      else if (status === 'AtRisk') weeklyMap[weekKey].atRisk++;
-      else weeklyMap[weekKey].breached++;
-    });
-
-    const slaWeeklyTrend = ['Week 1', 'Week 2', 'Week 3', 'Week 4'].map((week) => ({
-      week,
-      onTrack: weeklyMap[week]?.onTrack ?? 0,
-      atRisk: weeklyMap[week]?.atRisk ?? 0,
-      breached: weeklyMap[week]?.breached ?? 0,
-    }));
+    const slaWeeklyTrend: Array<{ week: string; onTrack: number; atRisk: number; breached: number }> =
+      ['Week 1', 'Week 2', 'Week 3', 'Week 4'].map((week) => ({
+        week,
+        onTrack: 0,
+        atRisk: 0,
+        breached: 0,
+      }));
 
     // ─────────────────────────────────────────────────────────────────────────
     // 3. DOCUMENT TYPE DISTRIBUTION
@@ -243,7 +192,6 @@ export async function GET(request: Request) {
       document_type: t.document_type,
       requestor_name: t.requestor_name,
       created_at: t.created_at,
-      sla_due_at: t.sla_due_at,
       sla_status: t.sla_status,
       payment_status: t.payment_status,
     }));

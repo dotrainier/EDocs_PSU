@@ -4,7 +4,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { db } from '@/db';
 import { clearance_tasks, document_requests, document_types, users } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
-import { getSlaStatus } from '@/lib/server_utils';
+import { calculateExpectedDatesForOffice } from '@/lib/expected-date';
 import { composeFullName } from '@/lib/user-name';
 
 // ── GET /api/office/queue ─────────────────────────────────────────────────────
@@ -43,7 +43,6 @@ export async function GET(request: Request) {
         copies: document_requests.copies,
         fee_amount: document_requests.fee_amount,
         payment_status: document_requests.payment_status,
-        sla_due_at: document_requests.sla_due_at,
         created_at: document_requests.created_at,
 
         // Document type
@@ -87,21 +86,17 @@ export async function GET(request: Request) {
       }),
     );
 
-    // 5. Add SLA status to each task
-    const tasksWithSla = tasks.map((t) => ({
+    // 5. Add the live calculated expected date to each task
+    const expectedDates = await calculateExpectedDatesForOffice(Number(session.officeId));
+    const tasksWithExpectedDate = tasks.map((t) => ({
       ...t,
-      sla_status: t.sla_due_at ? getSlaStatus(t.created_at, t.sla_due_at) : 'OnTrack',
+      expected_date: expectedDates.get(t.request_id) ?? null,
     }));
 
     // 6. Stats for dashboard
-    const stats = {
-      total_pending: tasksWithSla.length,
-      on_track: tasksWithSla.filter((t) => t.sla_status === 'OnTrack').length,
-      at_risk: tasksWithSla.filter((t) => t.sla_status === 'AtRisk').length,
-      breached: tasksWithSla.filter((t) => t.sla_status === 'Breached').length,
-    };
+    const stats = { total_pending: tasksWithExpectedDate.length };
 
-    return NextResponse.json({ tasks: tasksWithSla, stats }, { status: 200 });
+    return NextResponse.json({ tasks: tasksWithExpectedDate, stats }, { status: 200 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'An unexpected error occurred';
     return NextResponse.json({ message }, { status: 500 });

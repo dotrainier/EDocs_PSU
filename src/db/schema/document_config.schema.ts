@@ -22,7 +22,13 @@ export const document_types = pgTable(
       .references(() => offices.id),
     handling_pattern: varchar('handling_pattern', { length: 20 }).notNull().default('GENERATE'), // 'GENERATE' | 'UPLOAD'
     fee_amount: decimal('fee_amount', { precision: 10, scale: 2 }), // null = free
+    // Minimum realistic preparation days for this type — a floor on the
+    // expected-date calculation, not a promised deadline (see
+    // src/lib/expected-date.ts).
     sla_working_days: integer('sla_working_days').notNull().default(3),
+    // Relative load this document type places on its issuing office's daily
+    // capacity (e.g. TOR takes longer to prepare than a generated certificate).
+    capacity_weight: integer('capacity_weight').notNull().default(1),
     requires_clearance: boolean('requires_clearance').notNull().default(false),
     // Controls which extra period fields are collected on the request form:
     // 'semester_past_only' → school_year + semester required, restricted to past terms (COG)

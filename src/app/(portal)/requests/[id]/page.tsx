@@ -21,7 +21,6 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -37,9 +36,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useFetch } from '@/hooks/useFetch';
 import {
-  calculateDaysBetween,
-  calculateElapsedDays,
   formatDate,
+  formatDateOptional,
   formatDateTime,
   normalizeClearanceStatus,
   normalizeRequestStatus,
@@ -71,8 +69,7 @@ interface DocumentRequest {
   dateFiled: string;
   copies: number;
   purpose: string;
-  slaDays: number;
-  elapsedDays: number;
+  expectedDate: string | null;
   fee: string | null;
   paymentStatus: string;
   clearanceOffices: ClearanceOffice[];
@@ -98,8 +95,7 @@ interface RequestResponse {
     fee_amount: string | null;
     payment_status: string;
     payment_proof_path: string | null;
-    sla_due_at: string | null;
-    sla_status: 'OnTrack' | 'AtRisk' | 'Breached';
+    expected_date: string | null;
     created_at: string;
     clearance_tasks: Array<{
       office_name: string;
@@ -224,8 +220,6 @@ export default function TrackRequestPage() {
 
     const apiRequest = data.request;
     const status = normalizeRequestStatus(apiRequest.status);
-    const slaDays = calculateDaysBetween(apiRequest.created_at, apiRequest.sla_due_at);
-    const elapsedDays = calculateElapsedDays(apiRequest.created_at);
 
     return {
       id: apiRequest.tracking_number,
@@ -236,8 +230,7 @@ export default function TrackRequestPage() {
       dateFiled: formatDate(apiRequest.created_at),
       copies: apiRequest.copies,
       purpose: apiRequest.purpose,
-      slaDays: slaDays || 1,
-      elapsedDays,
+      expectedDate: apiRequest.expected_date,
       fee: apiRequest.fee_amount,
       paymentStatus: apiRequest.payment_status,
       clearanceOffices: apiRequest.clearance_tasks.map((task) => ({
@@ -260,16 +253,6 @@ export default function TrackRequestPage() {
       isCancellable: status === 'Pending' || status === 'In Process',
     };
   }, [data]);
-
-  const slaPercent = request ? Math.min((request.elapsedDays / request.slaDays) * 100, 100) : 0;
-  const slaColor =
-    slaPercent < 50 ? 'text-emerald-600' : slaPercent < 85 ? 'text-amber-600' : 'text-red-600';
-  const slaBarColor =
-    slaPercent < 50
-      ? '[&>div]:bg-emerald-500'
-      : slaPercent < 85
-        ? '[&>div]:bg-amber-500'
-        : '[&>div]:bg-red-500';
 
   const hasClearance = (request?.clearanceOffices.length ?? 0) > 0;
   const isReadyOrReleased =
@@ -380,29 +363,21 @@ export default function TrackRequestPage() {
               ))}
             </div>
 
-            {/* Right: SLA indicator */}
+            {/* Right: Expected completion */}
             <div className='flex flex-col justify-center gap-3 rounded-lg bg-muted/40 p-4'>
               <div className='flex items-center justify-between'>
                 <p className='text-xs font-medium text-muted-foreground uppercase tracking-wide'>
-                  SLA Progress
+                  Expected Completion
                 </p>
                 <Clock className='h-4 w-4 text-muted-foreground' />
               </div>
               <div>
-                <p className={`text-2xl font-bold ${slaColor}`}>
-                  Day {request.elapsedDays}
-                  <span className='text-base font-normal text-muted-foreground'>
-                    {' '}
-                    of {request.slaDays}
-                  </span>
+                <p className='text-2xl font-bold text-foreground'>
+                  {formatDateOptional(request.expectedDate, '—')}
                 </p>
-                <p className='text-xs text-muted-foreground mt-0.5'>working days</p>
               </div>
-              <Progress value={slaPercent} className={`h-2 ${slaBarColor}`} />
               <p className='text-xs text-muted-foreground'>
-                {request.slaDays - request.elapsedDays > 0
-                  ? `${request.slaDays - request.elapsedDays} working day(s) remaining`
-                  : 'SLA deadline reached'}
+                Estimated from your office&apos;s current workload — updates as the queue changes.
               </p>
             </div>
           </div>
