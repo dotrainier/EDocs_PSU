@@ -24,11 +24,13 @@
     "drizzle-orm": "^0.45.2",
     "libreoffice-convert": "^1.8.1",
     "lucide-react": "^1.9.0",
+    "mammoth": "^1.12.3",
     "nanoid": "^5.1.11",
     "next": "16.2.4",
     "nodemailer": "^8.0.7",
     "pizzip": "^3.2.0",
     "postgres": "^3.4.9",
+    "puppeteer": "^25.10.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",
     "react-apexcharts": "^2.1.0",
@@ -51,5 +53,8 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "puppeteer@25.10.0": true
   }
 }

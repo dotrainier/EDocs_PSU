@@ -224,6 +224,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         };
       }
 
+      if (event.action === 'DOCUMENT_GENERATED') {
+        return {
+          id: event.id,
+          title: 'Document generated',
+          at: event.timestamp,
+          subtitle: event.actor ? `By ${event.actor}` : null,
+        };
+      }
+
       return {
         id: event.id,
         title: event.action,

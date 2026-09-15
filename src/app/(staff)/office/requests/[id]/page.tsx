@@ -35,6 +35,7 @@ import AcademicSummaryPanel, {
   AcademicSummary,
 } from './_components/AcademicSummaryPanel';
 import ClearanceFormPanel from './_components/ClearanceFormPanel';
+import GenerateDocumentPanel from './_components/GenerateDocumentPanel';
 
 interface ClearanceTask {
   task_id: string;
@@ -465,6 +466,15 @@ export default function OfficeRequestDetailPage() {
               by the Registrar in place of routing through separate offices */}
           {req.document_type_code === 'TOR' && req.has_clearance_form && (
             <ClearanceFormPanel trackingNumber={req.tracking_number} />
+          )}
+
+          {/* Generate Document — internal staff action for GENERATE-pattern
+              document types (COE/COR/COG). Naturally excludes TOR via the
+              handling_pattern gate. Only available once the request is fully
+              cleared and Ready for Release; never shown to or reachable by
+              students. */}
+          {req.handling_pattern === 'GENERATE' && req.status === 'Ready for Release' && (
+            <GenerateDocumentPanel trackingNumber={req.tracking_number} />
           )}
 
           {/* Academic-records reference panel — Registrar staff only */}
