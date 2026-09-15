@@ -1,4 +1,4 @@
-import { inArray, sql } from 'drizzle-orm';
+import { inArray, isNotNull, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   document_requests,
@@ -154,8 +154,10 @@ export async function seedRequests() {
 
   const insertedRequests = await db.select().from(document_requests);
   const reqMap: Record<string, string> = {};
+  const trackingByRequestId: Record<string, string> = {};
   insertedRequests.forEach((r) => {
     reqMap[r.tracking_number] = r.id;
+    trackingByRequestId[r.id] = r.tracking_number;
   });
 
   const existingOffices = await db.select().from(clearance_requirements);
@@ -343,6 +345,10 @@ export async function seedRequests() {
     const requestId = reqMap[request.tracking_number];
     if (!requestId || !request.user_id) continue;
 
+    // Deterministic per-run key — re-seeding hits the same row instead of
+    // inserting a new duplicate each time (see audit_log.seed_key).
+    const seedKey = `REQUEST_SUBMITTED:${request.tracking_number}:seed`;
+
     await db.insert(audit_log).values({
       user_id: request.user_id,
       action: 'REQUEST_SUBMITTED',
@@ -353,7 +359,8 @@ export async function seedRequests() {
         purpose: request.purpose,
       },
       ip_address: 'seed',
-    }).onConflictDoNothing();
+      seed_key: seedKey,
+    }).onConflictDoNothing({ target: audit_log.seed_key, where: isNotNull(audit_log.seed_key) });
   }
 
   // ── CLEARANCE_CLEARED / CLEARANCE_REJECTED — one entry per relevant task ──
@@ -370,6 +377,7 @@ export async function seedRequests() {
   for (const task of seededTasks) {
     const officeCode = officeIdToCode[task.office_id];
     const actorId = officeActor[officeCode] ?? systemActorId;
+    const trackingNumber = trackingByRequestId[task.request_id];
 
     if (task.status === 'Cleared') {
       await db.insert(audit_log).values({
@@ -382,7 +390,8 @@ export async function seedRequests() {
           remarks: 'Seeded as cleared',
         },
         ip_address: 'seed',
-      }).onConflictDoNothing();
+        seed_key: `CLEARANCE_CLEARED:${trackingNumber}:${officeCode}:seed`,
+      }).onConflictDoNothing({ target: audit_log.seed_key, where: isNotNull(audit_log.seed_key) });
     }
 
     // Action Required maps to CLEARANCE_REJECTED in the real app flow.
@@ -397,7 +406,8 @@ export async function seedRequests() {
           remarks: 'Seeded as action required — student response needed',
         },
         ip_address: 'seed',
-      }).onConflictDoNothing();
+        seed_key: `CLEARANCE_REJECTED:${trackingNumber}:${officeCode}:seed`,
+      }).onConflictDoNothing({ target: audit_log.seed_key, where: isNotNull(audit_log.seed_key) });
     }
   }
 

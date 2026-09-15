@@ -1,14 +1,28 @@
-import { pgTable, uuid, varchar, jsonb, timestamp, boolean, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, jsonb, timestamp, boolean, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { users, document_requests } from './index';
 
-export const audit_log = pgTable('audit_log', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  user_id: uuid('user_id').references(() => users.id),
-  action: varchar('action', { length: 100 }).notNull(),
-  details: jsonb('details'),
-  ip_address: varchar('ip_address', { length: 45 }),
-  timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
-});
+export const audit_log = pgTable(
+  'audit_log',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    user_id: uuid('user_id').references(() => users.id),
+    action: varchar('action', { length: 100 }).notNull(),
+    details: jsonb('details'),
+    ip_address: varchar('ip_address', { length: 45 }),
+    timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
+    // Deterministic dedupe key set ONLY by the seed script (e.g.
+    // "REQUEST_SUBMITTED:EDOC-2026-000001:seed"), so re-seeding converges
+    // via onConflictDoNothing instead of duplicating. logAudit() (real app
+    // code) never sets this, so genuinely repeated real actions — e.g.
+    // generating the same document twice — are never constrained.
+    seed_key: varchar('seed_key', { length: 200 }),
+  },
+  (table) => [
+    // Partial unique index: only rows that set seed_key are constrained.
+    uniqueIndex('audit_log_seed_key_uq').on(table.seed_key).where(sql`${table.seed_key} IS NOT NULL`),
+  ],
+);
 
 export const notifications = pgTable(
   'notifications',
