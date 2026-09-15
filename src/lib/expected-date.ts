@@ -170,3 +170,35 @@ export async function calculateExpectedDateForNewRequest(documentTypeId: number)
     from: new Date(),
   });
 }
+
+/**
+ * Current backlog at an office, expressed in days: the same
+ * queueWeight/dailyCapacity ratio calculateExpectedDate() uses internally,
+ * surfaced on its own for the office dashboard — a live snapshot, not a
+ * historical trend (see the office dashboard route for why).
+ */
+export async function getOfficeBacklogSummary(officeId: number): Promise<{
+  totalWeight: number;
+  dailyCapacity: number | null;
+  backlogDays: number;
+}> {
+  const [dailyCapacity, weightRows] = await Promise.all([
+    getOfficeDailyCapacity(officeId),
+    db
+      .select({ weight: sql<number>`COALESCE(SUM(${document_types.capacity_weight}), 0)` })
+      .from(document_requests)
+      .innerJoin(document_types, eq(document_requests.document_type_id, document_types.id))
+      .where(
+        and(
+          eq(document_types.issuing_office_id, officeId),
+          inArray(document_requests.status, QUEUE_STATUSES),
+        ),
+      ),
+  ]);
+
+  const totalWeight = Number(weightRows[0]?.weight ?? 0);
+  const capacity =
+    dailyCapacity && dailyCapacity > 0 ? dailyCapacity : DEFAULT_DAILY_CAPACITY;
+
+  return { totalWeight, dailyCapacity, backlogDays: Math.ceil(totalWeight / capacity) };
+}

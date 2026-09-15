@@ -117,20 +117,25 @@ export interface DashboardInsightsResult {
 
 export async function generateDashboardInsights(data: {
   role: string;
-  stats: { total_pending: number; on_track: number; at_risk: number; breached: number };
-  slaWeeklyTrend: Array<{ week: string; onTrack: number; atRisk: number; breached: number }>;
+  stats: { total_pending: number; on_track: number; overdue: number };
+  backlog: { totalWeight: number; dailyCapacity: number | null; backlogDays: number };
   processingTime: Array<{ docType: string; target: number; actual: number }>;
-  tasks: Array<{ tracking_number: string; document_type: string; sla_status: string }>;
+  tasks: Array<{ tracking_number: string; document_type: string; status: string }>;
   clearancePerformance: Array<{ office: string; cleared: number; pending: number; rejected: number }>;
   myStats: { my_cleared: number; my_rejected: number; my_pending: number };
 }): Promise<DashboardInsightsResult> {
-  const { role, stats, slaWeeklyTrend, processingTime, tasks, clearancePerformance, myStats } = data;
+  const { role, stats, backlog, processingTime, tasks, clearancePerformance, myStats } = data;
 
   const topTasks = tasks.slice(0, 10).map((t) => ({
     tracking: t.tracking_number,
     type: t.document_type,
-    sla: t.sla_status,
+    status: t.status,
   }));
+
+  const backlogLine =
+    backlog.backlogDays > 0
+      ? `${backlog.totalWeight} weighted requests queued against a daily capacity of ${backlog.dailyCapacity ?? 'a default'} → about ${backlog.backlogDays} day(s) of backlog`
+      : `${backlog.totalWeight} weighted requests queued — within today's capacity, no backlog`;
 
   const isHead = role === 'OfficeHead';
 
@@ -139,25 +144,24 @@ export async function generateDashboardInsights(data: {
 You are an AI assistant for a university document processing system. Analyze this office dashboard data and provide 3–5 prioritized, actionable insights for the Office Head to manage their team.
 
 OFFICE DASHBOARD DATA:
-Queue: ${stats.total_pending} pending | ${stats.on_track} on-track | ${stats.at_risk} at-risk | ${stats.breached} breached
+Queue: ${stats.total_pending} pending | ${stats.on_track} on-track | ${stats.overdue} overdue (compared to each request's live calculated expected date)
 
-Weekly SLA trend (last 4 weeks):
-${slaWeeklyTrend.map((w) => `  ${w.week}: ${w.onTrack} on-track, ${w.atRisk} at-risk, ${w.breached} breached`).join('\n')}
+Current backlog: ${backlogLine}
 
 Processing time vs target (working days):
 ${processingTime.map((p) => `  ${p.docType}: target=${p.target}d, actual=${p.actual}d`).join('\n')}
 
 Top pending tasks:
-${topTasks.map((t) => `  ${t.tracking} (${t.type}) — ${t.sla}`).join('\n')}
+${topTasks.map((t) => `  ${t.tracking} (${t.type}) — ${t.status}`).join('\n')}
 
 Clearance performance by office:
 ${clearancePerformance.map((c) => `  ${c.office}: ${c.cleared} cleared, ${c.pending} pending, ${c.rejected} rejected`).join('\n')}
 
 Generate 3–5 insights sorted by urgency. Focus on team-level actions the head should take (delegate, escalate, monitor).
 Use severity:
-- "critical" → immediate action needed (breached SLAs, serious bottlenecks)
-- "warning" → needs attention soon (at-risk items, worsening trends)
-- "info" → useful observations (positive trends, patterns)
+- "critical" → immediate action needed (overdue requests, several days of backlog)
+- "warning" → needs attention soon (backlog building, worsening processing time)
+- "info" → useful observations (healthy queue, positive patterns)
 `
     : `
 You are an AI assistant for a university document processing system. Analyze this staff member's personal workload data and provide 3–5 prioritized, actionable personal insights. Speak directly to the staff member using "you"/"your".
@@ -165,18 +169,17 @@ You are an AI assistant for a university document processing system. Analyze thi
 YOUR PERSONAL STATS:
 Tasks you have cleared: ${myStats.my_cleared}
 Tasks you have rejected: ${myStats.my_rejected}
-Pending tasks in your queue: ${myStats.my_pending} (on-track: ${stats.on_track}, at-risk: ${stats.at_risk}, breached: ${stats.breached})
+Pending tasks in your queue: ${myStats.my_pending} (on-track: ${stats.on_track}, overdue: ${stats.overdue})
 
 Your pending tasks (most urgent first):
-${topTasks.map((t) => `  ${t.tracking} (${t.type}) — ${t.sla}`).join('\n')}
+${topTasks.map((t) => `  ${t.tracking} (${t.type}) — ${t.status}`).join('\n')}
 
-Weekly SLA trend in your office (last 4 weeks):
-${slaWeeklyTrend.map((w) => `  ${w.week}: ${w.onTrack} on-track, ${w.atRisk} at-risk, ${w.breached} breached`).join('\n')}
+Current backlog in your office: ${backlogLine}
 
 Generate 3–5 personal insights sorted by urgency. Focus on what this staff member should personally act on today.
 Use severity:
-- "critical" → you need to act immediately (your tasks breached SLA)
-- "warning" → needs your attention soon (at-risk tasks, rising workload)
+- "critical" → you need to act immediately (your tasks are overdue)
+- "warning" → needs your attention soon (backlog building, rising workload)
 - "info" → personal performance observations (your clearance count, trends)
 `;
 
@@ -186,9 +189,9 @@ Return ONLY valid JSON. No markdown, no explanation.
   "insights": [
     {
       "severity": "critical",
-      "title": "3 Requests Have Breached SLA",
-      "body": "Immediate action required. These requests are past their processing deadline.",
-      "action": "Review and process breached items first",
+      "title": "3 Requests Are Overdue",
+      "body": "Immediate action required. These requests are past their calculated expected date.",
+      "action": "Review and process overdue items first",
       "link": "/office/queue"
     }
   ]

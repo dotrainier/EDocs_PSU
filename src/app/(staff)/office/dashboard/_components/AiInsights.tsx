@@ -24,13 +24,13 @@ interface InsightsResult {
 
 interface DashboardData {
   role: string;
-  stats: { total_pending: number; on_track: number; at_risk: number; breached: number };
-  slaWeeklyTrend: Array<{ week: string; onTrack: number; atRisk: number; breached: number }>;
+  stats: { total_pending: number; on_track: number; overdue: number };
+  backlog: { totalWeight: number; dailyCapacity: number | null; backlogDays: number };
   processingTime: Array<{ docType: string; target: number; actual: number }>;
   tasks: Array<{
     tracking_number: string;
     document_type: string;
-    sla_status: string;
+    status: string;
   }>;
   clearancePerformance: Array<{ office: string; cleared: number; pending: number; rejected: number }>;
   myStats: { my_cleared: number; my_rejected: number; my_pending: number };
@@ -82,7 +82,7 @@ export function AiInsights({ data }: { data: DashboardData | null }) {
         body: JSON.stringify({
           role: data.role,
           stats: data.stats,
-          slaWeeklyTrend: data.slaWeeklyTrend,
+          backlog: data.backlog,
           processingTime: data.processingTime,
           tasks: data.tasks,
           clearancePerformance: data.clearancePerformance,

@@ -7,9 +7,8 @@ import {
   ClipboardList,
   CheckCircle2,
   AlertTriangle,
-  Clock,
+  Gauge,
   ChevronRight,
-  TrendingUp,
   BarChart3,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,11 +25,10 @@ import { cn } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
 import { AiInsights } from './_components/AiInsights';
 
-// Local placeholder mirroring the fixed-deadline SLA statuses the dashboard
-// route still emits (all "On Track" for now — see the NOTE in
-// src/app/api/office/dashboard/route.ts). Dashboard SLA visuals are a
-// separate follow-up task, not part of the expected-date rollout.
-type SLAStatus = 'On Track' | 'At Risk' | 'Breached';
+// On Track / Overdue is a live comparison of each request's calculated
+// expected date against today (see src/lib/expected-date.ts) — no status is
+// stored, so this always reflects the current queue and capacity.
+type ExpectedStatus = 'On Track' | 'Overdue';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -41,13 +39,13 @@ interface QueuePreviewItem {
   tracking_number: string;
   document_type: string;
   requestor_name: string;
-  sla_status: SLAStatus;
+  status: ExpectedStatus;
 }
 
 interface DashboardResponse {
   role: string;
-  stats: { total_pending: number; on_track: number; at_risk: number; breached: number };
-  slaWeeklyTrend: Array<{ week: string; onTrack: number; atRisk: number; breached: number }>;
+  stats: { total_pending: number; on_track: number; overdue: number };
+  backlog: { totalWeight: number; dailyCapacity: number | null; backlogDays: number };
   documentTypeDistribution: Array<{ name: string; value: number }>;
   processingTime: Array<{ docType: string; target: number; actual: number }>;
   clearancePerformance: Array<{ office: string; cleared: number; pending: number; rejected: number }>;
@@ -56,7 +54,7 @@ interface DashboardResponse {
     tracking_number: string;
     document_type: string;
     requestor_name: string;
-    sla_status: string;
+    status: string;
     payment_status: string;
   }>;
   myStats: { my_cleared: number; my_rejected: number; my_pending: number };
@@ -109,14 +107,13 @@ function StatCard({ title, value, icon: Icon, iconClass, bgClass, description }:
   );
 }
 
-const SLA_CONFIG: Record<SLAStatus, { label: string; icon: React.ElementType; classes: string }> = {
+const STATUS_CONFIG: Record<ExpectedStatus, { label: string; icon: React.ElementType; classes: string }> = {
   'On Track': { label: 'On Track', icon: CheckCircle2, classes: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400' },
-  'At Risk': { label: 'At Risk', icon: Clock, classes: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400' },
-  Breached: { label: 'Breached', icon: AlertTriangle, classes: 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400' },
+  Overdue: { label: 'Overdue', icon: AlertTriangle, classes: 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400' },
 };
 
-function SLABadge({ status }: { status: SLAStatus }) {
-  const cfg = SLA_CONFIG[status];
+function StatusBadge({ status }: { status: ExpectedStatus }) {
+  const cfg = STATUS_CONFIG[status];
   const Icon = cfg.icon;
   return (
     <span className={cn('font-sans inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', cfg.classes)}>
@@ -139,8 +136,13 @@ export default function OfficeDashboardPage() {
   const { data, loading, error, refetch } = useFetch<DashboardResponse>('/office/dashboard');
 
   const stats = useMemo(
-    () => data?.stats ?? { total_pending: 0, on_track: 0, at_risk: 0, breached: 0 },
+    () => data?.stats ?? { total_pending: 0, on_track: 0, overdue: 0 },
     [data?.stats],
+  );
+
+  const backlog = useMemo(
+    () => data?.backlog ?? { totalWeight: 0, dailyCapacity: null, backlogDays: 0 },
+    [data?.backlog],
   );
 
   const queuePreview = useMemo<QueuePreviewItem[]>(
@@ -149,37 +151,17 @@ export default function OfficeDashboardPage() {
       tracking_number: item.tracking_number,
       document_type: item.document_type,
       requestor_name: item.requestor_name,
-      sla_status: item.sla_status as SLAStatus,
+      status: item.status as ExpectedStatus,
     })),
     [data?.tasks],
   );
 
-  // ── SLA trend area ──
-  const slaAreaOptions: ApexOptions = useMemo(() => ({
-    ...base,
-    chart: { ...base.chart, type: 'area', id: 'sla-trend' },
-    colors: [C.emerald, C.amber, C.red],
-    stroke: { curve: 'smooth', width: 2 },
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 100] } },
-    xaxis: { categories: data?.slaWeeklyTrend?.map((d) => d.week) ?? [], axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '11px' } } },
-    yaxis: { labels: { style: { fontSize: '11px' } } },
-    dataLabels: { enabled: false },
-    legend: { position: 'top', horizontalAlign: 'right', fontSize: '12px' },
-    markers: { size: 3, hover: { size: 5 } },
-  }), [data?.slaWeeklyTrend]);
-
-  const slaAreaSeries = useMemo(() => [
-    { name: 'On Track', data: data?.slaWeeklyTrend?.map((d) => d.onTrack) ?? [] },
-    { name: 'At Risk', data: data?.slaWeeklyTrend?.map((d) => d.atRisk) ?? [] },
-    { name: 'Breached', data: data?.slaWeeklyTrend?.map((d) => d.breached) ?? [] },
-  ], [data?.slaWeeklyTrend]);
-
-  // ── Queue donut ──
+  // ── Queue donut (On Track vs Overdue) ──
   const donutOptions: ApexOptions = useMemo(() => ({
     ...base,
     chart: { ...base.chart, type: 'donut', id: 'queue-status' },
-    colors: [C.emerald, C.amber, C.red],
-    labels: ['On Track', 'At Risk', 'Breached'],
+    colors: [C.emerald, C.red],
+    labels: ['On Track', 'Overdue'],
     plotOptions: {
       pie: {
         donut: {
@@ -196,7 +178,7 @@ export default function OfficeDashboardPage() {
     stroke: { width: 0 },
   }), [stats.total_pending]);
 
-  const donutSeries = useMemo(() => [stats.on_track, stats.at_risk, stats.breached], [stats]);
+  const donutSeries = useMemo(() => [stats.on_track, stats.overdue], [stats]);
 
   // ── Document type horizontal bar ──
   const docTypeOptions: ApexOptions = useMemo(() => ({
@@ -253,8 +235,8 @@ export default function OfficeDashboardPage() {
     return (
       <div className='space-y-6 p-6 lg:p-8'>
         <div className='h-8 w-48 animate-pulse rounded-lg bg-muted' />
-        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-          {Array(4).fill(0).map((_, i) => <div key={i} className='h-32 animate-pulse rounded-lg bg-muted' />)}
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'>
+          {Array(3).fill(0).map((_, i) => <div key={i} className='h-32 animate-pulse rounded-lg bg-muted' />)}
         </div>
       </div>
     );
@@ -279,11 +261,10 @@ export default function OfficeDashboardPage() {
         <p className='font-sans mt-1 text-sm text-muted-foreground'>Real-time workload summary and performance metrics</p>
       </div>
 
-      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4'>
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'>
         <StatCard title='Pending Tasks' value={stats.total_pending} icon={ClipboardList} iconClass='text-primary' bgClass='bg-primary/10' description='In queue, not yet acted on' />
-        <StatCard title='On Track' value={stats.on_track} icon={CheckCircle2} iconClass='text-emerald-600' bgClass='bg-emerald-100 dark:bg-emerald-950/40' description='Within SLA window' />
-        <StatCard title='At Risk' value={stats.at_risk} icon={Clock} iconClass='text-amber-600' bgClass='bg-amber-100 dark:bg-amber-950/40' description='Near SLA deadline' />
-        <StatCard title='SLA Breached' value={stats.breached} icon={AlertTriangle} iconClass='text-red-600' bgClass='bg-red-100 dark:bg-red-950/40' description='Past their deadline' />
+        <StatCard title='On Track' value={stats.on_track} icon={CheckCircle2} iconClass='text-emerald-600' bgClass='bg-emerald-100 dark:bg-emerald-950/40' description='Expected date is today or later' />
+        <StatCard title='Overdue' value={stats.overdue} icon={AlertTriangle} iconClass='text-red-600' bgClass='bg-red-100 dark:bg-red-950/40' description='Past their calculated expected date' />
       </div>
 
       <AiInsights data={data} />
@@ -292,14 +273,31 @@ export default function OfficeDashboardPage() {
         <Card>
           <CardHeader className='pb-3'>
             <CardTitle className='font-sans flex items-center gap-2 text-base font-semibold'>
-              <TrendingUp className='h-4 w-4 text-primary' />SLA Performance (Weekly)
+              <Gauge className='h-4 w-4 text-primary' />Current Backlog
             </CardTitle>
-            <p className='font-sans mt-1 text-xs text-muted-foreground'>Requests by SLA status over past 4 weeks</p>
+            <p className='font-sans mt-1 text-xs text-muted-foreground'>
+              A live snapshot, not a historical trend — see why below.
+            </p>
           </CardHeader>
           <CardContent className='pt-0'>
-            {(data?.slaWeeklyTrend?.length ?? 0) > 0
-              ? <ReactApexChart type='area' height={250} options={slaAreaOptions} series={slaAreaSeries} />
-              : <EmptyChart />}
+            <div className='flex items-baseline gap-2'>
+              <span className={cn('font-heading text-4xl font-bold', backlog.backlogDays > 0 ? 'text-amber-600' : 'text-emerald-600')}>
+                {backlog.backlogDays}
+              </span>
+              <span className='font-sans text-sm text-muted-foreground'>
+                day{backlog.backlogDays === 1 ? '' : 's'} of backlog
+              </span>
+            </div>
+            <p className='font-sans mt-2 text-xs text-muted-foreground'>
+              {backlog.totalWeight} weighted request{backlog.totalWeight === 1 ? '' : 's'} queued against{' '}
+              {backlog.dailyCapacity !== null ? `${backlog.dailyCapacity}/day` : 'a default'} capacity.
+            </p>
+            <p className='font-sans mt-3 text-[11px] leading-relaxed text-muted-foreground/80'>
+              A weekly trend chart was considered but dropped: this deployment&apos;s audit history only
+              spans a few days, and status changes like &quot;Ready for Release&quot; aren&apos;t
+              independently logged — not enough to reconstruct a real multi-week trend without
+              fabricating one.
+            </p>
           </CardContent>
         </Card>
 
@@ -371,7 +369,7 @@ export default function OfficeDashboardPage() {
                   <TableHead className='font-sans pl-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground'>Tracking No.</TableHead>
                   <TableHead className='font-sans text-xs font-semibold uppercase tracking-wider text-muted-foreground'>Document</TableHead>
                   <TableHead className='font-sans text-xs font-semibold uppercase tracking-wider text-muted-foreground'>Requestor</TableHead>
-                  <TableHead className='font-sans pr-6 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground'>SLA Status</TableHead>
+                  <TableHead className='font-sans pr-6 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground'>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -382,7 +380,7 @@ export default function OfficeDashboardPage() {
                     </TableCell>
                     <TableCell className='font-sans text-sm'>{item.document_type}</TableCell>
                     <TableCell className='font-sans text-sm text-muted-foreground'>{item.requestor_name}</TableCell>
-                    <TableCell className='font-sans pr-6 text-right'><SLABadge status={item.sla_status} /></TableCell>
+                    <TableCell className='font-sans pr-6 text-right'><StatusBadge status={item.status} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -5,6 +5,7 @@ import { db } from '@/db';
 import { clearance_tasks, document_requests, document_types, users, offices } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
 import { composeFullName } from '@/lib/user-name';
+import { calculateExpectedDatesForOffice, getOfficeBacklogSummary } from '@/lib/expected-date';
 
 export async function GET(request: Request) {
   try {
@@ -64,29 +65,32 @@ export async function GET(request: Request) {
       payment_status: task.payment_status,
     }));
 
-    // NOTE: On Track/At Risk/Breached SLA-status counts and the weekly SLA
-    // trend chart are retired along with the fixed-deadline SLA system. A
-    // live capacity-based number doesn't fit an "on track/breached" framing,
-    // so these are left as neutral placeholders pending a dedicated
-    // replacement concept for the dashboard (a separate follow-up task) —
-    // see calculateExpectedDate() in src/lib/expected-date.ts for the new
-    // per-request calculation used elsewhere.
-    const tasksWithSla = pendingTasks.map((t) => ({ ...t, sla_status: 'On Track' as const }));
+    // On Track vs Overdue: a live comparison of each request's calculated
+    // expected date (see src/lib/expected-date.ts) against today — no status
+    // is stored, so this always reflects the current queue and capacity.
+    const expectedDates = await calculateExpectedDatesForOffice(officeId);
+    const now = Date.now();
+    const tasksWithStatus = pendingTasks.map((t) => {
+      const expectedDate = expectedDates.get(t.request_id) ?? null;
+      const overdue = expectedDate !== null && expectedDate.getTime() < now;
+      return { ...t, expected_date: expectedDate, status_vs_expected: overdue ? 'Overdue' : 'On Track' };
+    });
 
     const stats = {
-      total_pending: tasksWithSla.length,
-      on_track: tasksWithSla.length,
-      at_risk: 0,
-      breached: 0,
+      total_pending: tasksWithStatus.length,
+      on_track: tasksWithStatus.filter((t) => t.status_vs_expected === 'On Track').length,
+      overdue: tasksWithStatus.filter((t) => t.status_vs_expected === 'Overdue').length,
     };
 
-    const slaWeeklyTrend: Array<{ week: string; onTrack: number; atRisk: number; breached: number }> =
-      ['Week 1', 'Week 2', 'Week 3', 'Week 4'].map((week) => ({
-        week,
-        onTrack: 0,
-        atRisk: 0,
-        breached: 0,
-      }));
+    // Current backlog, in days — a live snapshot rather than a fabricated
+    // multi-week trend. audit_log only spans a few days of (partly seed-
+    // duplicated) history in this deployment, and status transitions like
+    // "Ready for Release" aren't independently logged (only inferred from
+    // the last clearance action), so a genuine historical queue-depth trend
+    // can't be reconstructed with confidence yet — see the office dashboard
+    // investigation notes. This can be revisited once real usage
+    // accumulates weeks of clean audit history.
+    const backlog = await getOfficeBacklogSummary(officeId);
 
     // ─────────────────────────────────────────────────────────────────────────
     // 3. DOCUMENT TYPE DISTRIBUTION
@@ -186,13 +190,14 @@ export async function GET(request: Request) {
     // 6. RECENT QUEUE PREVIEW (top 5)
     // ─────────────────────────────────────────────────────────────────────────
 
-    const queuePreview = tasksWithSla.slice(0, 5).map((t) => ({
+    const queuePreview = tasksWithStatus.slice(0, 5).map((t) => ({
       request_id: t.request_id,
       tracking_number: t.tracking_number,
       document_type: t.document_type,
       requestor_name: t.requestor_name,
       created_at: t.created_at,
-      sla_status: t.sla_status,
+      expected_date: t.expected_date,
+      status: t.status_vs_expected,
       payment_status: t.payment_status,
     }));
 
@@ -226,8 +231,10 @@ export async function GET(request: Request) {
         // Stats cards
         stats,
 
+        // Live current-backlog indicator (replaces the fabricated weekly trend)
+        backlog,
+
         // Chart data
-        slaWeeklyTrend,
         documentTypeDistribution,
         processingTime,
         clearancePerformance,
