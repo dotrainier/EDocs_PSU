@@ -376,7 +376,7 @@ export default function OfficeDashboardPage() {
                 {queuePreview.map((item) => (
                   <TableRow key={item.request_id} className='border-border hover:bg-muted/50'>
                     <TableCell className='font-sans pl-6 text-sm font-medium'>
-                      <a href={`/office/request/${item.request_id}`} className='text-primary hover:underline'>{item.tracking_number}</a>
+                      <a href={`/office/requests/${item.tracking_number}`} className='text-primary hover:underline'>{item.tracking_number}</a>
                     </TableCell>
                     <TableCell className='font-sans text-sm'>{item.document_type}</TableCell>
                     <TableCell className='font-sans text-sm text-muted-foreground'>{item.requestor_name}</TableCell>
