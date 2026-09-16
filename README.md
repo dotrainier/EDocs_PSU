@@ -13,27 +13,42 @@ AI-assisted online document requisition and management system for Pampanga State
 
 ## Getting Started
 
-Install dependencies and run the development server:
+1. Clone the repo and install dependencies:
 
-```bash
-npm install
-npm run dev
-```
+   ```bash
+   npm install
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+2. Copy `.env.example` to `.env` and fill in the values — each line in that file has a comment explaining what it's for and where to get it:
 
-Copy `.env.example` to `.env` and fill in the values. Generate secrets with:
+   ```bash
+   cp .env.example .env
+   ```
 
-```bash
-openssl rand -hex 32   # use once for SESSION_SECRET, once for JWT_SECRET
-```
+3. Run the one-command setup. This checks that `.env` is filled in, then creates the database schema and seeds demo data:
 
-Run database migrations after updating schema files:
+   ```bash
+   npm run setup
+   ```
 
-```bash
-npx drizzle-kit generate
-npx drizzle-kit migrate
-```
+4. Start the dev server:
+
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000). Demo logins (password `password123` for all):
+
+   | Role         | Email                       |
+   | ------------ | ---------------------------- |
+   | Student      | juan.delacruz@psu.edu.ph     |
+   | Office Staff | registrar.staff@psu.edu.ph   |
+   | Office Head  | registrar.head@psu.edu.ph    |
+   | Admin        | admin@psu.edu.ph             |
+
+`npm run setup` is safe to run more than once — it won't duplicate or overwrite existing data. If you need to wipe the database and start over completely, use `npm run db:fresh` instead.
+
+Schema changes go through Drizzle Kit's push workflow (`npm run db:push`), which `npm run setup` and `npm run db:fresh` both call automatically.
 
 ## Tech Stack
 
