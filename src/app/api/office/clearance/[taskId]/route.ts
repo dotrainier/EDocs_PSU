@@ -55,6 +55,18 @@ export async function PATCH(
       return NextResponse.json({ message: 'Forbidden - not your office' }, { status: 403 });
     }
 
+    // 2b. A task can only be cleared/rejected once — same pattern as the
+    // status guards on Generate Document and Mark as Released. Without this,
+    // a replayed or direct call against an already-resolved task can
+    // re-trigger advanceRouting() or flip a completed request back to
+    // Action Required.
+    if (task.status !== 'Pending') {
+      return NextResponse.json(
+        { message: 'This clearance task has already been resolved' },
+        { status: 409 },
+      );
+    }
+
     // 3. Get the request to access documentTypeId and payment status
     const requestResult = await db
       .select({
