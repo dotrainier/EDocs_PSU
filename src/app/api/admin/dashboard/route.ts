@@ -49,10 +49,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
-    // ───────────────────────────────────────────────────────────────────────
-    // 1. USER / REGISTRATION FUNNEL
-    // ───────────────────────────────────────────────────────────────────────
-
     const [totalUsersRow, verificationRows] = await Promise.all([
       db.select({ count: sql<number>`COUNT(*)` }).from(users),
       db
@@ -71,10 +67,6 @@ export async function GET(request: Request) {
         (registrationFunnel as Record<string, number>)[row.verification_status] = Number(row.count);
       }
     });
-
-    // ───────────────────────────────────────────────────────────────────────
-    // 2. REQUEST VOLUME — total, by status, by document type
-    // ───────────────────────────────────────────────────────────────────────
 
     const [totalRequestsRow, statusRows, docTypeRows] = await Promise.all([
       db.select({ count: sql<number>`COUNT(*)` }).from(document_requests),
@@ -104,10 +96,6 @@ export async function GET(request: Request) {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
 
-    // ───────────────────────────────────────────────────────────────────────
-    // 3. COMPLETED TODAY — REQUEST_RELEASED audit events since local midnight
-    // ───────────────────────────────────────────────────────────────────────
-
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
@@ -117,13 +105,10 @@ export async function GET(request: Request) {
       .where(and(eq(audit_log.action, 'REQUEST_RELEASED'), gte(audit_log.timestamp, startOfToday)));
     const completedToday = Number(completedTodayRow[0]?.count ?? 0);
 
-    // ───────────────────────────────────────────────────────────────────────
-    // 4. PARTICIPATING OFFICES — offices actually issuing at least one active
-    //    document type. Currently just OUR (see seed.document.ts), but this
-    //    derives it live rather than hardcoding the office code, so it stays
-    //    correct once other offices are wired up.
-    // ───────────────────────────────────────────────────────────────────────
-
+    // Offices actually issuing at least one active document type. Currently
+    // just OUR (see seed.document.ts), but this derives it live rather than
+    // hardcoding the office code, so it stays correct once other offices are
+    // wired up.
     const participatingOfficeRows = await db
       .selectDistinct({ id: offices.id, name: offices.name })
       .from(document_types)
@@ -131,12 +116,8 @@ export async function GET(request: Request) {
       .where(eq(document_types.is_active, true))
       .orderBy(offices.name);
 
-    // ───────────────────────────────────────────────────────────────────────
-    // 5. SYSTEM-WIDE ON TRACK / OVERDUE — same calculateExpectedDatesForOffice
-    //    used by the office dashboard, aggregated across every participating
-    //    office (currently just OUR).
-    // ───────────────────────────────────────────────────────────────────────
-
+    // Same calculateExpectedDatesForOffice used by the office dashboard,
+    // aggregated across every participating office (currently just OUR).
     const now = Date.now();
     let onTrack = 0;
     let overdue = 0;
@@ -148,10 +129,6 @@ export async function GET(request: Request) {
       });
     }
 
-    // ───────────────────────────────────────────────────────────────────────
-    // 6. LIVE BACKLOG per participating office (currently just OUR)
-    // ───────────────────────────────────────────────────────────────────────
-
     const officeBacklogs = await Promise.all(
       participatingOfficeRows.map(async (office) => ({
         officeId: office.id,
@@ -159,10 +136,6 @@ export async function GET(request: Request) {
         ...(await getOfficeBacklogSummary(office.id)),
       })),
     );
-
-    // ───────────────────────────────────────────────────────────────────────
-    // 7. RECENT ACTIVITY — latest audit_log entries, system-wide
-    // ───────────────────────────────────────────────────────────────────────
 
     const recentAuditRows = await db
       .select({
@@ -226,10 +199,6 @@ export async function GET(request: Request) {
         at: row.timestamp,
       };
     });
-
-    // ───────────────────────────────────────────────────────────────────────
-    // RESPONSE
-    // ───────────────────────────────────────────────────────────────────────
 
     return NextResponse.json(
       {

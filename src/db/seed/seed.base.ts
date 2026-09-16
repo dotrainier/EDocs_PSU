@@ -25,7 +25,6 @@ const officeData = [
 ];
 
 export async function seedBase() {
-  // ─── 1. Roles ───────────────────────────────────────────────────────────────
   console.log('Seeding roles...');
 
   await db.insert(roles).values(roleData).onConflictDoNothing();
@@ -36,7 +35,6 @@ export async function seedBase() {
     roleMap[r.name] = r.id;
   });
 
-  // ─── 2. Offices ─────────────────────────────────────────────────────────────
   console.log('Seeding offices...');
 
   // Upsert on code so re-running the seed (without db:fresh) keeps
@@ -55,7 +53,6 @@ export async function seedBase() {
     officeMap[o.code] = o.id;
   });
 
-  // ─── 3. Users ───────────────────────────────────────────────────────────────
   console.log('Hashing passwords...');
   const defaultPassword = await bcrypt.hash('password123', 12);
 
@@ -238,7 +235,6 @@ export async function seedBase() {
     if (u.school_id) userMap[u.school_id] = u.id;
   });
 
-  // ─── 4. Office Staff Assignments ────────────────────────────────────────────
   console.log('Seeding office staff assignments...');
 
   const officeStaffData = [

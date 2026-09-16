@@ -8,8 +8,6 @@ import { getClearanceFormDownloadUrl } from '@/lib/cloudinary';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // 1. Auth check — same pattern as /api/office/requests/[id] and
-    // /api/office/clearance/[taskId]: verified staff session with an office.
     const session = await getAccessTokenPayload(request);
     if (!session) {
       return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
@@ -43,10 +41,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ message: 'No clearance form on file for this request' }, { status: 404 });
     }
 
-    // 2. This office must actually be involved in this request's clearance —
-    // identical narrowing to /api/office/requests/[id] and
-    // /api/office/clearance/[taskId]. Denies any office with no clearance
-    // task on this request (e.g. Library/Cashier/Property/Guidance for TOR).
+    // This office must actually be involved in this request's clearance —
+    // denies any office with no clearance task on this request (e.g.
+    // Library/Cashier/Property/Guidance for TOR).
     const taskResult = await db
       .select({ office_id: clearance_tasks.office_id })
       .from(clearance_tasks)
@@ -60,7 +57,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       );
     }
 
-    // 3. Only now — after authorization — fetch the file from Cloudinary via a
+    // Only now — after authorization — fetch the file from Cloudinary via a
     // short-lived signed URL, and return its bytes. The signed URL and the
     // Cloudinary public_id are never sent to the browser.
     const downloadUrl = getClearanceFormDownloadUrl(req.clearance_form_public_id);

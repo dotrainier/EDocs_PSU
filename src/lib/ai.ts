@@ -2,10 +2,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { normalizeString } from '@/lib/utils';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface ClassificationResult {
   suggested_code: string;
   confidence: number;
@@ -20,10 +16,6 @@ export interface PurposeQualityResult {
   suggestion: string;
   ai_failed: boolean;
 }
-
-// ============================================================================
-// Gemini call with real exponential backoff on 429 / 503
-// ============================================================================
 
 type ModelName = 'gemini-2.5-flash' | 'gemini-2.5-flash-lite';
 
@@ -70,10 +62,7 @@ function tryParseJson<T>(text: string): T | null {
   }
 }
 
-// ============================================================================
 // In-memory cache (24h TTL). For multi-instance deployments, swap for Redis.
-// ============================================================================
-
 interface CacheEntry<T> {
   value: T;
   expiresAt: number;
@@ -97,10 +86,6 @@ function setCached<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T):
   cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
 }
 
-
-// ============================================================================
-// 3) Dashboard insights — prioritized recommendations for office staff
-// ============================================================================
 
 export interface DashboardInsight {
   severity: 'critical' | 'warning' | 'info';
@@ -218,15 +203,11 @@ Constraints: title ≤ 60 chars, body ≤ 130 chars, action ≤ 55 chars or null
   }
 }
 
-// ============================================================================
-// 4) System insights — prioritized recommendations for the Admin dashboard.
 // Deliberately separate from generateDashboardInsights(): that one reasons
 // about a single office's day-to-day queue, this one reasons across the
 // whole system (registrations, cross-office capacity, request volume) for
 // an Admin audience. Not cached — regenerated on every call, same as
 // generateDashboardInsights().
-// ============================================================================
-
 export interface SystemInsight {
   severity: 'critical' | 'warning' | 'info';
   title: string;
@@ -335,21 +316,14 @@ Constraints: title ≤ 60 chars, body ≤ 130 chars, action ≤ 55 chars or null
   }
 }
 
-// ============================================================================
 // Pre-filter: obvious purpose <-> document type matches that don't need AI.
 // Expand this map as your document type catalog grows.
-// ============================================================================
-
 const OBVIOUS_PURPOSES: Record<string, RegExp> = {
   COE: /\b(scholarship|visa|loan|ojt|internship|enrollment proof|currently enrolled)\b/i,
   TOR: /\b(graduate school|board exam|licensure|employment|transfer credit|masters?|phd)\b/i,
   COG: /\b(grades?|gpa|academic standing|grade(s)? report|class standing)\b/i,
   COR: /\b(registration|registered subjects|enlisted courses|proof of registration|course load)\b/i,
 };
-
-// ============================================================================
-// 1) Classification — does the stated purpose match the chosen document type?
-// ============================================================================
 
 export async function validateDocumentClassification(
   purpose: string,
@@ -428,10 +402,6 @@ Respond ONLY in this format (JSON):
     };
   }
 }
-
-// ============================================================================
-// 2) Purpose quality — is the purpose specific and plausible?
-// ============================================================================
 
 const TRIVIALLY_VAGUE = /^(personal use|needed|for me|asdf|test|n\/?a|none|\.+)$/i;
 const MIN_PURPOSE_LENGTH = 4;

@@ -17,13 +17,11 @@ import { composeFullName } from '@/lib/user-name';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // 1. Auth check
     const session = await getAccessTokenPayload(request);
     if (!session) {
       return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
     }
 
-    // 2. Role check
     if (session.role !== 'OfficeStaff' && session.role !== 'OfficeHead') {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
@@ -34,7 +32,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { id } = await params;
 
-    // 3. Fetch main request row
     const requestResult = await db
       .select({
         id: document_requests.id,
@@ -79,7 +76,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ message: 'Request not found' }, { status: 404 });
     }
 
-    // 4. Fetch all clearance tasks for this request
     const clearedByUsers = users;
     const taskRows = await db
       .select({
@@ -117,7 +113,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       }),
     }));
 
-    // 5. Find this office's specific task
     const myTask = tasks.find((t) => t.office_id === Number(session.officeId));
 
     if (!myTask) {
@@ -127,7 +122,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       );
     }
 
-    // 6. Live expected completion date
     const expectedDate = await calculateExpectedDateForRequest(req.id);
 
     const toTimestamp = (value: Date | string | null) => (value ? new Date(value).getTime() : 0);
@@ -261,7 +255,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const timeline = auditTimeline.length ? auditTimeline : fallbackTimeline;
 
-    // 7. Academic-records reference panel — Registrar staff only. Sourced
+    // Academic-records reference panel — Registrar staff only. Sourced
     // entirely through getStudentAcademicSummary(), the sole entry point into
     // the isolated (placeholder) academic-records data source.
     const isRegistrarReviewer = myTask.office_name.toLowerCase().includes('registrar');

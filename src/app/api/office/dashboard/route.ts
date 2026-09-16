@@ -9,13 +9,11 @@ import { calculateExpectedDatesForOffice, getOfficeBacklogSummary } from '@/lib/
 
 export async function GET(request: Request) {
   try {
-    // 1. Auth check
     const session = await getAccessTokenPayload(request);
     if (!session) {
       return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
     }
 
-    // 2. Role check
     if (session.role !== 'OfficeStaff' && session.role !== 'OfficeHead') {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
@@ -25,10 +23,6 @@ export async function GET(request: Request) {
     }
 
     const officeId = Number(session.officeId);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // 1. GET ALL PENDING TASKS FOR THIS OFFICE (+ SLA status)
-    // ─────────────────────────────────────────────────────────────────────────
 
     const pendingTaskRows = await db
       .select({
@@ -90,10 +84,6 @@ export async function GET(request: Request) {
     // real usage accumulates weeks of clean audit history.
     const backlog = await getOfficeBacklogSummary(officeId);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 3. DOCUMENT TYPE DISTRIBUTION
-    // ─────────────────────────────────────────────────────────────────────────
-
     const docTypeVolume = await db
       .select({
         name: document_types.name,
@@ -111,11 +101,7 @@ export async function GET(request: Request) {
         value: Number(row.count ?? 0),
       }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5); // Top 5
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // 4. PROCESSING TIME vs SLA TARGET (released requests only)
-    // ─────────────────────────────────────────────────────────────────────────
+      .slice(0, 5);
 
     const releasedRequests = await db
       .select({
@@ -131,7 +117,6 @@ export async function GET(request: Request) {
         and(eq(clearance_tasks.office_id, officeId), eq(document_requests.status, 'Released')),
       );
 
-    // Calculate average processing time per document type
     const processingTimeMap: Record<string, { total: number; count: number; sla: number }> = {};
     releasedRequests.forEach((r) => {
       if (!processingTimeMap[r.document_type]) {
@@ -150,11 +135,7 @@ export async function GET(request: Request) {
         target: data.sla,
         actual: Math.round(data.total / data.count),
       }))
-      .slice(0, 4); // Top 4
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // 5. CLEARANCE PERFORMANCE BY OFFICE
-    // ─────────────────────────────────────────────────────────────────────────
+      .slice(0, 4);
 
     const clearanceByOffice = await db
       .select({
@@ -184,10 +165,6 @@ export async function GET(request: Request) {
       rejected: Number(row.rejected ?? 0),
     }));
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 6. RECENT QUEUE PREVIEW (top 5)
-    // ─────────────────────────────────────────────────────────────────────────
-
     const queuePreview = tasksWithStatus.slice(0, 5).map((t) => ({
       request_id: t.request_id,
       tracking_number: t.tracking_number,
@@ -198,10 +175,6 @@ export async function GET(request: Request) {
       status: t.status_vs_expected,
       payment_status: t.payment_status,
     }));
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // 7. PERSONAL STATS (OfficeStaff only)
-    // ─────────────────────────────────────────────────────────────────────────
 
     const myStatsRow = await db
       .select({
@@ -216,10 +189,6 @@ export async function GET(request: Request) {
       my_rejected: Number(myStatsRow[0]?.rejected ?? 0),
       my_pending: stats.total_pending,
     };
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // RESPONSE
-    // ─────────────────────────────────────────────────────────────────────────
 
     return NextResponse.json(
       {

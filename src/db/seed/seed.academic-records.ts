@@ -24,7 +24,6 @@ export async function seedAcademicRecords() {
     throw new Error('Expected demo students not found. Run seedBase() first.');
   }
 
-  // ─── 1. Overall status per student ───────────────────────────────────────────
   const statusData = [
     { user_id: juanId, overall_status: 'active', graduation_date: null },
     { user_id: mariaId, overall_status: 'graduated', graduation_date: '2025-06-15' },
@@ -41,7 +40,6 @@ export async function seedAcademicRecords() {
     },
   });
 
-  // ─── 2. Per-term enrollment history ──────────────────────────────────────────
   const termData = [
     // Juan — continuing/active student; multi-term history building up to
     // the current term (2025-2026, 1st Semester).

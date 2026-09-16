@@ -1,12 +1,11 @@
 /**
  * lib/document-generation.ts
- * ─────────────────────────────────────────────────────────────
+ *
  * Internal staff-facing document generation for GENERATE-pattern document
  * types (COE/COR/COG). Fully on-demand — nothing is stored: docxtemplater
  * fills the template, mammoth converts the result to HTML, and puppeteer
  * renders that HTML to a PDF that streams straight back as the response.
  * No external API or account involved. Never exposed to students.
- * ─────────────────────────────────────────────────────────────
  */
 
 import path from 'path';

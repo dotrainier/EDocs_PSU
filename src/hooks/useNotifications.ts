@@ -18,7 +18,6 @@ export function useNotifications(userId: string | undefined) {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ========== STEP 1: SUBSCRIBE TO SSE ==========
   useEffect(() => {
     if (!userId) return;
 
@@ -27,11 +26,9 @@ export function useNotifications(userId: string | undefined) {
 
     const connect = () => {
       try {
-        console.log(`[useNotifications] SSE connecting for user: ${userId}`);
         eventSource = new EventSource(`/api/notifications/subscribe?userId=${userId}`);
 
         eventSource.onopen = () => {
-          console.log('[useNotifications] SSE connected');
           setIsConnected(true);
           setError(null);
         };
@@ -39,15 +36,11 @@ export function useNotifications(userId: string | undefined) {
         eventSource.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log('[useNotifications] SSE message received:', data);
 
-            // Skip initial connection message
             if (data.type === 'connected') {
-              console.log('Connected to notification server');
               return;
             }
 
-            // Handle real-time notification
             if (data.type === 'notification') {
               const newNotification: Notification = {
                 id: data.id,
@@ -61,10 +54,8 @@ export function useNotifications(userId: string | undefined) {
                 created_at: data.timestamp,
               };
 
-              console.log('[useNotifications] Adding real-time notification:', newNotification);
               setNotifications((prev) => [newNotification, ...prev]);
 
-              // Show browser notification if permitted
               if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification(data.title, {
                   body: data.message,
@@ -84,7 +75,6 @@ export function useNotifications(userId: string | undefined) {
           eventSource?.close();
           eventSource = null;
 
-          // Reconnect after 3 seconds
           reconnectTimer = setTimeout(connect, 3000);
         };
       } catch (connectError) {
@@ -106,15 +96,11 @@ export function useNotifications(userId: string | undefined) {
     };
   }, [userId]);
 
-  // ========== STEP 2: FETCH FROM DB ON MOUNT ==========
-  // THIS WAS MISSING IN YOUR IMPLEMENTATION!
   useEffect(() => {
     if (!userId) return;
 
     const fetchNotificationsFromDB = async () => {
       try {
-        console.log(`[useNotifications] Fetching from DB for user: ${userId}`);
-
         const response = await fetch(`/api/notifications/list?userId=${userId}&limit=50`);
 
         if (!response.ok) {
@@ -125,9 +111,6 @@ export function useNotifications(userId: string | undefined) {
         const data = await response.json();
 
         if (data.success && Array.isArray(data.data)) {
-          console.log(`[useNotifications] Fetched ${data.data.length} notifications from DB`);
-
-          // Map DB format to component format
           const dbNotifications: Notification[] = data.data.map((notif: any) => ({
             id: notif.id,
             user_id: notif.user_id,
@@ -151,30 +134,21 @@ export function useNotifications(userId: string | undefined) {
     fetchNotificationsFromDB();
   }, [userId]);
 
-  // ========== MARK AS READ - WITH API CALL ==========
-  // THIS NOW CALLS THE API!
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      console.log(`[useNotifications] Marking as read: ${notificationId}`);
-
-      // First update local state for instant UI feedback
       setNotifications((prev) =>
         prev.map((notif) => (notif.id === notificationId ? { ...notif, is_read: true } : notif)),
       );
 
-      // Then persist to DB
       const response = await fetch(`/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
       });
 
       if (!response.ok) {
         console.error('[useNotifications] Failed to mark as read:', response.statusText);
-        // Revert local state if API call fails
         setNotifications((prev) =>
           prev.map((notif) => (notif.id === notificationId ? { ...notif, is_read: false } : notif)),
         );
-      } else {
-        console.log(`[useNotifications] Successfully marked as read: ${notificationId}`);
       }
     } catch (error) {
       console.error('[useNotifications] Error marking as read:', error);
@@ -192,7 +166,6 @@ export function useNotifications(userId: string | undefined) {
   };
 }
 
-// Helper to map notification type to status for UI display
 function mapTypeToStatus(type: string): 'pending' | 'processing' | 'completed' | 'rejected' {
   const map: Record<string, 'pending' | 'processing' | 'completed' | 'rejected'> = {
     clearance_cleared: 'completed',

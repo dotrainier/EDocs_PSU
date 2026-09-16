@@ -10,7 +10,6 @@ import {
 } from '@/db/schema';
 
 export async function seedDocuments() {
-  // ─── 1. Get office map ───────────────────────────────────────────────────────
   console.log('Seeding document types...');
 
   const existingOffices = await db.select().from(offices);
@@ -25,8 +24,6 @@ export async function seedDocuments() {
       throw new Error(`Office "${code}" not found. Run seedBase() first.`);
     }
   }
-
-  // ─── 2. Document types ───────────────────────────────────────────────────────
 
   const documentTypeData = [
     // ── Registrar documents ──
@@ -159,7 +156,6 @@ export async function seedDocuments() {
 
   await db.insert(document_type_roles).values(documentTypeRolesData).onConflictDoNothing();
 
-  // ─── 3. Clearance requirements ───────────────────────────────────────────────
   console.log('Seeding clearance requirements...');
 
   // TOR moved from multi-office routing (Library/Cashier/Property/Guidance) to

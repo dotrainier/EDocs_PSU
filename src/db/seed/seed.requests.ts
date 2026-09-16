@@ -13,8 +13,6 @@ import {
 export async function seedRequests() {
   console.log('Seeding document requests...');
 
-  // ─── 1. Get maps ─────────────────────────────────────────────────────────────
-
   const existingUsers = await db.select().from(users);
   const userMap: Record<string, string> = {};
   existingUsers.forEach((u) => {
@@ -26,8 +24,6 @@ export async function seedRequests() {
   existingDocTypes.forEach((d) => {
     docMap[d.code] = d.id;
   });
-
-  // ─── 2. Requests ─────────────────────────────────────────────────────────────
 
   const requestData = [
     // Juan — Student — multiple statuses for UI testing
@@ -148,8 +144,6 @@ export async function seedRequests() {
     },
   });
 
-  // ─── 3. Clearance tasks ───────────────────────────────────────────────────────
-
   console.log('Seeding clearance tasks...');
 
   const insertedRequests = await db.select().from(document_requests);
@@ -164,7 +158,6 @@ export async function seedRequests() {
 
   let totalTasks = 0;
 
-  // ── TOR (EDOC-2026-000001) — Pending ──────────────────────────────────────
   // TOR is Registrar-only (single sequential requirement at OUR) — mirrors
   // what createClearanceTasks() does for real requests since there are no
   // parallel requirements to wait on.
@@ -184,7 +177,6 @@ export async function seedRequests() {
     totalTasks += torTasks.length;
   }
 
-  // ── COE (EDOC-2026-000002) — Ready for Release ────────────────────────────
   // All requirements cleared — consistent with 'Ready for Release' status.
   const coeReqs = existingOffices.filter((r) => r.document_type_id === docMap['COE']);
   const coeTasks = coeReqs.map((r) => ({
@@ -202,7 +194,6 @@ export async function seedRequests() {
     totalTasks += coeTasks.length;
   }
 
-  // ── COG (EDOC-2026-000003) — Pending ─────────────────────────────────────
   // All requirements pending — consistent with 'Pending' status.
   const cogReqs = existingOffices.filter((r) => r.document_type_id === docMap['COG']);
   const cogTasks = cogReqs.map((r) => ({
@@ -220,7 +211,6 @@ export async function seedRequests() {
     totalTasks += cogTasks.length;
   }
 
-  // ── COR (EDOC-2026-000004) — Ready for Release ───────────────────────────
   // All requirements cleared — consistent with 'Ready for Release' status,
   // same pattern as COE's EDOC-2026-000002 above.
   const corReqs = existingOffices.filter((r) => r.document_type_id === docMap['COR']);
@@ -239,7 +229,6 @@ export async function seedRequests() {
     totalTasks += corTasks.length;
   }
 
-  // ── TOR (EDOC-2026-000006) — Carlo — Pending ─────────────────────────────
   // Reusing TOR's (Registrar-only) requirement; task pending.
   const torTasksCarlo = torReqs.map((r) => ({
     request_id: reqMap['EDOC-2026-000006'],
@@ -256,7 +245,6 @@ export async function seedRequests() {
     totalTasks += torTasksCarlo.length;
   }
 
-  // ── COE Maria (EDOC-2026-000005) — Pending ───────────────────────────────
   // Reusing COE requirements; all tasks pending.
   const coe2Tasks = coeReqs.map((r) => ({
     request_id: reqMap['EDOC-2026-000005'],
@@ -273,7 +261,6 @@ export async function seedRequests() {
     totalTasks += coe2Tasks.length;
   }
 
-  // ── TOR (EDOC-2026-000007) — Maria — Pending ─────────────────────────────
   // Reusing TOR's (Registrar-only) requirement; task pending.
   const torTasksMaria = torReqs.map((r) => ({
     request_id: reqMap['EDOC-2026-000007'],
@@ -290,7 +277,6 @@ export async function seedRequests() {
     totalTasks += torTasksMaria.length;
   }
 
-  // ── COG (EDOC-2026-000008) — Carlo — Pending ─────────────────────────────
   // Reusing COG requirements; all tasks pending.
   const cogTasksCarlo = cogReqs.map((r) => ({
     request_id: reqMap['EDOC-2026-000008'],
@@ -307,13 +293,9 @@ export async function seedRequests() {
     totalTasks += cogTasksCarlo.length;
   }
 
-  // ─── 4. Summary ──────────────────────────────────────────────────────────────
-
   console.log('Done! Request seed summary:');
   console.log(`  Document requests: ${requestData.length}`);
   console.log(`  Clearance tasks:   ${totalTasks}`);
-
-  // ─── 5. Audit logs ───────────────────────────────────────────────────────────
 
   console.log('Seeding audit logs...');
 
@@ -340,7 +322,6 @@ export async function seedRequests() {
     officeIdToCode[o.id] = o.code;
   });
 
-  // ── REQUEST_SUBMITTED — one entry per request ─────────────────────────────
   for (const request of requestData) {
     const requestId = reqMap[request.tracking_number];
     if (!requestId || !request.user_id) continue;
@@ -363,7 +344,6 @@ export async function seedRequests() {
     }).onConflictDoNothing({ target: audit_log.seed_key, where: isNotNull(audit_log.seed_key) });
   }
 
-  // ── CLEARANCE_CLEARED / CLEARANCE_REJECTED — one entry per relevant task ──
   const seededTasks = await db
     .select()
     .from(clearance_tasks)

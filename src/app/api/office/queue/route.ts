@@ -7,27 +7,21 @@ import { getAccessTokenPayload } from '@/lib/auth';
 import { calculateExpectedDatesForOffice } from '@/lib/expected-date';
 import { composeFullName } from '@/lib/user-name';
 
-// ── GET /api/office/queue ─────────────────────────────────────────────────────
-
 export async function GET(request: Request) {
   try {
-    // 1. Auth check
     const session = await getAccessTokenPayload(request);
     if (!session) {
       return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
     }
 
-    // 2. Only office staff and office head can access
     if (session.role !== 'OfficeStaff' && session.role !== 'OfficeHead') {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
-    // 3. Must have an office assigned
     if (!session.officeId) {
       return NextResponse.json({ message: 'No office assigned to this account' }, { status: 403 });
     }
 
-    // 4. Fetch pending tasks for this office
     const taskRows = await db
       .select({
         // Task info
@@ -86,14 +80,12 @@ export async function GET(request: Request) {
       }),
     );
 
-    // 5. Add the live calculated expected date to each task
     const expectedDates = await calculateExpectedDatesForOffice(Number(session.officeId));
     const tasksWithExpectedDate = tasks.map((t) => ({
       ...t,
       expected_date: expectedDates.get(t.request_id) ?? null,
     }));
 
-    // 6. Stats for dashboard
     const stats = { total_pending: tasksWithExpectedDate.length };
 
     return NextResponse.json({ tasks: tasksWithExpectedDate, stats }, { status: 200 });

@@ -7,22 +7,16 @@ import { getAccessTokenPayload } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
-    // 1. Auth check
     const session = await getAccessTokenPayload(request);
     if (!session) {
       return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
     }
 
-    // 2. Must be front user (Student)
     if (!['Student'].includes(session.role)) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
     const userId = session.userId;
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // 1. GET ALL USER'S REQUESTS
-    // ─────────────────────────────────────────────────────────────────────────
 
     const userRequests = await db
       .select({
@@ -39,10 +33,6 @@ export async function GET(request: Request) {
       .where(eq(document_requests.user_id, userId))
       .orderBy(desc(document_requests.created_at));
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 2. STATS SUMMARY
-    // ─────────────────────────────────────────────────────────────────────────
-
     const activeStatuses = new Set(['Pending', 'In Process', 'Ready for Release', 'Action Required']);
     const stats = {
       total: userRequests.length,
@@ -56,16 +46,11 @@ export async function GET(request: Request) {
       ).length,
     };
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 3. MONTHLY TREND (last 6 months)
-    // ─────────────────────────────────────────────────────────────────────────
-
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
     const monthlyMap: Record<string, { requests: number; completed: number }> = {};
 
-    // Initialize months
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
@@ -73,7 +58,6 @@ export async function GET(request: Request) {
       monthlyMap[monthKey] = { requests: 0, completed: 0 };
     }
 
-    // Count requests and completions
     userRequests.forEach((r) => {
       if (r.created_at >= sixMonthsAgo) {
         const monthKey = r.created_at.toLocaleDateString('en-US', { month: 'short' });
@@ -95,10 +79,6 @@ export async function GET(request: Request) {
       completed: data.completed,
     }));
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 4. DOCUMENT TYPE BREAKDOWN
-    // ─────────────────────────────────────────────────────────────────────────
-
     const docTypeMap: Record<string, number> = {};
     userRequests.forEach((r) => {
       docTypeMap[r.document_type] = (docTypeMap[r.document_type] ?? 0) + 1;
@@ -107,10 +87,6 @@ export async function GET(request: Request) {
     const documentTypeBreakdown = Object.entries(docTypeMap)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // 5. AVERAGE PROCESSING TIME BY DOCUMENT TYPE
-    // ─────────────────────────────────────────────────────────────────────────
 
     const processingMap: Record<string, { totalDays: number; count: number }> = {};
 
@@ -134,10 +110,6 @@ export async function GET(request: Request) {
       }))
       .sort((a, b) => b.avgDays - a.avgDays);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // 6. RECENT REQUESTS (last 5)
-    // ─────────────────────────────────────────────────────────────────────────
-
     const recentRequests = userRequests.slice(0, 5).map((r) => ({
       tracking_number: r.tracking_number,
       document_type: r.document_type,
@@ -145,10 +117,6 @@ export async function GET(request: Request) {
       created_at: r.created_at,
       request_id: r.request_id,
     }));
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // RESPONSE
-    // ─────────────────────────────────────────────────────────────────────────
 
     return NextResponse.json(
       {

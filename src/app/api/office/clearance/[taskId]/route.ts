@@ -38,7 +38,6 @@ export async function PATCH(
       return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
     }
 
-    // 1. Get the clearance task
     const taskResult = await db
       .select()
       .from(clearance_tasks)
@@ -50,16 +49,13 @@ export async function PATCH(
       return NextResponse.json({ message: 'Task not found' }, { status: 404 });
     }
 
-    // 2. Verify task belongs to this office
     if (task.office_id !== Number(session.officeId)) {
       return NextResponse.json({ message: 'Forbidden - not your office' }, { status: 403 });
     }
 
-    // 2b. A task can only be cleared/rejected once — same pattern as the
-    // status guards on Generate Document and Mark as Released. Without this,
-    // a replayed or direct call against an already-resolved task can
-    // re-trigger advanceRouting() or flip a completed request back to
-    // Action Required.
+    // A task can only be cleared/rejected once. Without this, a replayed or
+    // direct call against an already-resolved task can re-trigger
+    // advanceRouting() or flip a completed request back to Action Required.
     if (task.status !== 'Pending') {
       return NextResponse.json(
         { message: 'This clearance task has already been resolved' },
@@ -67,7 +63,6 @@ export async function PATCH(
       );
     }
 
-    // 3. Get the request to access documentTypeId and payment status
     const requestResult = await db
       .select({
         user_id: document_requests.user_id,
@@ -91,7 +86,6 @@ export async function PATCH(
       return NextResponse.json({ message: 'Request not found' }, { status: 404 });
     }
 
-    // 4. Block clearing if payment has not been confirmed
     if (action === 'cleared' && docRequest.payment_status !== 'Paid') {
       return NextResponse.json(
         { message: 'Payment has not been confirmed. Request cannot be cleared until payment is verified.' },
@@ -99,7 +93,6 @@ export async function PATCH(
       );
     }
 
-    // 5. Update clearance task
     const newStatus = action === 'cleared' ? 'Cleared' : 'Rejected';
 
     await db
@@ -112,12 +105,10 @@ export async function PATCH(
       })
       .where(eq(clearance_tasks.id, taskId));
 
-    // 6. If CLEARED, advance routing
     if (action === 'cleared') {
       await advanceRouting(task.request_id, docRequest.document_type_id, session.userId);
     }
 
-    // 7. If REJECTED, update request status to 'Action Required'
     if (action === 'rejected') {
       await db
         .update(document_requests)
@@ -128,7 +119,6 @@ export async function PATCH(
         .where(eq(document_requests.id, task.request_id));
     }
 
-    // 8. Log audit
     await logAudit({
       userId: session.userId,
       action: action === 'cleared' ? 'CLEARANCE_CLEARED' : 'CLEARANCE_REJECTED',
