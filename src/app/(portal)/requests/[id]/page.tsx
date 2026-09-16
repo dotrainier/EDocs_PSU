@@ -70,6 +70,7 @@ interface DocumentRequest {
   copies: number;
   purpose: string;
   expectedDate: string | null;
+  releasedAt: string | null;
   fee: string | null;
   paymentStatus: string;
   clearanceOffices: ClearanceOffice[];
@@ -97,6 +98,7 @@ interface RequestResponse {
     payment_proof_path: string | null;
     expected_date: string | null;
     created_at: string;
+    updated_at: string;
     clearance_tasks: Array<{
       office_name: string;
       status: string;
@@ -231,6 +233,7 @@ export default function TrackRequestPage() {
       copies: apiRequest.copies,
       purpose: apiRequest.purpose,
       expectedDate: apiRequest.expected_date,
+      releasedAt: status === 'Released' ? apiRequest.updated_at : null,
       fee: apiRequest.fee_amount,
       paymentStatus: apiRequest.payment_status,
       clearanceOffices: apiRequest.clearance_tasks.map((task) => ({
@@ -255,8 +258,8 @@ export default function TrackRequestPage() {
   }, [data]);
 
   const hasClearance = (request?.clearanceOffices.length ?? 0) > 0;
-  const isReadyOrReleased =
-    request?.status === 'Ready for Release' || request?.status === 'Released';
+  const isReadyForRelease = request?.status === 'Ready for Release';
+  const isReleased = request?.status === 'Released';
   const isActionRequired = request?.status === 'Action Required';
 
   if (loading) {
@@ -427,8 +430,8 @@ export default function TrackRequestPage() {
         </Card>
       )}
 
-      {/* Document download / pickup */}
-      {isReadyOrReleased && (
+      {/* Document ready for pickup */}
+      {isReadyForRelease && (
         <Card className='border-emerald-200 bg-emerald-50/50'>
           <CardHeader className='pb-3'>
             <CardTitle className='text-sm font-medium text-emerald-800 flex items-center gap-2'>
@@ -463,6 +466,25 @@ export default function TrackRequestPage() {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Document already picked up — final state, nothing left to do */}
+      {isReleased && (
+        <Card className='border-purple-200 bg-purple-50/50'>
+          <CardHeader className='pb-3'>
+            <CardTitle className='text-sm font-medium text-purple-800 flex items-center gap-2'>
+              <CheckCircle2 className='h-4 w-4' />
+              Document Released
+            </CardTitle>
+          </CardHeader>
+          <CardContent className='pt-0'>
+            <p className='text-sm text-purple-800'>
+              This document was released
+              {request.releasedAt ? ` on ${formatDate(request.releasedAt)}` : ''}. This request is
+              now complete.
+            </p>
           </CardContent>
         </Card>
       )}

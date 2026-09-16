@@ -48,6 +48,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         payment_proof_path: document_requests.payment_proof_path,
         clearance_form_public_id: document_requests.clearance_form_public_id,
         created_at: document_requests.created_at,
+        updated_at: document_requests.updated_at,
         document_type: document_types.name,
         document_type_code: document_types.code,
         handling_pattern: document_types.handling_pattern,
@@ -232,6 +233,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         };
       }
 
+      if (event.action === 'REQUEST_RELEASED') {
+        return {
+          id: event.id,
+          title: 'Marked as released',
+          at: event.timestamp,
+          subtitle: event.actor ? `By ${event.actor}` : null,
+        };
+      }
+
       return {
         id: event.id,
         title: event.action,
@@ -270,6 +280,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           has_clearance_form: !!req.clearance_form_public_id,
           expected_date: expectedDate,
           created_at: req.created_at,
+          updated_at: req.updated_at,
           requestor_name: composeFullName({
             given_name: req.requestor_given_name,
             middle_name: req.requestor_middle_name,

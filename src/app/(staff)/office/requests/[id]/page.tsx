@@ -35,6 +35,7 @@ import AcademicSummaryPanel, {
 } from './_components/AcademicSummaryPanel';
 import ClearanceFormPanel from './_components/ClearanceFormPanel';
 import GenerateDocumentPanel from './_components/GenerateDocumentPanel';
+import MarkAsReleasedPanel from './_components/MarkAsReleasedPanel';
 
 interface ClearanceTask {
   task_id: string;
@@ -73,6 +74,7 @@ interface RequestDetailApiResponse {
     has_clearance_form: boolean;
     expected_date: string | null;
     created_at: string;
+    updated_at: string;
     requestor_name: string;
     requestor_school_id: string;
     requestor_email: string;
@@ -258,15 +260,27 @@ export default function OfficeRequestDetailPage() {
             </h1>
             <p className='mt-1 font-mono text-sm text-muted-foreground'>{req.tracking_number}</p>
           </div>
-          <span
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold',
-              'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-400',
-            )}
-          >
-            <Clock className='h-3.5 w-3.5' />
-            Expected {formatDateOptional(req.expected_date, '—')}
-          </span>
+          {req.status === 'Released' ? (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold',
+                'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900 dark:bg-purple-950/30 dark:text-purple-400',
+              )}
+            >
+              <CheckCircle2 className='h-3.5 w-3.5' />
+              Released {formatDateOptional(req.updated_at, '—')}
+            </span>
+          ) : (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold',
+                'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-400',
+              )}
+            >
+              <Clock className='h-3.5 w-3.5' />
+              Expected {formatDateOptional(req.expected_date, '—')}
+            </span>
+          )}
         </div>
       </div>
 
@@ -452,6 +466,16 @@ export default function OfficeRequestDetailPage() {
               students. */}
           {req.handling_pattern === 'GENERATE' && req.status === 'Ready for Release' && (
             <GenerateDocumentPanel trackingNumber={req.tracking_number} />
+          )}
+
+          {/* Mark as Released — closes the lifecycle once the student has
+              picked up the document. Applies regardless of handling_pattern
+              (GENERATE or UPLOAD/TOR both end up here); authorized the same
+              way as Generate Document — issuing office, not the
+              Pending-clearance-task check, since clearance is already
+              Cleared by this point. */}
+          {req.status === 'Ready for Release' && (
+            <MarkAsReleasedPanel trackingNumber={req.tracking_number} onReleased={refetch} />
           )}
 
           {/* Academic-records reference panel — Registrar staff only */}

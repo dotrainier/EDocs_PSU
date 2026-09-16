@@ -35,6 +35,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         payment_status: document_requests.payment_status,
         payment_proof_path: document_requests.payment_proof_path,
         created_at: document_requests.created_at,
+        updated_at: document_requests.updated_at,
         user_id: document_requests.user_id,
         document_type: document_types.name,
         handling_pattern: document_types.handling_pattern,
@@ -175,6 +176,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         };
       }
 
+      if (event.action === 'REQUEST_RELEASED') {
+        return {
+          id: event.id,
+          title: 'Document released',
+          at: event.timestamp,
+          subtitle: 'Ready for pickup confirmed complete',
+        };
+      }
+
       return {
         id: event.id,
         title: event.action,
@@ -201,6 +211,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           payment_proof_path: req.payment_proof_path,
           expected_date: expectedDate,
           created_at: req.created_at,
+          updated_at: req.updated_at,
           clearance_tasks: tasks,
           timeline,
           documents: [],
