@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
+import { AiInsights } from './_components/AiInsights';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -152,6 +153,8 @@ export default function AdminDashboardPage() {
         <StatCard title='Overdue' value={stats.overdue} icon={AlertTriangle} iconClass='text-red-600' bgClass='bg-red-100' description={officeScopeNote(participatingOffices)} />
         <StatCard title='Active Offices' value={participatingOffices.length} icon={Building2} iconClass='text-violet-600' bgClass='bg-violet-100' description={officeScopeNote(participatingOffices)} />
       </div>
+
+      <AiInsights data={data} />
 
       <div className='grid gap-6 lg:grid-cols-2'>
         {/* Recent activity */}

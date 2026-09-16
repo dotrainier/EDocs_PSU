@@ -219,6 +219,123 @@ Constraints: title ≤ 60 chars, body ≤ 130 chars, action ≤ 55 chars or null
 }
 
 // ============================================================================
+// 4) System insights — prioritized recommendations for the Admin dashboard.
+// Deliberately separate from generateDashboardInsights(): that one reasons
+// about a single office's day-to-day queue, this one reasons across the
+// whole system (registrations, cross-office capacity, request volume) for
+// an Admin audience. Not cached — regenerated on every call, same as
+// generateDashboardInsights().
+// ============================================================================
+
+export interface SystemInsight {
+  severity: 'critical' | 'warning' | 'info';
+  title: string;
+  body: string;
+  action: string | null;
+  link: '/admin/verification' | null;
+}
+
+export interface SystemInsightsResult {
+  insights: SystemInsight[];
+  ai_failed: boolean;
+}
+
+export async function generateSystemInsights(data: {
+  stats: {
+    totalUsers: number;
+    totalRequests: number;
+    pendingRequests: number;
+    completedToday: number;
+    onTrack: number;
+    overdue: number;
+  };
+  registrationFunnel: { pending: number; approved: number; rejected: number };
+  requestsByStatus: Array<{ status: string; count: number }>;
+  documentTypeVolume: Array<{ name: string; value: number }>;
+  participatingOffices: Array<{ id: number; name: string }>;
+  officeBacklogs: Array<{
+    officeName: string;
+    totalWeight: number;
+    dailyCapacity: number | null;
+    backlogDays: number;
+  }>;
+  recentActivity: Array<{ label: string; actor: string | null; detail: string | null; at: string }>;
+}): Promise<SystemInsightsResult> {
+  const { stats, registrationFunnel, requestsByStatus, documentTypeVolume, participatingOffices, officeBacklogs, recentActivity } = data;
+
+  // The same honesty constraint the dashboard UI enforces via officeScopeNote()
+  // (see admin/dashboard/page.tsx) — spelled out for the model too, so it
+  // can't imply office-level figures cover more offices than they do.
+  const officeScopeLine =
+    participatingOffices.length === 0
+      ? 'No office currently routes any document type — office-level figures below are all zero.'
+      : `Office-level figures (On Track/Overdue, backlog) currently cover ONLY these ${participatingOffices.length} office(s): ${participatingOffices.map((o) => o.name).join(', ')}. Do not imply any other office contributes to these numbers.`;
+
+  const recentActivityLines = recentActivity
+    .slice(0, 10)
+    .map((a) => `  ${a.label}${a.detail ? ` — ${a.detail}` : ''}${a.actor ? ` (by ${a.actor})` : ''}`)
+    .join('\n');
+
+  const prompt = `
+You are an AI assistant for a university document processing system. Analyze this system-wide admin dashboard data and provide 3–5 prioritized, actionable insights for a system Administrator overseeing the whole platform — not a single office's queue.
+
+USER ACCOUNTS:
+Total users: ${stats.totalUsers}
+Registration funnel: ${registrationFunnel.pending} pending review, ${registrationFunnel.approved} approved, ${registrationFunnel.rejected} rejected
+
+REQUEST VOLUME:
+Total requests (all-time): ${stats.totalRequests}
+Currently pending or in process: ${stats.pendingRequests}
+Completed (released) today: ${stats.completedToday}
+By status: ${requestsByStatus.map((s) => `${s.status}=${s.count}`).join(', ')}
+By document type (top ${documentTypeVolume.length}): ${documentTypeVolume.map((d) => `${d.name}=${d.value}`).join(', ') || 'none yet'}
+
+SYSTEM-WIDE CAPACITY:
+On track: ${stats.onTrack} | Overdue: ${stats.overdue}
+${officeScopeLine}
+Live backlog by office:
+${officeBacklogs.map((b) => `  ${b.officeName}: ${b.totalWeight} weighted requests queued, ${b.dailyCapacity ?? 'default'}/day capacity → ${b.backlogDays} day(s) backlog`).join('\n') || '  (no office is currently routing documents)'}
+
+RECENT SYSTEM ACTIVITY (most recent first):
+${recentActivityLines || '  (no activity yet)'}
+
+Generate 3–5 insights sorted by urgency. Focus on system-level actions an Administrator should take: registration backlog needing review, request-volume or capacity trends across the system, and anything about office participation worth flagging (e.g. only one office is currently routing documents). Never state or imply that an office contributes to on-track/overdue or backlog figures unless it is explicitly listed above.
+Use severity:
+- "critical" → immediate action needed (large registration backlog, many overdue requests)
+- "warning" → needs attention soon (registrations piling up, backlog building)
+- "info" → useful system-level observations (healthy queue, participation gaps, volume patterns)
+
+Return ONLY valid JSON. No markdown, no explanation.
+{
+  "insights": [
+    {
+      "severity": "warning",
+      "title": "12 Registrations Awaiting Review",
+      "body": "Pending accounts are piling up and blocking student sign-in.",
+      "action": "Review pending registrations",
+      "link": "/admin/verification"
+    }
+  ]
+}
+
+For the "link" field, choose ONLY "/admin/verification" (the pending-registrations review queue) or null — no other route exists for this action yet.
+Constraints: title ≤ 60 chars, body ≤ 130 chars, action ≤ 55 chars or null.
+`;
+
+  try {
+    const text = await generateWithRetry(prompt, 'gemini-2.5-flash');
+    const parsed = tryParseJson<{ insights: SystemInsight[] }>(text);
+    if (!parsed?.insights || !Array.isArray(parsed.insights)) {
+      return { insights: [], ai_failed: true };
+    }
+    return { insights: parsed.insights.slice(0, 5), ai_failed: false };
+  } catch (error) {
+    console.error('Gemini API error (system insights):', error);
+    return { insights: [], ai_failed: true };
+  }
+}
+
+// ============================================================================
 // Pre-filter: obvious purpose <-> document type matches that don't need AI.
 // Expand this map as your document type catalog grows.
 // ============================================================================
