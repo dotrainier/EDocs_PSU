@@ -84,12 +84,10 @@ export async function GET(request: Request) {
 
     // Current backlog, in days — a live snapshot rather than a fabricated
     // multi-week trend. audit_log only spans a few days of (partly seed-
-    // duplicated) history in this deployment, and status transitions like
-    // "Ready for Release" aren't independently logged (only inferred from
-    // the last clearance action), so a genuine historical queue-depth trend
-    // can't be reconstructed with confidence yet — see the office dashboard
-    // investigation notes. This can be revisited once real usage
-    // accumulates weeks of clean audit history.
+    // duplicated) history in this deployment, so a genuine historical
+    // queue-depth trend can't be reconstructed with confidence yet — see
+    // the office dashboard investigation notes. This can be revisited once
+    // real usage accumulates weeks of clean audit history.
     const backlog = await getOfficeBacklogSummary(officeId);
 
     // ─────────────────────────────────────────────────────────────────────────

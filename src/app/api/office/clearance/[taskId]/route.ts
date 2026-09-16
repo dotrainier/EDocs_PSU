@@ -114,7 +114,7 @@ export async function PATCH(
 
     // 6. If CLEARED, advance routing
     if (action === 'cleared') {
-      await advanceRouting(task.request_id, docRequest.document_type_id);
+      await advanceRouting(task.request_id, docRequest.document_type_id, session.userId);
     }
 
     // 7. If REJECTED, update request status to 'Action Required'

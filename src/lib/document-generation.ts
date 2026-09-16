@@ -5,10 +5,7 @@
  * types (COE/COR/COG). Fully on-demand — nothing is stored: docxtemplater
  * fills the template, mammoth converts the result to HTML, and puppeteer
  * renders that HTML to a PDF that streams straight back as the response.
- * No external API or account involved (unlike the dormant, mock-data-driven
- * src/app/api/generate-cor/route.ts prototype, which this feature replaces
- * in spirit but not in code — that file is left untouched). Never exposed
- * to students.
+ * No external API or account involved. Never exposed to students.
  * ─────────────────────────────────────────────────────────────
  */
 

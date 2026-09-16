@@ -176,6 +176,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         };
       }
 
+      if (event.action === 'REQUEST_READY_FOR_RELEASE') {
+        return {
+          id: event.id,
+          title: 'Ready for release',
+          at: event.timestamp,
+          subtitle: event.actor ? `By ${event.actor}` : null,
+        };
+      }
+
       if (event.action === 'REQUEST_RELEASED') {
         return {
           id: event.id,

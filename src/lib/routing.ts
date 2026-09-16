@@ -1,8 +1,13 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { clearance_requirements, clearance_tasks, document_requests } from '@/db/schema';
+import { logAudit } from '@/lib/audit';
 
-export async function advanceRouting(requestId: string, documentTypeId: number): Promise<void> {
+export async function advanceRouting(
+  requestId: string,
+  documentTypeId: number,
+  clearedByUserId: string,
+): Promise<void> {
   const existingTasks = await db
     .select()
     .from(clearance_tasks)
@@ -47,4 +52,10 @@ export async function advanceRouting(requestId: string, documentTypeId: number):
     .update(document_requests)
     .set({ status: 'Ready for Release', updated_at: new Date() })
     .where(eq(document_requests.id, requestId));
+
+  await logAudit({
+    userId: clearedByUserId,
+    action: 'REQUEST_READY_FOR_RELEASE',
+    details: { requestId },
+  });
 }
