@@ -14,6 +14,7 @@ import { getAccessTokenPayload } from '@/lib/auth';
 import { calculateExpectedDateForRequest } from '@/lib/expected-date';
 import { getStudentAcademicSummary } from '@/lib/academic-records';
 import { composeFullName } from '@/lib/user-name';
+import { describeAuditEvent } from '@/lib/audit-labels';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -178,79 +179,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       const details = (event.details ?? {}) as Record<string, unknown>;
       const officeId = details.officeId ? Number(details.officeId) : null;
       const officeName = officeId
-        ? tasks.find((task) => task.office_id === officeId)?.office_name
+        ? (tasks.find((task) => task.office_id === officeId)?.office_name ?? null)
         : null;
 
-      if (event.action === 'REQUEST_SUBMITTED') {
-        return {
-          id: event.id,
-          title: 'Request submitted',
-          at: event.timestamp,
-          subtitle: `Tracking #${req.tracking_number}`,
-        };
-      }
+      const { title, subtitle } = describeAuditEvent({
+        action: event.action,
+        details: event.details as Record<string, unknown> | null,
+        actorName: event.actor,
+        officeName,
+        trackingNumber: req.tracking_number,
+      });
 
-      if (event.action === 'CLEARANCE_CLEARED') {
-        return {
-          id: event.id,
-          title: `${officeName ?? 'Office'} cleared`,
-          at: event.timestamp,
-          subtitle: event.actor ? `By ${event.actor}` : null,
-        };
-      }
-
-      if (event.action === 'CLEARANCE_REJECTED') {
-        const remark = typeof details.remarks === 'string' ? details.remarks : null;
-        return {
-          id: event.id,
-          title: `${officeName ?? 'Office'} rejected`,
-          at: event.timestamp,
-          subtitle: remark ?? (event.actor ? `By ${event.actor}` : null),
-        };
-      }
-
-      if (event.action === 'PAYMENT_CONFIRMED') {
-        return {
-          id: event.id,
-          title: 'Payment confirmed',
-          at: event.timestamp,
-          subtitle: event.actor ? `By ${event.actor}` : null,
-        };
-      }
-
-      if (event.action === 'DOCUMENT_GENERATED') {
-        return {
-          id: event.id,
-          title: 'Document generated',
-          at: event.timestamp,
-          subtitle: event.actor ? `By ${event.actor}` : null,
-        };
-      }
-
-      if (event.action === 'REQUEST_READY_FOR_RELEASE') {
-        return {
-          id: event.id,
-          title: 'Ready for release',
-          at: event.timestamp,
-          subtitle: event.actor ? `By ${event.actor}` : null,
-        };
-      }
-
-      if (event.action === 'REQUEST_RELEASED') {
-        return {
-          id: event.id,
-          title: 'Marked as released',
-          at: event.timestamp,
-          subtitle: event.actor ? `By ${event.actor}` : null,
-        };
-      }
-
-      return {
-        id: event.id,
-        title: event.action,
-        at: event.timestamp,
-        subtitle: event.actor ? `By ${event.actor}` : null,
-      };
+      return { id: event.id, title, at: event.timestamp, subtitle };
     }).reverse();
 
     const timeline = auditTimeline.length ? auditTimeline : fallbackTimeline;

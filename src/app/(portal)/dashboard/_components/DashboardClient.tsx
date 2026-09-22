@@ -163,11 +163,17 @@ interface StatCardProps {
   icon: React.ElementType;
   accent: string;
   description?: string;
+  href?: string;
 }
 
-function StatCard({ title, value, icon: Icon, accent, description }: StatCardProps) {
-  return (
-    <Card className='relative overflow-hidden'>
+function StatCard({ title, value, icon: Icon, accent, description, href }: StatCardProps) {
+  const card = (
+    <Card
+      className={cn(
+        'relative overflow-hidden',
+        href && 'transition-colors hover:border-primary/40 hover:bg-muted/30',
+      )}
+    >
       <CardContent className='px-4 pb-3 pt-4 sm:px-5 sm:pb-4 sm:pt-5'>
         <div className='flex items-start justify-between gap-2'>
           <div>
@@ -194,6 +200,14 @@ function StatCard({ title, value, icon: Icon, accent, description }: StatCardPro
         </div>
       </CardContent>
     </Card>
+  );
+
+  if (!href) return card;
+
+  return (
+    <Link href={href} className='block' aria-label={`${title}: ${value}. View filtered requests`}>
+      {card}
+    </Link>
   );
 }
 
@@ -443,6 +457,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           value={stats.total}
           icon={FileStack}
           accent='text-primary'
+          href='/requests'
         />
         <StatCard
           title='Active'
@@ -450,18 +465,21 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           icon={Clock}
           accent='text-amber-500'
           description={`${stats.pending} pending`}
+          href={`/requests?status=${encodeURIComponent('Pending,In Process')}`}
         />
         <StatCard
           title='Ready'
           value={stats.readyForRelease}
           icon={PackageCheck}
           accent='text-emerald-500'
+          href={`/requests?status=${encodeURIComponent('Ready for Release')}`}
         />
         <StatCard
           title='Completed'
           value={stats.completed}
           icon={CheckCircle2}
           accent='text-blue-500'
+          href={`/requests?status=${encodeURIComponent('Released')}`}
         />
       </div>
 

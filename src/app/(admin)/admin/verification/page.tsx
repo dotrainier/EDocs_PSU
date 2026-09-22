@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { cn } from '@/lib/utils';
+import { cn, formatDateTime } from '@/lib/utils';
 import { api } from '@/lib/axios';
 import { UserDetailSheet, type VerificationStatus } from '../_components/UserDetailSheet';
 import { RejectReasonDialog } from '../_components/RejectReasonDialog';
@@ -228,6 +228,9 @@ export default function AdminVerificationPage() {
                         {user.school_id && course && <span>·</span>}
                         {course && <span className='truncate'>{course}</span>}
                       </div>
+                      <p className='mt-0.5 text-xs text-muted-foreground'>
+                        Submitted {formatDateTime(user.created_at)}
+                      </p>
                     </div>
                   </div>
 

@@ -9,6 +9,7 @@ import { sendMail } from '@/lib/lib-mailer';
 import { RegistrationApprovedEmail } from '@/email-templates/RegistrationApproved';
 import { RegistrationRejectedEmail } from '@/email-templates/RegistrationRejected';
 import { composeFullName } from '@/lib/user-name';
+import { logAudit } from '@/lib/audit';
 
 async function requireAdmin(request: Request) {
   const session = await getAccessTokenPayload(request);
@@ -120,6 +121,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (!updated) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+
+    if (updated.verification_status === 'approved' || updated.verification_status === 'rejected') {
+      await logAudit({
+        userId: auth.session.userId,
+        action:
+          updated.verification_status === 'approved' ? 'REGISTRATION_APPROVED' : 'REGISTRATION_REJECTED',
+        details: {
+          targetUserId: updated.id,
+          targetName: composeFullName(updated),
+          targetEmail: updated.email,
+          ...(updated.verification_status === 'rejected'
+            ? { reason: updated.rejection_reason }
+            : {}),
+        },
+        ipAddress: request.headers.get('x-forwarded-for') ?? 'unknown',
+      });
     }
 
     // Fire-and-forget: the approve/reject email must never block the response.

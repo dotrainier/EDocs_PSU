@@ -233,7 +233,22 @@ export default function RequestPage() {
 
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
 
-  const statusParam = searchParams.get('status') ?? 'all';
+  const rawStatusParam = searchParams.get('status') ?? 'all';
+  // Supports a comma-separated list (e.g. `?status=Pending,In Process`) so dashboard
+  // cards that represent more than one status — "Active" — can deep-link here too.
+  const statusList = useMemo(
+    () =>
+      rawStatusParam === 'all'
+        ? []
+        : rawStatusParam
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
+    [rawStatusParam],
+  );
+  // The single-select dropdown can only reflect a single status; multi-status
+  // filters from a deep link show as "All Statuses" there while still filtering.
+  const statusParam = statusList.length === 1 ? statusList[0] : 'all';
 
   function handleStatusChange(value: string) {
     const params = new URLSearchParams();
@@ -272,12 +287,13 @@ export default function RequestPage() {
         r.tracking_number.toLowerCase().includes(search.toLowerCase()) ||
         r.document_type.toLowerCase().includes(search.toLowerCase()) ||
         r.purpose.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = statusParam === 'all' || normalizeStatus(r.status) === statusParam;
+      const matchesStatus =
+        statusList.length === 0 || statusList.includes(normalizeStatus(r.status) ?? '');
       return matchesSearch && matchesStatus;
     });
-  }, [requests, search, statusParam]);
+  }, [requests, search, statusList]);
 
-  const hasActiveFilters = search !== '' || statusParam !== 'all';
+  const hasActiveFilters = search !== '' || statusList.length > 0;
 
   function clearFilters() {
     setSearch('');
