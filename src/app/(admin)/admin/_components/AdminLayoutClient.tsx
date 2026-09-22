@@ -153,6 +153,7 @@ function NavSection({
   onToggle,
   onNavClick,
   pathname,
+  expandOnHover,
 }: {
   label: string;
   icon: React.ElementType;
@@ -162,9 +163,19 @@ function NavSection({
   onToggle: () => void;
   onNavClick?: () => void;
   pathname: string;
+  // Expands on mouse enter / collapses on mouse leave, in addition to the
+  // click toggle below — click stays fully functional on its own for
+  // touch/keyboard users who can't hover.
+  expandOnHover?: boolean;
 }) {
+  const [hovering, setHovering] = useState(false);
+  const effectiveOpen = open || (expandOnHover && hovering);
+
   return (
-    <div>
+    <div
+      onMouseEnter={expandOnHover ? () => setHovering(true) : undefined}
+      onMouseLeave={expandOnHover ? () => setHovering(false) : undefined}
+    >
       <button
         onClick={onToggle}
         className={cn(
@@ -184,11 +195,11 @@ function NavSection({
         <ChevronDown
           className={cn(
             'h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform duration-200',
-            open && 'rotate-180',
+            effectiveOpen && 'rotate-180',
           )}
         />
       </button>
-      {open && (
+      {effectiveOpen && (
         <div className='relative ml-3 mt-0.5 space-y-0.5 pl-4'>
           <div className='absolute bottom-2 left-2.75 top-1 w-px bg-border' />
           {items.map(({ href, label: itemLabel, icon }) => (
@@ -353,6 +364,7 @@ function ExpandedSidebar({
             onToggle={() => setUserToggledConfig((o) => !o)}
             onNavClick={onNavClick}
             pathname={pathname}
+            expandOnHover
           />
         </div>
 

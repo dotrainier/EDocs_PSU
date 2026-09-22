@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { SlidersHorizontal, Loader2, FileStack } from 'lucide-react';
+import Link from 'next/link';
+import { SlidersHorizontal, Loader2, FileStack, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -160,14 +162,14 @@ export default function AdminRequestsPage() {
           <Table>
             <TableHeader>
               <TableRow className='border-border hover:bg-transparent'>
-                {['Tracking No.', 'Requester', 'Document Type', 'Status', 'Payment', 'Submitted'].map(
+                {['Tracking No.', 'Requester', 'Document Type', 'Status', 'Payment', 'Submitted', ''].map(
                   (h) => (
                     <TableHead
                       key={h}
                       className={cn(
                         'font-sans text-xs font-semibold uppercase tracking-wider text-muted-foreground',
                         h === 'Tracking No.' && 'pl-6',
-                        h === 'Submitted' && 'pr-6',
+                        h === '' && 'pr-6',
                       )}
                     >
                       {h}
@@ -179,14 +181,14 @@ export default function AdminRequestsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className='py-16 text-center text-sm text-muted-foreground'>
+                  <TableCell colSpan={7} className='py-16 text-center text-sm text-muted-foreground'>
                     <Loader2 className='mx-auto mb-2 h-5 w-5 animate-spin' />
                     Loading requests…
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className='py-16 text-center text-sm text-muted-foreground'>
+                  <TableCell colSpan={7} className='py-16 text-center text-sm text-muted-foreground'>
                     <div className='flex flex-col items-center gap-3'>
                       <div className='flex h-14 w-14 items-center justify-center rounded-full bg-muted'>
                         <FileStack className='h-7 w-7 text-muted-foreground' />
@@ -232,10 +234,18 @@ export default function AdminRequestsPage() {
                         {req.payment_status}
                       </Badge>
                     </TableCell>
-                    <TableCell className='pr-6'>
+                    <TableCell>
                       <span className='font-sans text-sm text-muted-foreground'>
                         {formatDate(req.created_at)}
                       </span>
+                    </TableCell>
+                    <TableCell className='pr-6'>
+                      <Button variant='outline' size='sm' className='gap-1.5' asChild>
+                        <Link href={`/admin/requests/${req.tracking_number}`}>
+                          View
+                          <ArrowRight className='h-3.5 w-3.5' />
+                        </Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))

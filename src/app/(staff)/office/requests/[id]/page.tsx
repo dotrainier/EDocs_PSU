@@ -35,7 +35,6 @@ import AcademicSummaryPanel, {
 } from './_components/AcademicSummaryPanel';
 import ClearanceFormPanel from './_components/ClearanceFormPanel';
 import GenerateDocumentPanel from './_components/GenerateDocumentPanel';
-import MarkAsReleasedPanel from './_components/MarkAsReleasedPanel';
 
 interface ClearanceTask {
   task_id: string;
@@ -468,15 +467,10 @@ export default function OfficeRequestDetailPage() {
             <GenerateDocumentPanel trackingNumber={req.tracking_number} />
           )}
 
-          {/* Mark as Released — closes the lifecycle once the student has
-              picked up the document. Applies regardless of handling_pattern
-              (GENERATE or UPLOAD/TOR both end up here); authorized the same
-              way as Generate Document — issuing office, not the
-              Pending-clearance-task check, since clearance is already
-              Cleared by this point. */}
-          {req.status === 'Ready for Release' && (
-            <MarkAsReleasedPanel trackingNumber={req.tracking_number} onReleased={refetch} />
-          )}
+          {/* Mark as Released is now an Admin-only action (see
+              /admin/requests/[id]) — office staff see the status via the
+              header badge and timeline above, but no longer get the action
+              here. */}
 
           {/* Academic-records reference panel — Registrar staff only */}
           {req.academic_summary && (
