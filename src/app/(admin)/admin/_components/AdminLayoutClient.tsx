@@ -22,6 +22,7 @@ import {
   BookOpen,
   ClipboardCheck,
   Gauge,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -54,6 +55,7 @@ const CONFIG_ITEMS = [
   { href: '/admin/document-types', label: 'Document Types', icon: FileText },
   { href: '/admin/courses', label: 'Courses', icon: BookOpen },
   { href: '/admin/capacity-settings', label: 'Capacity Settings', icon: Gauge },
+  { href: '/admin/payments', label: 'Payments', icon: Wallet },
 ];
 
 const MONITOR_ITEMS = [
@@ -71,6 +73,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/document-types': 'Document Types',
   '/admin/courses': 'Courses',
   '/admin/capacity-settings': 'Capacity Settings',
+  '/admin/payments': 'Payments',
   '/admin/requests': 'All Requests',
   '/admin/audit-logs': 'Audit Logs',
 };
