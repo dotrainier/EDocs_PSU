@@ -51,6 +51,7 @@ export const notifications = pgTable(
         'account_notice',
         'password_expiring',
         'office_closure',
+        'new_message',
       ],
     }),
     title: varchar('title', { length: 100 }).notNull(),

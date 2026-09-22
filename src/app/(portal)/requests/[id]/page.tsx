@@ -34,6 +34,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
+import MessageThreadPanel from '@/components/shared/MessageThreadPanel';
 import { useFetch } from '@/hooks/useFetch';
 import {
   formatDate,
@@ -520,6 +521,13 @@ export default function TrackRequestPage() {
           </ol>
         </CardContent>
       </Card>
+
+      {/* Message thread with the handling office(s) */}
+      <MessageThreadPanel
+        apiBase='/portal/requests'
+        trackingNumber={request.trackingNumber}
+        viewerIsStaff={false}
+      />
 
       {/* Cancel button */}
       {request.isCancellable && (

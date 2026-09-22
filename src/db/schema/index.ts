@@ -8,3 +8,4 @@ export * from './document_config.schema';
 export * from './request.schema';
 export * from './clearance_tasks.schema';
 export * from './notification.schema';
+export * from './request_messages.schema';

@@ -35,6 +35,7 @@ import AcademicSummaryPanel, {
 } from './_components/AcademicSummaryPanel';
 import ClearanceFormPanel from './_components/ClearanceFormPanel';
 import GenerateDocumentPanel from './_components/GenerateDocumentPanel';
+import MessageThreadPanel from '@/components/shared/MessageThreadPanel';
 
 interface ClearanceTask {
   task_id: string;
@@ -481,6 +482,13 @@ export default function OfficeRequestDetailPage() {
               requestedSemester={req.semester}
             />
           )}
+
+          {/* Message thread with the requesting student */}
+          <MessageThreadPanel
+            apiBase='/office/requests'
+            trackingNumber={req.tracking_number}
+            viewerIsStaff
+          />
         </div>
 
         {/* Right column */}

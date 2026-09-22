@@ -11,6 +11,10 @@ import {
 import { cn } from '@/lib/utils';
 
 const statusConfig: Record<string, { label: string; color: string }> = {
+  pending: {
+    label: 'New',
+    color: 'text-primary before:bg-primary',
+  },
   completed: {
     label: 'Completed',
     color: 'text-emerald-600 dark:text-emerald-400 before:bg-emerald-500',

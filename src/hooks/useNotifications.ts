@@ -177,6 +177,7 @@ function mapTypeToStatus(type: string): 'pending' | 'processing' | 'completed' |
     payment_required: 'processing',
     sla_warning: 'processing',
     sla_breached: 'rejected',
+    new_message: 'pending',
   };
   return map[type] || 'pending';
 }

@@ -17,7 +17,8 @@ type NotificationType =
   | 'maintenance'
   | 'account_notice'
   | 'password_expiring'
-  | 'office_closure';
+  | 'office_closure'
+  | 'new_message';
 
 interface CreateNotificationInput {
   userId: string;
