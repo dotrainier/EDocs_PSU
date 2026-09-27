@@ -8,7 +8,7 @@ import { document_requests, document_types, offices } from '@/db/schema';
 const QUEUE_STATUSES = ['Pending', 'In Process'];
 
 // Fallback for offices with no daily_capacity configured yet (the column is
-// nullable — admin UI to set it per office is a separate follow-up task).
+// nullable; Admins set it per office under Capacity Settings).
 const DEFAULT_DAILY_CAPACITY = 20;
 
 /**

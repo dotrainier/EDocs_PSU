@@ -2,7 +2,7 @@
 //
 // Real, paginated audit trail for the admin Audit Logs page (Admin only).
 // Supports filtering by action type and a date range; actor search was left
-// out for now — see the note above ACTOR SEARCH below.
+// out for now — see the note above the `where` clause below.
 import { NextResponse } from 'next/server';
 import { and, desc, eq, gte, lte, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/db';
@@ -52,15 +52,15 @@ export async function GET(request: Request) {
       conditions.push(lte(audit_log.timestamp, new Date(toParam)));
     }
 
-    // ── ACTOR SEARCH ──────────────────────────────────────────────────────
-    // Deliberately not implemented yet. Action-type and date-range filters
-    // are plain WHERE clauses on audit_log's own columns. Actor search would
-    // need to match a *computed* full name (given/middle/last/suffix
-    // concatenated) or email on the joined users row — the first free-text
-    // search in this app that isn't done by fetching everything and
-    // filtering client-side (every other admin list does that). Adding it
-    // properly means a raw ILIKE-on-concat clause with no existing pattern
-    // to follow here, so it's left for a follow-up rather than bolted on.
+    // Actor search is deliberately not implemented yet. Action-type and
+    // date-range filters are plain WHERE clauses on audit_log's own columns.
+    // Actor search would need to match a *computed* full name
+    // (given/middle/last/suffix concatenated) or email on the joined users
+    // row — the first free-text search in this app that isn't done by
+    // fetching everything and filtering client-side (every other admin list
+    // does that). Adding it properly means a raw ILIKE-on-concat clause with
+    // no existing pattern to follow here, so it's left for a follow-up rather
+    // than bolted on.
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 

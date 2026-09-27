@@ -26,7 +26,6 @@ export async function seedDocuments() {
   }
 
   const documentTypeData = [
-    // ── Registrar documents ──
     {
       name: 'Transcript of Records',
       code: 'TOR',
@@ -141,16 +140,9 @@ export async function seedDocuments() {
   });
 
   const documentTypeRolesData = [
-    // TOR → Student only
     { document_type_id: docMap['TOR'], role_id: roleMap['Student'] },
-
-    // COE → Student only
     { document_type_id: docMap['COE'], role_id: roleMap['Student'] },
-
-    // COG → Student only
     { document_type_id: docMap['COG'], role_id: roleMap['Student'] },
-
-    // COR → Student only
     { document_type_id: docMap['COR'], role_id: roleMap['Student'] },
   ];
 
@@ -172,9 +164,9 @@ export async function seedDocuments() {
     );
 
   const clearanceData = [
-    // ── TOR: Registrar-only. Clearance is satisfied by the student uploading a
+    // TOR: Registrar-only. Clearance is satisfied by the student uploading a
     // clearance form (reviewed by Registrar staff), not by routing through
-    // Library/Cashier/Property/Guidance — same single-office pattern as COE/COG. ──
+    // Library/Cashier/Property/Guidance — same single-office pattern as COE/COG.
     {
       document_type_id: docMap['TOR'],
       office_id: officeMap['OUR'],
@@ -182,7 +174,6 @@ export async function seedDocuments() {
       is_required: true,
     },
 
-    // ── COE: OUR head approval only ──
     {
       document_type_id: docMap['COE'],
       office_id: officeMap['OUR'],
@@ -190,7 +181,7 @@ export async function seedDocuments() {
       is_required: true,
     },
 
-    // ── COG: OUR head approval only (client mentioned security trail) ──
+    // COG: OUR head approval only (client mentioned security trail)
     {
       document_type_id: docMap['COG'],
       office_id: officeMap['OUR'],
@@ -198,7 +189,6 @@ export async function seedDocuments() {
       is_required: true,
     },
 
-    // ── COR: OUR head approval only — same single-office pattern as COE/COG ──
     {
       document_type_id: docMap['COR'],
       office_id: officeMap['OUR'],

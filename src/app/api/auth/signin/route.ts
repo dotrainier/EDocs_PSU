@@ -29,8 +29,6 @@ export async function POST(request: Request) {
 
     const { username, password } = parsed.data;
 
-    console.log('[signin] Attempting login for:', username);
-
     const result = await db
       .select({
         id: users.id,
@@ -55,19 +53,11 @@ export async function POST(request: Request) {
 
     const user = result[0];
 
-    console.log('[signin] User found:', user ? 'yes' : 'no');
-
     if (!user) {
-      console.log('[signin] No user matched school_id or email:', username);
       return NextResponse.json({ message: 'Invalid username or password' }, { status: 401 });
     }
 
-    console.log('[signin] User status:', user.status);
-    console.log('[signin] Role name:', user.role_name);
-    console.log('[signin] Hash from DB:', user.password_hash);
-
     if (user.verification_status === 'pending') {
-      console.log('[signin] Registration pending review');
       return NextResponse.json(
         { message: 'Your registration is still pending review. Please wait for admin approval before signing in.' },
         { status: 403 },
@@ -75,7 +65,6 @@ export async function POST(request: Request) {
     }
 
     if (user.verification_status === 'rejected') {
-      console.log('[signin] Registration rejected');
       return NextResponse.json(
         {
           message:
@@ -86,7 +75,6 @@ export async function POST(request: Request) {
     }
 
     if (user.status !== 'active') {
-      console.log('[signin] Account inactive');
       return NextResponse.json(
         { message: 'Your account has been deactivated. Please contact the administrator.' },
         { status: 403 },
@@ -94,8 +82,6 @@ export async function POST(request: Request) {
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
-
-    console.log('[signin] Password match:', passwordMatch);
 
     if (!passwordMatch) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
@@ -119,8 +105,6 @@ export async function POST(request: Request) {
     await setAuthCookies(accessToken, refreshToken);
 
     const full_name = composeFullName(user);
-
-    console.log('[signin] Login successful for:', full_name);
 
     return NextResponse.json(
       {

@@ -468,10 +468,9 @@ export default function OfficeRequestDetailPage() {
             <GenerateDocumentPanel trackingNumber={req.tracking_number} />
           )}
 
-          {/* Mark as Released is now an Admin-only action (see
-              /admin/requests/[id]) — office staff see the status via the
-              header badge and timeline above, but no longer get the action
-              here. */}
+          {/* Mark as Released is Admin-only (see /admin/requests/[id]) —
+              office staff see the status via the header badge and timeline
+              above. */}
 
           {/* Academic-records reference panel — Registrar staff only */}
           {req.academic_summary && (

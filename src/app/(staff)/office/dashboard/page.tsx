@@ -156,7 +156,6 @@ export default function OfficeDashboardPage() {
     [data?.tasks],
   );
 
-  // ── Queue donut (On Track vs Overdue) ──
   const donutOptions: ApexOptions = useMemo(() => ({
     ...base,
     chart: { ...base.chart, type: 'donut', id: 'queue-status' },
@@ -180,7 +179,6 @@ export default function OfficeDashboardPage() {
 
   const donutSeries = useMemo(() => [stats.on_track, stats.overdue], [stats]);
 
-  // ── Document type horizontal bar ──
   const docTypeOptions: ApexOptions = useMemo(() => ({
     ...base,
     chart: { ...base.chart, type: 'bar', id: 'doc-type' },
@@ -196,7 +194,6 @@ export default function OfficeDashboardPage() {
     { name: 'Requests', data: data?.documentTypeDistribution?.map((d) => d.value) ?? [] },
   ], [data?.documentTypeDistribution]);
 
-  // ── Processing time grouped bar ──
   const processingOptions: ApexOptions = useMemo(() => ({
     ...base,
     chart: { ...base.chart, type: 'bar', id: 'processing' },
@@ -213,7 +210,6 @@ export default function OfficeDashboardPage() {
     { name: 'Actual', data: data?.processingTime?.map((d) => d.actual) ?? [] },
   ], [data?.processingTime]);
 
-  // ── Clearance performance grouped bar ──
   const clearanceOptions: ApexOptions = useMemo(() => ({
     ...base,
     chart: { ...base.chart, type: 'bar', id: 'clearance' },

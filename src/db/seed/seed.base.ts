@@ -13,8 +13,7 @@ const roleData = [
 const officeData = [
   // daily_capacity: placeholder assumption (40 capacity_weight units/day for
   // OUR — adjust once real registrar throughput is known). Other offices are
-  // left null until the admin-editable capacity UI (a follow-up task) sets
-  // real values for them.
+  // left null; Admins set real values for them under Capacity Settings.
   { name: 'Office of the University Registrar', code: 'OUR', daily_capacity: 40 },
   { name: 'University Cashier / Finance', code: 'UCF' },
   { name: 'University Library', code: 'LIB' },

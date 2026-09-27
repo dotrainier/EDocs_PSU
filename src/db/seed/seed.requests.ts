@@ -71,7 +71,7 @@ export async function seedRequests() {
       document_type_id: docMap['COR'],
       purpose: 'Scholarship Application',
       copies: 1,
-      // COR now mirrors COE (single OUR clearance requirement) — all
+      // COR mirrors COE (single OUR clearance requirement) — all
       // requirements cleared, consistent with 'Ready for Release'.
       status: 'Ready for Release',
       fee_amount: '50.00',

@@ -243,7 +243,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     [data?.stats],
   );
 
-  // ── Area chart ──
   const areaOptions: ApexOptions = useMemo(
     () => ({
       ...base,
@@ -276,7 +275,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     [data?.requestTrend],
   );
 
-  // ── Donut chart ──
   const donutOptions: ApexOptions = useMemo(
     () => ({
       ...base,
@@ -313,7 +311,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     [stats],
   );
 
-  // ── Bar chart: document types ──
   const docTypeOptions: ApexOptions = useMemo(
     () => ({
       ...base,
@@ -349,7 +346,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     [data?.documentTypeBreakdown],
   );
 
-  // ── Bar chart: avg processing time ──
   const avgTimeOptions: ApexOptions = useMemo(
     () => ({
       ...base,
@@ -378,7 +374,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
     [data?.avgProcessingTime],
   );
 
-  // ── Loading / error ──
   if (loading) {
     return (
       <div className='mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8'>

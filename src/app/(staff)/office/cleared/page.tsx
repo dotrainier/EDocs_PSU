@@ -34,7 +34,7 @@ import { cn, formatDateOptional, formatDateTime } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
 
 // ---------------------------------------------------------------------------
-// Types & mock data
+// Types
 // ---------------------------------------------------------------------------
 
 type ActionTaken = 'Cleared' | 'Rejected';

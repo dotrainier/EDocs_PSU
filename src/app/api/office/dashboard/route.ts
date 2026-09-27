@@ -79,9 +79,8 @@ export async function GET(request: Request) {
     // Current backlog, in days — a live snapshot rather than a fabricated
     // multi-week trend. audit_log only spans a few days of (partly seed-
     // duplicated) history in this deployment, so a genuine historical
-    // queue-depth trend can't be reconstructed with confidence yet — see
-    // the office dashboard investigation notes. This can be revisited once
-    // real usage accumulates weeks of clean audit history.
+    // queue-depth trend can't be reconstructed with confidence yet. This can
+    // be revisited once real usage accumulates weeks of clean audit history.
     const backlog = await getOfficeBacklogSummary(officeId);
 
     const docTypeVolume = await db
@@ -195,18 +194,11 @@ export async function GET(request: Request) {
         // Role (used by AI insights to tailor prompt)
         role: session.role,
 
-        // Stats cards
         stats,
-
-        // Live current-backlog indicator (replaces the fabricated weekly trend)
         backlog,
-
-        // Chart data
         documentTypeDistribution,
         processingTime,
         clearancePerformance,
-
-        // Queue preview
         tasks: queuePreview,
 
         // Personal stats for role-aware AI insights
