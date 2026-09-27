@@ -23,6 +23,7 @@ import {
   ClipboardCheck,
   Gauge,
   Wallet,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -47,6 +48,7 @@ interface User {
 const OVERVIEW_ITEMS = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/verification', label: 'Pending Registrations', icon: ClipboardCheck },
+  { href: '/admin/assistant', label: 'Assistant', icon: Sparkles },
 ];
 
 const CONFIG_ITEMS = [
@@ -68,6 +70,7 @@ const ALL_ITEMS = [...OVERVIEW_ITEMS, ...CONFIG_ITEMS, ...MONITOR_ITEMS];
 const PAGE_TITLES: Record<string, string> = {
   '/admin/dashboard': 'Dashboard',
   '/admin/verification': 'Pending Registrations',
+  '/admin/assistant': 'Assistant',
   '/admin/users': 'Users',
   '/admin/offices': 'Offices',
   '/admin/document-types': 'Document Types',
