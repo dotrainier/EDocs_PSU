@@ -8,7 +8,11 @@ import { createNotification } from '@/lib/notification';
 import { sendMailToMultiple } from '@/lib/lib-mailer';
 import { NewRequestStaffEmail } from '@/email-templates/NewRequestStaff';
 import { render } from 'react-email';
-import { uploadClearanceForm } from '@/lib/cloudinary';
+import {
+  uploadClearanceForm,
+  CLEARANCE_FORM_MAX_BYTES,
+  CLEARANCE_FORM_ALLOWED_TYPES,
+} from '@/lib/cloudinary';
 
 import {
   document_requests,
@@ -28,12 +32,6 @@ const createRequestSchema = z.object({
   schoolYear: z.string().max(20).optional(),
   semester: z.string().max(30).optional(),
 });
-
-// TOR requests are cleared by the Registrar reviewing a student-uploaded
-// clearance form (see clearance_requirements seed) rather than by routing
-// through separate offices — so a file is required at submission time.
-const CLEARANCE_FORM_MAX_BYTES = 5 * 1024 * 1024;
-const CLEARANCE_FORM_ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
 async function readRequestBody(
   request: Request,

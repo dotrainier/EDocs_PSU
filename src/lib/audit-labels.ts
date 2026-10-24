@@ -40,6 +40,10 @@ export function describeAuditEvent({
       const remark = typeof d.remarks === 'string' ? d.remarks : null;
       return { title: `${officeName ?? 'Office'} rejected`, subtitle: remark ?? by };
     }
+    case 'REQUEST_RESUBMITTED': {
+      const note = typeof d.note === 'string' ? d.note : null;
+      return { title: 'Resubmitted for clearance', subtitle: note ?? by };
+    }
     case 'PAYMENT_CONFIRMED':
       return { title: 'Payment confirmed', subtitle: by };
     case 'DOCUMENT_GENERATED':
@@ -79,6 +83,7 @@ export const KNOWN_AUDIT_ACTIONS = [
   'REQUEST_SUBMITTED',
   'CLEARANCE_CLEARED',
   'CLEARANCE_REJECTED',
+  'REQUEST_RESUBMITTED',
   'PAYMENT_CONFIRMED',
   'DOCUMENT_GENERATED',
   'REQUEST_READY_FOR_RELEASE',

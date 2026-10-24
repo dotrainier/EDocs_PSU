@@ -13,6 +13,13 @@ export async function advanceRouting(
     .from(clearance_tasks)
     .where(eq(clearance_tasks.request_id, requestId));
 
+  // A rejected task holds the request in Action Required until the student
+  // resubmits (which resets it to Pending) — other offices clearing in the
+  // meantime must not route it onward or mark it Ready for Release.
+  if (existingTasks.some((t) => t.status === 'Rejected')) {
+    return;
+  }
+
   const pendingParallel = existingTasks.filter(
     (t) => t.sequence_order === null && t.status === 'Pending',
   );

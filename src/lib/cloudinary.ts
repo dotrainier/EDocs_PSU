@@ -12,6 +12,11 @@ cloudinary.config({
 const RESOURCE_TYPE = 'image';
 const FOLDER = 'clearance-forms';
 
+// Shared by every route that accepts a clearance form (submission and
+// Action Required resubmission) so the accepted files never drift apart.
+export const CLEARANCE_FORM_MAX_BYTES = 5 * 1024 * 1024;
+export const CLEARANCE_FORM_ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+
 // Uploads a clearance form as a private ("authenticated") Cloudinary resource,
 // server-side only. The upload API secret never reaches the browser.
 // Returns "<public_id>.<format>" — stored verbatim in

@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import MessageThreadPanel from '@/components/shared/MessageThreadPanel';
+import ResubmitRequestPanel from './_components/ResubmitRequestPanel';
 import { useFetch } from '@/hooks/useFetch';
 import {
   formatDate,
@@ -66,6 +67,7 @@ interface DocumentRequest {
   trackingNumber: string;
   status: RequestStatus;
   documentType: string;
+  documentTypeCode: string;
   issuingOffice: string;
   dateFiled: string;
   copies: number;
@@ -88,6 +90,7 @@ interface RequestResponse {
   request: {
     tracking_number: string;
     document_type: string;
+    document_type_code: string;
     handling_pattern: string;
     issuing_office: string;
     purpose: string;
@@ -223,12 +226,18 @@ export default function TrackRequestPage() {
 
     const apiRequest = data.request;
     const status = normalizeRequestStatus(apiRequest.status);
+    // Each rejecting office's remark is the reason shown on the Action
+    // Required banner — one line per office.
+    const rejectedTasks = apiRequest.clearance_tasks.filter(
+      (task) => normalizeClearanceStatus(task.status) === 'Rejected',
+    );
 
     return {
       id: apiRequest.tracking_number,
       trackingNumber: apiRequest.tracking_number,
       status,
       documentType: apiRequest.document_type,
+      documentTypeCode: apiRequest.document_type_code,
       issuingOffice: apiRequest.issuing_office,
       dateFiled: formatDate(apiRequest.created_at),
       copies: apiRequest.copies,
@@ -249,8 +258,13 @@ export default function TrackRequestPage() {
         at: event.at,
         subtitle: event.subtitle,
       })),
-      actionRequiredReason: undefined,
-      actionRequiredInstruction: undefined,
+      actionRequiredReason: rejectedTasks.length
+        ? rejectedTasks
+            .map((task) => `${task.office_name}: ${task.remarks ?? 'No reason was given.'}`)
+            .join('\n')
+        : undefined,
+      actionRequiredInstruction:
+        'Fix the issue above, then resubmit your request below. You can message the office if you need clarification.',
       pickupLocation: undefined,
       pickupSchedule: undefined,
       pickupBringItems: undefined,
@@ -308,7 +322,7 @@ export default function TrackRequestPage() {
           <AlertTriangle className='h-4 w-4' />
           <AlertTitle>Action Required</AlertTitle>
           <AlertDescription className='mt-1 space-y-1'>
-            <p>{request.actionRequiredReason}</p>
+            <p className='whitespace-pre-line'>{request.actionRequiredReason}</p>
             {request.actionRequiredInstruction && (
               <p className='font-medium'>{request.actionRequiredInstruction}</p>
             )}
@@ -429,6 +443,15 @@ export default function TrackRequestPage() {
             ))}
           </CardContent>
         </Card>
+      )}
+
+      {/* Way out of Action Required — resubmit once the issue is fixed */}
+      {isActionRequired && (
+        <ResubmitRequestPanel
+          trackingNumber={request.trackingNumber}
+          allowsClearanceForm={request.documentTypeCode === 'TOR'}
+          onResubmitted={refetch}
+        />
       )}
 
       {/* Document ready for pickup */}

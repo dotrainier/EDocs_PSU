@@ -38,6 +38,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         updated_at: document_requests.updated_at,
         user_id: document_requests.user_id,
         document_type: document_types.name,
+        document_type_code: document_types.code,
         handling_pattern: document_types.handling_pattern,
         issuing_office: offices.name,
       })
@@ -176,6 +177,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         };
       }
 
+      if (event.action === 'REQUEST_RESUBMITTED') {
+        const note = typeof details.note === 'string' ? details.note : null;
+        return {
+          id: event.id,
+          title: 'Resubmitted for clearance',
+          at: event.timestamp,
+          subtitle: note,
+        };
+      }
+
       if (event.action === 'REQUEST_READY_FOR_RELEASE') {
         return {
           id: event.id,
@@ -209,6 +220,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         request: {
           tracking_number: req.tracking_number,
           document_type: req.document_type,
+          document_type_code: req.document_type_code,
           handling_pattern: req.handling_pattern,
           issuing_office: req.issuing_office,
           purpose: req.purpose,

@@ -7,6 +7,7 @@ import { advanceRouting } from '@/lib/routing';
 import { logAudit } from '@/lib/audit';
 import { sendMail } from '@/lib/lib-mailer';
 import { ClearanceApprovedEmail } from '@/email-templates/ClearanceApproved';
+import { ClearanceRejectedEmail } from '@/email-templates/ClearanceRejected';
 import { render } from 'react-email';
 import { createNotification } from '@/lib/notification';
 import { composeFullName } from '@/lib/user-name';
@@ -32,10 +33,21 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { action, remarks } = body; // action = 'cleared' or 'rejected'
+    const { action } = body; // action = 'cleared' or 'rejected'
+    const remarks = typeof body.remarks === 'string' ? body.remarks.trim() : '';
 
     if (!['cleared', 'rejected'].includes(action)) {
       return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
+    }
+
+    // The remark is the reason the student sees on their Action Required
+    // banner and in the rejection email — a rejection without one leaves
+    // them nothing to act on.
+    if (action === 'rejected' && !remarks) {
+      return NextResponse.json(
+        { message: 'Remarks are required when rejecting a clearance' },
+        { status: 400 },
+      );
     }
 
     const taskResult = await db
@@ -126,7 +138,7 @@ export async function PATCH(
         taskId: taskId,
         requestId: task.request_id,
         officeId: session.officeId,
-        remarks,
+        remarks: remarks || null,
       },
       ipAddress: request.headers.get('x-forwarded-for') ?? 'unknown',
     });
@@ -157,10 +169,20 @@ export async function PATCH(
         const requestorName = composeFullName(requestor[0]);
         const officeName = officeResult[0]?.name || 'Office';
 
-        const notif = {
-          title: `Your ${docRequest.document_name} request has been ${newStatus.toLowerCase()} by ${officeName}`,
-          message: `Your request for ${docRequest.document_name} has been ${newStatus.toLowerCase()} by ${officeName}.`,
-        };
+        // notifications.title is varchar(100) and message varchar(500): the
+        // remark is capped here — the full text is in the email and on the
+        // request page.
+        const remarkPreview = remarks.length > 200 ? `${remarks.slice(0, 200)}…` : remarks;
+        const notif =
+          newStatus === 'Cleared'
+            ? {
+                title: `Your ${docRequest.document_name} request has been cleared by ${officeName}`,
+                message: `Your request for ${docRequest.document_name} has been cleared by ${officeName}.`,
+              }
+            : {
+                title: `Action required on your ${docRequest.document_name} request`,
+                message: `${officeName} rejected your ${docRequest.document_name} request: "${remarkPreview}". Fix the issue, then resubmit it from the request page.`,
+              };
 
         await createNotification({
           userId: docRequest.user_id,
@@ -183,17 +205,26 @@ export async function PATCH(
         }).catch(() => {});
 
         if (requestor[0].email) {
+          const trackingUrl = `${process.env.NEXT_PUBLIC_APP_URL}/requests/${docRequest.tracking_number}`;
           const emailHtml = await render(
-            ClearanceApprovedEmail({
-              userName: requestorName,
-              documentType: docRequest.document_name,
-              trackingUrl: `${process.env.NEXT_PUBLIC_APP_URL}/requests/${docRequest.tracking_number}`,
-              officeName,
-            }),
+            newStatus === 'Cleared'
+              ? ClearanceApprovedEmail({
+                  userName: requestorName,
+                  documentType: docRequest.document_name,
+                  trackingUrl,
+                  officeName,
+                })
+              : ClearanceRejectedEmail({
+                  userName: requestorName,
+                  documentType: docRequest.document_name,
+                  trackingUrl,
+                  officeName,
+                  reason: remarks,
+                }),
           );
           await sendMail({
             to: requestor[0].email,
-            subject: `Your ${docRequest.document_name} request has been ${newStatus.toLowerCase()} by ${officeName}`,
+            subject: notif.title,
             html: emailHtml,
           });
         }
