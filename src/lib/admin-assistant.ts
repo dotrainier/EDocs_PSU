@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/lib/admin-assistant.ts
 //
 // Admin-facing chat assistant backed by genuine Gemini function calling
@@ -6,26 +5,16 @@
 // — which format pre-computed data into a single prompt — here the model
 // decides which lookups to run.
 //
-// Round-trip shape for this SDK version:
-//   1. getGenerativeModel({ tools: [{ functionDeclarations }], toolConfig })
-//   2. chat.sendMessage(text) → response.functionCalls() lists { name, args }
-//   3. chat.sendMessage([{ functionResponse: { name, response } }, ...])
-//      (the SDK sends these as role "function"; they can't be mixed with text
-//      parts in the same message)
-//   4. repeat until the response has no function calls, then response.text()
-//
 // Every tool is strictly read-only and wraps the same functions that power
 // the Admin Dashboard and Payments page (src/lib/admin-reports.ts) — nothing
 // here queries or writes the database directly.
+import { SchemaType } from '@google/generative-ai';
 import {
-  GoogleGenerativeAI,
-  FunctionCallingMode,
-  SchemaType,
-  type ChatSession,
-  type FunctionDeclaration,
-  type FunctionResponsePart,
-  type GenerateContentResult,
-} from '@google/generative-ai';
+  runAssistantChat,
+  type AssistantReply,
+  type AssistantTool,
+  type AssistantTurn,
+} from '@/lib/assistant-chat';
 import {
   getRegistrationFunnel,
   getRequestVolume,
@@ -36,21 +25,6 @@ import {
   getPaymentReport,
 } from '@/lib/admin-reports';
 
-export interface AssistantTurn {
-  role: 'user' | 'model';
-  text: string;
-}
-
-export interface AssistantReply {
-  reply: string;
-  toolsUsed: string[];
-  declined: boolean;
-  ai_failed: boolean;
-}
-
-const MODEL_NAME = 'gemini-2.5-flash';
-const MAX_TOOL_ROUNDS = 5;
-
 // ─── Toolset ──────────────────────────────────────────────────────────────────
 
 const OFFICE_SCOPE_NOTE =
@@ -58,12 +32,6 @@ const OFFICE_SCOPE_NOTE =
 
 const SNAPSHOT_NOTE =
   'Live snapshot as of asOf. No historical time series exists, so trends over time and forecasts cannot be derived from this.';
-
-interface AssistantTool {
-  label: string;
-  declaration: FunctionDeclaration;
-  run: (args: Record<string, unknown>) => Promise<object>;
-}
 
 const TOOLS: Record<string, AssistantTool> = {
   get_system_overview: {
@@ -219,17 +187,6 @@ export function toolLabel(name: string): string {
   return TOOLS[name]?.label ?? name;
 }
 
-async function runTool(name: string, args: object): Promise<object> {
-  const tool = TOOLS[name];
-  if (!tool) return { error: `Unknown tool "${name}". No data available.` };
-  try {
-    return { asOf: new Date().toISOString(), ...(await tool.run((args ?? {}) as Record<string, unknown>)) };
-  } catch (err) {
-    console.error(`Admin assistant tool ${name} failed:`, err);
-    return { error: 'The lookup failed. No data is available for this question right now.' };
-  }
-}
-
 // ─── Honesty guard ────────────────────────────────────────────────────────────
 
 // Forecasting is explicitly unsupported: there isn't enough historical data
@@ -272,26 +229,6 @@ Rules. Follow them strictly:
 
 // ─── Chat loop ────────────────────────────────────────────────────────────────
 
-async function sendWithRetry(
-  chat: ChatSession,
-  request: string | FunctionResponsePart[],
-  attempts = 3,
-): Promise<GenerateContentResult> {
-  let lastErr: unknown;
-  for (let i = 0; i < attempts; i++) {
-    try {
-      return await chat.sendMessage(request);
-    } catch (err: any) {
-      lastErr = err;
-      const status = err?.status ?? err?.response?.status;
-      const isRetryable = status === 429 || status === 503;
-      if (!isRetryable || i === attempts - 1) throw err;
-      await new Promise((r) => setTimeout(r, Math.min(2000 * 2 ** i, 10000)));
-    }
-  }
-  throw lastErr;
-}
-
 /**
  * Answers one Admin message. `history` is the text-only conversation so far
  * (held by the client for the current page visit). It carries enough context
@@ -306,68 +243,12 @@ export async function askAdminAssistant(
     return { reply: PREDICTION_DECLINE, toolsUsed: [], declined: true, ai_failed: false };
   }
 
-  const genAI = new GoogleGenerativeAI(process.env.AI_API_KEY!);
-  const model = genAI.getGenerativeModel({
-    model: MODEL_NAME,
+  return runAssistantChat({
+    logName: 'Admin assistant',
     systemInstruction: systemInstruction(),
-    tools: [{ functionDeclarations: Object.values(TOOLS).map((t) => t.declaration) }],
-    toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.AUTO } },
-    generationConfig: { temperature: 0 },
+    tools: TOOLS,
+    ctx: undefined,
+    history,
+    message,
   });
-
-  const chat = model.startChat({
-    history: history.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
-  });
-
-  const toolsUsed: string[] = [];
-
-  try {
-    let result = await sendWithRetry(chat, message);
-
-    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const calls = result.response.functionCalls();
-      if (!calls || calls.length === 0) break;
-
-      const responses: FunctionResponsePart[] = await Promise.all(
-        calls.map(async (call) => {
-          if (!toolsUsed.includes(call.name)) toolsUsed.push(call.name);
-          return { functionResponse: { name: call.name, response: await runTool(call.name, call.args) } };
-        }),
-      );
-      result = await sendWithRetry(chat, responses);
-    }
-
-    if (result.response.functionCalls()?.length) {
-      return {
-        reply: "I couldn't finish looking that up. Please try asking a narrower question.",
-        toolsUsed,
-        declined: false,
-        ai_failed: true,
-      };
-    }
-
-    const reply = result.response.text().trim();
-    if (!reply) {
-      return {
-        reply: "I couldn't produce an answer to that. Please try rephrasing.",
-        toolsUsed,
-        declined: false,
-        ai_failed: true,
-      };
-    }
-    return { reply, toolsUsed, declined: false, ai_failed: false };
-  } catch (error: any) {
-    console.error('Gemini API error (admin assistant):', error);
-    // Each tool-using question costs 2+ Gemini calls, so the free tier's
-    // per-minute quota is easy to hit. Say so rather than a vague failure.
-    const rateLimited = (error?.status ?? error?.response?.status) === 429;
-    return {
-      reply: rateLimited
-        ? 'The AI service rate limit has been reached. Please wait about a minute and ask again.'
-        : 'The assistant is unavailable right now. Please try again in a moment.',
-      toolsUsed,
-      declined: false,
-      ai_failed: true,
-    };
-  }
 }

@@ -5,28 +5,7 @@ import { Bot, Loader2, RotateCcw, SendHorizontal, Search, User } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { api } from '@/lib/axios';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface AssistantResponse {
-  reply: string;
-  toolsUsed: string[];
-  declined: boolean;
-  ai_failed: boolean;
-}
-
-interface ChatMessage {
-  role: 'user' | 'model';
-  text: string;
-  toolsUsed?: string[];
-  // Failed exchanges are shown but never sent back as conversation history.
-  excluded?: boolean;
-}
-
-// Matches the route's history cap. Always an even number so the slice still
-// starts on a user turn.
-const MAX_HISTORY_TURNS = 40;
+import { useAssistantChat, type AssistantChatMessage } from '@/hooks/useAssistantChat';
 
 const SUGGESTIONS = [
   'How many requests are pending right now?',
@@ -37,7 +16,7 @@ const SUGGESTIONS = [
 
 // ─── Message bubble ───────────────────────────────────────────────────────────
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({ message }: { message: AssistantChatMessage }) {
   const isUser = message.role === 'user';
   return (
     <div className={cn('flex gap-3', isUser && 'flex-row-reverse')}>
@@ -74,49 +53,16 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
 export default function AdminAssistantPage() {
   // Conversation lives only in component state: it resets on every visit.
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { messages, sending, send: sendMessage, reset } = useAssistantChat('/admin/assistant');
   const [input, setInput] = useState('');
-  const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
 
-  async function send(text: string) {
-    const message = text.trim();
-    if (!message || sending) return;
-
-    const history = messages
-      .filter((m) => !m.excluded)
-      .map(({ role, text }) => ({ role, text }))
-      .slice(-MAX_HISTORY_TURNS);
-
-    setMessages((prev) => [...prev, { role: 'user', text: message }]);
-    setInput('');
-    setSending(true);
-
-    try {
-      const res = await api.post<AssistantResponse>(
-        '/admin/assistant',
-        { message, history },
-        { timeout: 60000 },
-      );
-      setMessages((prev) => {
-        const next = [...prev];
-        if (res.ai_failed) next[next.length - 1] = { ...next[next.length - 1], excluded: true };
-        return [...next, { role: 'model', text: res.reply, toolsUsed: res.toolsUsed, excluded: res.ai_failed }];
-      });
-    } catch (err: unknown) {
-      const errorText = (err as { message?: string })?.message ?? 'Something went wrong.';
-      setMessages((prev) => {
-        const next = [...prev];
-        next[next.length - 1] = { ...next[next.length - 1], excluded: true };
-        return [...next, { role: 'model', text: errorText, excluded: true }];
-      });
-    } finally {
-      setSending(false);
-    }
+  function send(text: string) {
+    if (sendMessage(text)) setInput('');
   }
 
   return (
@@ -131,7 +77,7 @@ export default function AdminAssistantPage() {
           </p>
         </div>
         {messages.length > 0 && (
-          <Button variant='outline' size='sm' onClick={() => setMessages([])} disabled={sending}>
+          <Button variant='outline' size='sm' onClick={reset} disabled={sending}>
             <RotateCcw className='h-3.5 w-3.5' />
             New chat
           </Button>
