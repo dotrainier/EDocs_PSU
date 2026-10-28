@@ -25,6 +25,7 @@ import { cn, formatRole } from '@/lib/utils';
 import { api } from '@/lib/axios';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { useStaffUnreadCount } from '@/hooks/useStaffUnreadCount';
+import StaffAssistantWidget from './StaffAssistantWidget';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -533,6 +534,8 @@ export default function OfficeLayoutClient({
 
         <main className='flex-1 overflow-y-auto'>{children}</main>
       </div>
+
+      <StaffAssistantWidget />
     </div>
   );
 }
