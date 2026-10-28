@@ -17,6 +17,7 @@ import {
   AlertCircle,
   RefreshCw,
   CreditCard,
+  QrCode,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import MessageThreadPanel from '@/components/shared/MessageThreadPanel';
+import RequestQrCode from '@/components/shared/RequestQrCode';
 import ResubmitRequestPanel from './_components/ResubmitRequestPanel';
 import { useFetch } from '@/hooks/useFetch';
 import {
@@ -355,6 +357,26 @@ export default function TrackRequestPage() {
           </div>
           <p className='text-sm text-muted-foreground mt-1'>{request.documentType}</p>
         </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant='outline' size='sm' className='gap-1.5'>
+              <QrCode className='h-4 w-4' />
+              QR Code
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Request QR Code</AlertDialogTitle>
+              <AlertDialogDescription>
+                Scan it to open {request.trackingNumber}, or save it as an image.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <RequestQrCode trackingNumber={request.trackingNumber} />
+            <AlertDialogFooter>
+              <AlertDialogCancel>Close</AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Top summary card */}

@@ -6,7 +6,6 @@ import { CheckCircle2, Loader2, AlertCircle, RefreshCw, FileText, CreditCard, X 
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Separator as SeparatorUI } from '@/components/ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +26,7 @@ import Step3PrivacyNotice from './Step3PrivacyNotice';
 import Step4Review from './Step4Review';
 import ClassificationWarningDialog from './ClassificationWarningDialog';
 import PurposeQualityDialog from './PurposeQualityDialog';
+import RequestQrCode from '@/components/shared/RequestQrCode';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -142,7 +142,6 @@ function DocumentTypesError({ onRetry }: { onRetry: () => void }) {
 interface SuccessModalProps {
   open: boolean;
   trackingNumber: string;
-  documentName: string;
   feeAmount: string;
   onViewRequest: () => void;
   onClose: () => void;
@@ -151,7 +150,6 @@ interface SuccessModalProps {
 function SuccessModal({
   open,
   trackingNumber,
-  documentName,
   feeAmount,
   onViewRequest,
   onClose,
@@ -160,51 +158,28 @@ function SuccessModal({
 
   return (
     <AlertDialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <AlertDialogContent className='max-w-md relative'>
+      <AlertDialogContent
+        aria-describedby={undefined}
+        className='max-h-[calc(100dvh-2rem)] gap-6 overflow-y-auto px-6 py-8 data-[size=default]:max-w-[calc(100%-2rem)] data-[size=default]:sm:max-w-sm'
+      >
         <button
           type='button'
           onClick={onClose}
           aria-label='Close'
-          className='absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors'
+          className='absolute right-4 top-4 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors'
         >
           <X className='h-4 w-4' />
         </button>
-        <AlertDialogHeader>
-          <div className='flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mx-auto mb-3'>
+        <AlertDialogHeader className='gap-3'>
+          <div className='flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mx-auto'>
             <CheckCircle2 className='h-7 w-7 text-primary' />
           </div>
-          <AlertDialogTitle className='text-center text-lg w-full'>
+          <AlertDialogTitle className='text-center text-xl w-full'>
             Request Submitted!
           </AlertDialogTitle>
-          <AlertDialogDescription className='text-center'>
-            Your document request has been received and is now queued for processing.
-          </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className='space-y-0 rounded-xl border bg-muted/40 overflow-hidden my-2'>
-          <div className='flex items-center justify-between px-4 py-3'>
-            <span className='text-xs text-muted-foreground'>Tracking Number</span>
-            <span className='font-mono text-sm font-semibold text-foreground'>
-              {trackingNumber}
-            </span>
-          </div>
-          <SeparatorUI />
-          <div className='flex items-center justify-between px-4 py-3'>
-            <span className='text-xs text-muted-foreground'>Document</span>
-            <span className='text-sm font-medium text-foreground text-right max-w-[180px]'>
-              {documentName}
-            </span>
-          </div>
-          {hasFee && (
-            <>
-              <SeparatorUI />
-              <div className='flex items-center justify-between px-4 py-3'>
-                <span className='text-xs text-muted-foreground'>Fee</span>
-                <span className='text-sm font-semibold text-primary'>₱{feeAmount}</span>
-              </div>
-            </>
-          )}
-        </div>
+        <RequestQrCode trackingNumber={trackingNumber} className='border-0 bg-transparent p-0' />
 
         {hasFee && (
           <div className='flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800'>
@@ -213,7 +188,7 @@ function SuccessModal({
           </div>
         )}
 
-        <AlertDialogFooter className='mt-2 flex-col gap-2 sm:flex-col'>
+        <AlertDialogFooter className='m-0 border-0 bg-transparent p-0 sm:flex-col'>
           <AlertDialogAction onClick={onViewRequest} className='w-full h-10'>
             <FileText className='mr-2 h-4 w-4' />
             View My Request
@@ -598,7 +573,6 @@ export default function NewRequestClient() {
       <SuccessModal
         open={showSuccess}
         trackingNumber={submittedTracking}
-        documentName={selectedDoc?.name ?? ''}
         feeAmount={submittedFee}
         onViewRequest={() => router.push(`/requests/${submittedTracking}`)}
         onClose={() => setShowSuccess(false)}
