@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Search,
   SlidersHorizontal,
@@ -59,6 +60,17 @@ const PAYMENT_CONFIG: Record<PaymentStatus, { classes: string }> = {
   Unpaid: { classes: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
 };
 
+const TIMING_OPTIONS = ['All', 'On Track', 'Overdue'];
+
+const TIMING_PARAMS: Record<string, string> = {
+  'on-track': 'On Track',
+  overdue: 'Overdue',
+};
+
+function isOverdue(expectedDate: string | null) {
+  return expectedDate !== null && new Date(expectedDate).getTime() < Date.now();
+}
+
 function PaymentBadge({ status }: { status: PaymentStatus }) {
   const cfg = PAYMENT_CONFIG[status];
   return (
@@ -73,16 +85,21 @@ function PaymentBadge({ status }: { status: PaymentStatus }) {
 // ---------------------------------------------------------------------------
 
 export default function OfficeQueuePage() {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
-  const [docType, setDocType] = useState('All Types');
+  const [docType, setDocType] = useState(() => searchParams.get('type') ?? 'All Types');
+  const [timing, setTiming] = useState(
+    () => TIMING_PARAMS[searchParams.get('status') ?? ''] ?? 'All',
+  );
 
   const { data, loading, error, refetch } = useFetch<QueueApiResponse>('/office/queue');
   const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks]);
 
   const documentTypes = useMemo(() => {
-    const unique = Array.from(new Set(tasks.map((task) => task.document_type))).sort();
-    return ['All Types', ...unique];
-  }, [tasks]);
+    const unique = new Set(tasks.map((task) => task.document_type));
+    if (docType !== 'All Types') unique.add(docType);
+    return ['All Types', ...Array.from(unique).sort()];
+  }, [tasks, docType]);
 
   const filtered = useMemo(() => {
     return tasks.filter((t) => {
@@ -90,9 +107,11 @@ export default function OfficeQueuePage() {
         t.tracking_number.toLowerCase().includes(search.toLowerCase()) ||
         t.requestor_name.toLowerCase().includes(search.toLowerCase());
       const matchDoc = docType === 'All Types' || t.document_type === docType;
-      return matchSearch && matchDoc;
+      const matchTiming =
+        timing === 'All' || (timing === 'Overdue') === isOverdue(t.expected_date);
+      return matchSearch && matchDoc && matchTiming;
     });
-  }, [tasks, search, docType]);
+  }, [tasks, search, docType, timing]);
 
   return (
     <div className='space-y-6 p-6 lg:p-8'>
@@ -128,6 +147,19 @@ export default function OfficeQueuePage() {
                 {documentTypes.map((t) => (
                   <SelectItem key={t} value={t} className='font-sans'>
                     {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={timing} onValueChange={setTiming}>
+              <SelectTrigger className='font-sans w-40'>
+                <Clock className='mr-2 h-3.5 w-3.5 text-muted-foreground' />
+                <SelectValue placeholder='Timing' />
+              </SelectTrigger>
+              <SelectContent>
+                {TIMING_OPTIONS.map((t) => (
+                  <SelectItem key={t} value={t} className='font-sans'>
+                    {t === 'All' ? 'All Timing' : t}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -170,7 +202,7 @@ export default function OfficeQueuePage() {
               <div>
                 <p className='font-sans text-sm font-medium text-foreground'>No pending tasks</p>
                 <p className='font-sans mt-1 text-xs text-muted-foreground'>
-                  {search || docType !== 'All Types'
+                  {search || docType !== 'All Types' || timing !== 'All'
                     ? 'Try adjusting your filters.'
                     : "You're all caught up! No requests in your queue."}
                 </p>
@@ -226,10 +258,17 @@ export default function OfficeQueuePage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className='font-sans inline-flex items-center gap-1.5 text-sm text-foreground'>
-                        <Clock className='h-3.5 w-3.5 text-muted-foreground' />
-                        {formatDateOptional(task.expected_date, '—')}
-                      </span>
+                      {isOverdue(task.expected_date) ? (
+                        <span className='font-sans inline-flex items-center gap-1.5 text-sm font-medium text-red-600 dark:text-red-400'>
+                          <AlertTriangle className='h-3.5 w-3.5' />
+                          {formatDateOptional(task.expected_date, '—')}
+                        </span>
+                      ) : (
+                        <span className='font-sans inline-flex items-center gap-1.5 text-sm text-foreground'>
+                          <Clock className='h-3.5 w-3.5 text-muted-foreground' />
+                          {formatDateOptional(task.expected_date, '—')}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <PaymentBadge status={task.payment_status} />

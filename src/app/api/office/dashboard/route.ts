@@ -138,6 +138,7 @@ export async function GET(request: Request) {
 
     const clearanceByOffice = await db
       .select({
+        office_id: offices.id,
         office_name: offices.name,
         cleared:
           sql<number>`SUM(CASE WHEN ${clearance_tasks.status} = 'Cleared' THEN 1 ELSE 0 END)`.as(
@@ -159,6 +160,7 @@ export async function GET(request: Request) {
 
     const clearancePerformance = clearanceByOffice.map((row) => ({
       office: row.office_name,
+      is_mine: row.office_id === officeId,
       cleared: Number(row.cleared ?? 0),
       pending: Number(row.pending ?? 0),
       rejected: Number(row.rejected ?? 0),

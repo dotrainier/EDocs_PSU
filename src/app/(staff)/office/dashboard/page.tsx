@@ -2,6 +2,8 @@
 
 import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ApexOptions } from 'apexcharts';
 import {
   ClipboardList,
@@ -48,7 +50,7 @@ interface DashboardResponse {
   backlog: { totalWeight: number; dailyCapacity: number | null; backlogDays: number };
   documentTypeDistribution: Array<{ name: string; value: number }>;
   processingTime: Array<{ docType: string; target: number; actual: number }>;
-  clearancePerformance: Array<{ office: string; cleared: number; pending: number; rejected: number }>;
+  clearancePerformance: Array<{ office: string; is_mine: boolean; cleared: number; pending: number; rejected: number }>;
   tasks: Array<{
     request_id: string;
     tracking_number: string;
@@ -83,14 +85,31 @@ const base: ApexOptions = {
   tooltip: { theme: 'light' },
 };
 
+const CLICKABLE_CHART =
+  '[&_.apexcharts-bar-area]:cursor-pointer [&_.apexcharts-pie-area]:cursor-pointer';
+
+const DONUT_TIMING = ['on-track', 'overdue'];
+
+const CLEARANCE_SERIES_LINKS = [
+  '/office/cleared?action=Cleared',
+  '/office/queue',
+  '/office/cleared?action=Rejected',
+];
+
+type ChartSelection = { dataPointIndex?: number; seriesIndex?: number };
+
+function withParams(path: string, params: Record<string, string>) {
+  return `${path}?${new URLSearchParams(params).toString()}`;
+}
+
 // ─── Subcomponents ────────────────────────────────────────────────────────────
 
-function StatCard({ title, value, icon: Icon, iconClass, bgClass, description }: {
+function StatCard({ title, value, icon: Icon, iconClass, bgClass, description, href }: {
   title: string; value: number; icon: React.ElementType;
-  iconClass: string; bgClass: string; description?: string;
+  iconClass: string; bgClass: string; description?: string; href?: string;
 }) {
-  return (
-    <Card className='relative overflow-hidden'>
+  const card = (
+    <Card className={cn('relative h-full overflow-hidden', href && 'transition-colors hover:border-primary/40 hover:bg-muted/30')}>
       <CardContent className='px-5 pb-4 pt-5'>
         <div className='flex items-start justify-between gap-2'>
           <div>
@@ -104,6 +123,14 @@ function StatCard({ title, value, icon: Icon, iconClass, bgClass, description }:
         </div>
       </CardContent>
     </Card>
+  );
+
+  if (!href) return card;
+
+  return (
+    <Link href={href} className='block' aria-label={`${title}: ${value}. View tasks`}>
+      {card}
+    </Link>
   );
 }
 
@@ -133,6 +160,7 @@ function EmptyChart({ message = 'No data available' }: { message?: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OfficeDashboardPage() {
+  const router = useRouter();
   const { data, loading, error, refetch } = useFetch<DashboardResponse>('/office/dashboard');
 
   const stats = useMemo(
@@ -158,7 +186,17 @@ export default function OfficeDashboardPage() {
 
   const donutOptions: ApexOptions = useMemo(() => ({
     ...base,
-    chart: { ...base.chart, type: 'donut', id: 'queue-status' },
+    chart: {
+      ...base.chart,
+      type: 'donut',
+      id: 'queue-status',
+      events: {
+        dataPointSelection: (_event, _chart, options?: ChartSelection) => {
+          const status = DONUT_TIMING[options?.dataPointIndex ?? -1];
+          if (status) router.push(withParams('/office/queue', { status }));
+        },
+      },
+    },
     colors: [C.emerald, C.red],
     labels: ['On Track', 'Overdue'],
     plotOptions: {
@@ -175,20 +213,30 @@ export default function OfficeDashboardPage() {
     dataLabels: { enabled: false },
     legend: { position: 'bottom', fontSize: '12px', itemMargin: { horizontal: 8 } },
     stroke: { width: 0 },
-  }), [stats.total_pending]);
+  }), [stats.total_pending, router]);
 
   const donutSeries = useMemo(() => [stats.on_track, stats.overdue], [stats]);
 
   const docTypeOptions: ApexOptions = useMemo(() => ({
     ...base,
-    chart: { ...base.chart, type: 'bar', id: 'doc-type' },
+    chart: {
+      ...base.chart,
+      type: 'bar',
+      id: 'doc-type',
+      events: {
+        dataPointSelection: (_event, _chart, options?: ChartSelection) => {
+          const doc = data?.documentTypeDistribution?.[options?.dataPointIndex ?? -1];
+          if (doc) router.push(withParams('/office/queue', { type: doc.name }));
+        },
+      },
+    },
     colors: [C.indigo, C.emerald, C.amber, C.blue, C.violet],
     plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '55%', distributed: true } },
     xaxis: { categories: data?.documentTypeDistribution?.map((d) => d.name) ?? [], labels: { style: { fontSize: '11px' } } },
     yaxis: { labels: { style: { fontSize: '11px' }, maxWidth: 130 } },
     dataLabels: { enabled: false },
     legend: { show: false },
-  }), [data?.documentTypeDistribution]);
+  }), [data?.documentTypeDistribution, router]);
 
   const docTypeSeries = useMemo(() => [
     { name: 'Requests', data: data?.documentTypeDistribution?.map((d) => d.value) ?? [] },
@@ -196,14 +244,24 @@ export default function OfficeDashboardPage() {
 
   const processingOptions: ApexOptions = useMemo(() => ({
     ...base,
-    chart: { ...base.chart, type: 'bar', id: 'processing' },
+    chart: {
+      ...base.chart,
+      type: 'bar',
+      id: 'processing',
+      events: {
+        dataPointSelection: (_event, _chart, options?: ChartSelection) => {
+          const row = data?.processingTime?.[options?.dataPointIndex ?? -1];
+          if (row) router.push(withParams('/office/cleared', { type: row.docType }));
+        },
+      },
+    },
     colors: [C.amber, C.indigo],
     plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
     xaxis: { categories: data?.processingTime?.map((d) => d.docType) ?? [], labels: { style: { fontSize: '11px' }, rotate: -30 }, axisBorder: { show: false }, axisTicks: { show: false } },
     yaxis: { labels: { style: { fontSize: '11px' }, formatter: (v) => `${v}d` } },
     dataLabels: { enabled: false },
     legend: { position: 'top', horizontalAlign: 'right', fontSize: '12px' },
-  }), [data?.processingTime]);
+  }), [data?.processingTime, router]);
 
   const processingSeries = useMemo(() => [
     { name: 'SLA Target', data: data?.processingTime?.map((d) => d.target) ?? [] },
@@ -212,14 +270,25 @@ export default function OfficeDashboardPage() {
 
   const clearanceOptions: ApexOptions = useMemo(() => ({
     ...base,
-    chart: { ...base.chart, type: 'bar', id: 'clearance' },
+    chart: {
+      ...base.chart,
+      type: 'bar',
+      id: 'clearance',
+      events: {
+        dataPointSelection: (_event, _chart, options?: ChartSelection) => {
+          const row = data?.clearancePerformance?.[options?.dataPointIndex ?? -1];
+          const href = CLEARANCE_SERIES_LINKS[options?.seriesIndex ?? -1];
+          if (row?.is_mine && href) router.push(href);
+        },
+      },
+    },
     colors: [C.emerald, C.amber, C.red],
     plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
     xaxis: { categories: data?.clearancePerformance?.map((d) => d.office) ?? [], labels: { style: { fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
     yaxis: { labels: { style: { fontSize: '11px' } } },
     dataLabels: { enabled: false },
     legend: { position: 'top', horizontalAlign: 'right', fontSize: '12px' },
-  }), [data?.clearancePerformance]);
+  }), [data?.clearancePerformance, router]);
 
   const clearanceSeries = useMemo(() => [
     { name: 'Cleared', data: data?.clearancePerformance?.map((d) => d.cleared) ?? [] },
@@ -258,9 +327,9 @@ export default function OfficeDashboardPage() {
       </div>
 
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'>
-        <StatCard title='Pending Tasks' value={stats.total_pending} icon={ClipboardList} iconClass='text-primary' bgClass='bg-primary/10' description='In queue, not yet acted on' />
-        <StatCard title='On Track' value={stats.on_track} icon={CheckCircle2} iconClass='text-emerald-600' bgClass='bg-emerald-100 dark:bg-emerald-950/40' description='Expected date is today or later' />
-        <StatCard title='Overdue' value={stats.overdue} icon={AlertTriangle} iconClass='text-red-600' bgClass='bg-red-100 dark:bg-red-950/40' description='Past their calculated expected date' />
+        <StatCard title='Pending Tasks' value={stats.total_pending} icon={ClipboardList} iconClass='text-primary' bgClass='bg-primary/10' description='In queue, not yet acted on' href='/office/queue' />
+        <StatCard title='On Track' value={stats.on_track} icon={CheckCircle2} iconClass='text-emerald-600' bgClass='bg-emerald-100 dark:bg-emerald-950/40' description='Expected date is today or later' href='/office/queue?status=on-track' />
+        <StatCard title='Overdue' value={stats.overdue} icon={AlertTriangle} iconClass='text-red-600' bgClass='bg-red-100 dark:bg-red-950/40' description='Past their calculated expected date' href='/office/queue?status=overdue' />
       </div>
 
       <AiInsights data={data} />
@@ -268,9 +337,14 @@ export default function OfficeDashboardPage() {
       <div className='grid gap-6 lg:grid-cols-2'>
         <Card>
           <CardHeader className='pb-3'>
-            <CardTitle className='font-sans flex items-center gap-2 text-base font-semibold'>
-              <Gauge className='h-4 w-4 text-primary' />Current Backlog
-            </CardTitle>
+            <div className='flex items-center justify-between gap-2'>
+              <CardTitle className='font-sans flex items-center gap-2 text-base font-semibold'>
+                <Gauge className='h-4 w-4 text-primary' />Current Backlog
+              </CardTitle>
+              <Button asChild variant='ghost' size='sm' className='gap-1 text-xs'>
+                <Link href='/office/queue'>Open queue <ChevronRight className='h-3.5 w-3.5' /></Link>
+              </Button>
+            </div>
             <p className='font-sans mt-1 text-xs text-muted-foreground'>
               A live snapshot, not a historical trend — see why below.
             </p>
@@ -302,9 +376,9 @@ export default function OfficeDashboardPage() {
             <CardTitle className='font-sans flex items-center gap-2 text-base font-semibold'>
               <BarChart3 className='h-4 w-4 text-primary' />Queue Status Distribution
             </CardTitle>
-            <p className='font-sans mt-1 text-xs text-muted-foreground'>Current breakdown of {stats.total_pending} pending tasks</p>
+            <p className='font-sans mt-1 text-xs text-muted-foreground'>Current breakdown of {stats.total_pending} pending tasks · click a slice to view them</p>
           </CardHeader>
-          <CardContent className='pt-0'>
+          <CardContent className={cn('pt-0', CLICKABLE_CHART)}>
             {stats.total_pending > 0
               ? <ReactApexChart type='donut' height={280} options={donutOptions} series={donutSeries} />
               : <EmptyChart message='No pending tasks' />}
@@ -316,9 +390,9 @@ export default function OfficeDashboardPage() {
         <Card>
           <CardHeader className='pb-3'>
             <CardTitle className='font-sans text-base font-semibold'>Requests by Document Type</CardTitle>
-            <p className='font-sans mt-1 text-xs text-muted-foreground'>All-time distribution (volume)</p>
+            <p className='font-sans mt-1 text-xs text-muted-foreground'>All-time distribution (volume) · click a bar for its pending requests</p>
           </CardHeader>
-          <CardContent className='pt-0'>
+          <CardContent className={cn('pt-0', CLICKABLE_CHART)}>
             {(data?.documentTypeDistribution?.length ?? 0) > 0
               ? <ReactApexChart type='bar' height={250} options={docTypeOptions} series={docTypeSeries} />
               : <EmptyChart />}
@@ -328,9 +402,9 @@ export default function OfficeDashboardPage() {
         <Card>
           <CardHeader className='pb-3'>
             <CardTitle className='font-sans text-base font-semibold'>Avg. Processing Time vs SLA Target</CardTitle>
-            <p className='font-sans mt-1 text-xs text-muted-foreground'>Performance by document type (working days)</p>
+            <p className='font-sans mt-1 text-xs text-muted-foreground'>Performance by document type (working days) · click a bar for its history</p>
           </CardHeader>
-          <CardContent className='pt-0'>
+          <CardContent className={cn('pt-0', CLICKABLE_CHART)}>
             {(data?.processingTime?.length ?? 0) > 0
               ? <ReactApexChart type='bar' height={250} options={processingOptions} series={processingSeries} />
               : <EmptyChart />}
@@ -341,9 +415,9 @@ export default function OfficeDashboardPage() {
       <Card>
         <CardHeader className='pb-3'>
           <CardTitle className='font-sans text-base font-semibold'>Clearance Performance by Office</CardTitle>
-          <p className='font-sans mt-1 text-xs text-muted-foreground'>Task status across participating clearance offices</p>
+          <p className='font-sans mt-1 text-xs text-muted-foreground'>Task status across participating clearance offices · click your office&apos;s bars to open those tasks</p>
         </CardHeader>
-        <CardContent className='pt-0'>
+        <CardContent className={cn('pt-0', CLICKABLE_CHART)}>
           {(data?.clearancePerformance?.length ?? 0) > 0
             ? <ReactApexChart type='bar' height={250} options={clearanceOptions} series={clearanceSeries} />
             : <EmptyChart />}
@@ -354,7 +428,7 @@ export default function OfficeDashboardPage() {
         <CardHeader className='flex flex-row items-center justify-between pb-3'>
           <CardTitle className='font-sans text-base font-semibold'>Queue Preview</CardTitle>
           <Button asChild variant='ghost' size='sm' className='gap-1 text-xs'>
-            <a href='/office/queue'>View all <ChevronRight className='h-3.5 w-3.5' /></a>
+            <Link href='/office/queue'>View all <ChevronRight className='h-3.5 w-3.5' /></Link>
           </Button>
         </CardHeader>
         <CardContent className='p-0'>
@@ -370,9 +444,17 @@ export default function OfficeDashboardPage() {
               </TableHeader>
               <TableBody>
                 {queuePreview.map((item) => (
-                  <TableRow key={item.request_id} className='border-border hover:bg-muted/50'>
+                  <TableRow
+                    key={item.request_id}
+                    onClick={(e) => {
+                      if (!(e.target as HTMLElement).closest('a')) {
+                        router.push(`/office/requests/${item.tracking_number}`);
+                      }
+                    }}
+                    className='cursor-pointer border-border hover:bg-muted/50'
+                  >
                     <TableCell className='font-sans pl-6 text-sm font-medium'>
-                      <a href={`/office/requests/${item.tracking_number}`} className='text-primary hover:underline'>{item.tracking_number}</a>
+                      <Link href={`/office/requests/${item.tracking_number}`} className='text-primary hover:underline'>{item.tracking_number}</Link>
                     </TableCell>
                     <TableCell className='font-sans text-sm'>{item.document_type}</TableCell>
                     <TableCell className='font-sans text-sm text-muted-foreground'>{item.requestor_name}</TableCell>

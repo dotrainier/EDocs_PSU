@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Search,
   CheckSquare,
@@ -88,17 +89,22 @@ function ActionBadge({ action }: { action: ActionTaken }) {
 // ---------------------------------------------------------------------------
 
 export default function OfficeClearedPage() {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
-  const [docType, setDocType] = useState('All Types');
-  const [actionFilter, setActionFilter] = useState('All');
+  const [docType, setDocType] = useState(() => searchParams.get('type') ?? 'All Types');
+  const [actionFilter, setActionFilter] = useState(() => {
+    const action = searchParams.get('action');
+    return action === 'Cleared' || action === 'Rejected' ? action : 'All';
+  });
 
   const { data, loading, error, refetch } = useFetch<ClearedApiResponse>('/office/cleared');
   const tasks = useMemo(() => data?.tasks ?? [], [data?.tasks]);
 
   const documentTypes = useMemo(() => {
-    const unique = Array.from(new Set(tasks.map((task) => task.document_type))).sort();
-    return ['All Types', ...unique];
-  }, [tasks]);
+    const unique = new Set(tasks.map((task) => task.document_type));
+    if (docType !== 'All Types') unique.add(docType);
+    return ['All Types', ...Array.from(unique).sort()];
+  }, [tasks, docType]);
 
   const filtered = useMemo(() => {
     return tasks.filter((t) => {
