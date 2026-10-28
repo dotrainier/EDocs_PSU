@@ -22,7 +22,7 @@ export function useStaffUnreadCount(refreshKey: string): number {
   useEffect(() => {
     let cancelled = false;
     api
-      .get<{ unread: number }>('/office/messages/unread')
+      .get<{ unread: number }>('/messages/unread')
       .then((res) => {
         if (!cancelled) setUnread(res.unread);
       })

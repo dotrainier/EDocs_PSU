@@ -24,6 +24,7 @@ import {
   Gauge,
   Wallet,
   Sparkles,
+  MessagesSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -33,6 +34,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/axios';
 import { NotificationBell } from '@/components/shared/NotificationBell';
+import { useStaffUnreadCount } from '@/hooks/useStaffUnreadCount';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,7 +67,11 @@ const MONITOR_ITEMS = [
   { href: '/admin/audit-logs', label: 'Audit Logs', icon: ScrollText },
 ];
 
-const ALL_ITEMS = [...OVERVIEW_ITEMS, ...CONFIG_ITEMS, ...MONITOR_ITEMS];
+const MESSAGES_HREF = '/admin/messages';
+
+const COMMUNICATION_ITEMS = [{ href: MESSAGES_HREF, label: 'Messages', icon: MessagesSquare }];
+
+const ALL_ITEMS = [...OVERVIEW_ITEMS, ...CONFIG_ITEMS, ...MONITOR_ITEMS, ...COMMUNICATION_ITEMS];
 
 const PAGE_TITLES: Record<string, string> = {
   '/admin/dashboard': 'Dashboard',
@@ -79,6 +85,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/payments': 'Payments',
   '/admin/requests': 'All Requests',
   '/admin/audit-logs': 'Audit Logs',
+  '/admin/messages': 'Messages',
 };
 
 function resolvePageTitle(pathname: string): string {
@@ -274,10 +281,12 @@ function RailItem({
 function ExpandedSidebar({
   user,
   pendingCount,
+  unreadMessages,
   onNavClick,
 }: {
   user: User;
   pendingCount: number;
+  unreadMessages: number;
   onNavClick?: () => void;
 }) {
   const pathname = usePathname();
@@ -389,6 +398,27 @@ function ExpandedSidebar({
             pathname={pathname}
           />
         </div>
+
+        <Separator className='mx-1 w-auto' />
+
+        <div>
+          <p className='mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60'>
+            Communication
+          </p>
+          <div className='space-y-0.5'>
+            {COMMUNICATION_ITEMS.map(({ href, label, icon }) => (
+              <NavLink
+                key={href}
+                href={href}
+                label={label}
+                icon={icon}
+                active={pathname === href}
+                badge={href === MESSAGES_HREF ? unreadMessages : undefined}
+                onClick={onNavClick}
+              />
+            ))}
+          </div>
+        </div>
       </nav>
 
       <Separator className='mx-4 mb-3 w-auto' />
@@ -422,7 +452,15 @@ function ExpandedSidebar({
 
 // ─── Collapsed rail ───────────────────────────────────────────────────────────
 
-function CollapsedRail({ user, pendingCount }: { user: User; pendingCount: number }) {
+function CollapsedRail({
+  user,
+  pendingCount,
+  unreadMessages,
+}: {
+  user: User;
+  pendingCount: number;
+  unreadMessages: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -461,7 +499,13 @@ function CollapsedRail({ user, pendingCount }: { user: User; pendingCount: numbe
             label={label}
             icon={icon}
             active={pathname === href || pathname.startsWith(href + '/')}
-            badge={href === '/admin/verification' ? pendingCount : undefined}
+            badge={
+              href === '/admin/verification'
+                ? pendingCount
+                : href === MESSAGES_HREF
+                  ? unreadMessages
+                  : undefined
+            }
           />
         ))}
 
@@ -500,7 +544,15 @@ function CollapsedRail({ user, pendingCount }: { user: User; pendingCount: numbe
 
 // ─── Mobile nav ───────────────────────────────────────────────────────────────
 
-function MobileNav({ user, pendingCount }: { user: User; pendingCount: number }) {
+function MobileNav({
+  user,
+  pendingCount,
+  unreadMessages,
+}: {
+  user: User;
+  pendingCount: number;
+  unreadMessages: number;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -511,7 +563,12 @@ function MobileNav({ user, pendingCount }: { user: User; pendingCount: number })
         </Button>
       </SheetTrigger>
       <SheetContent side='left' className='w-64 p-0'>
-        <ExpandedSidebar user={user} pendingCount={pendingCount} onNavClick={() => setOpen(false)} />
+        <ExpandedSidebar
+          user={user}
+          pendingCount={pendingCount}
+          unreadMessages={unreadMessages}
+          onNavClick={() => setOpen(false)}
+        />
       </SheetContent>
     </Sheet>
   );
@@ -528,6 +585,7 @@ export default function AdminLayoutClient({
 }) {
   const pathname = usePathname();
   const pageTitle = resolvePageTitle(pathname);
+  const unreadMessages = useStaffUnreadCount(pathname);
 
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -575,9 +633,9 @@ export default function AdminLayoutClient({
         )}
       >
         {isCollapsed ? (
-          <CollapsedRail user={user} pendingCount={pendingCount} />
+          <CollapsedRail user={user} pendingCount={pendingCount} unreadMessages={unreadMessages} />
         ) : (
-          <ExpandedSidebar user={user} pendingCount={pendingCount} />
+          <ExpandedSidebar user={user} pendingCount={pendingCount} unreadMessages={unreadMessages} />
         )}
 
         {/* Toggle button */}
@@ -601,7 +659,7 @@ export default function AdminLayoutClient({
       {/* Main content */}
       <div className='flex flex-1 flex-col overflow-hidden'>
         <header className='sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-sm lg:px-5'>
-          <MobileNav user={user} pendingCount={pendingCount} />
+          <MobileNav user={user} pendingCount={pendingCount} unreadMessages={unreadMessages} />
 
           <div className='flex items-center gap-2 lg:hidden'>
             <div className='flex h-7 w-7 items-center justify-center rounded-lg bg-primary'>

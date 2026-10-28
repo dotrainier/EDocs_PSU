@@ -3,6 +3,9 @@ import { z } from 'zod';
 import { getAccessTokenPayload, type AccessTokenPayload } from '@/lib/auth';
 import {
   ALL_STAFF_CHANNEL,
+  ALL_STAFF_CHANNEL_NAME,
+  ALL_STAFF_CHANNEL_SUBTITLE,
+  canUseStaffChat,
   findActiveStaff,
   getStaffThread,
   sendStaffMessage,
@@ -27,7 +30,7 @@ async function resolvePeer(session: AccessTokenPayload, rawPeer: string): Promis
 
   const peer = parsed.data;
   if (peer === ALL_STAFF_CHANNEL) {
-    return { ok: true, peer, name: 'All Staff', subtitle: 'Everyone in every office' };
+    return { ok: true, peer, name: ALL_STAFF_CHANNEL_NAME, subtitle: ALL_STAFF_CHANNEL_SUBTITLE };
   }
   if (peer === session.userId) {
     return {
@@ -52,7 +55,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ peer
     if (!session) {
       return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
     }
-    if (session.role !== 'OfficeStaff' && session.role !== 'OfficeHead') {
+    if (!canUseStaffChat(session.role)) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
@@ -84,7 +87,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pee
     if (!session) {
       return NextResponse.json({ message: 'Unauthorised' }, { status: 401 });
     }
-    if (session.role !== 'OfficeStaff' && session.role !== 'OfficeHead') {
+    if (!canUseStaffChat(session.role)) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 

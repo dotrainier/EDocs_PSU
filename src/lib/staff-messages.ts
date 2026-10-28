@@ -1,12 +1,25 @@
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, exists, gt, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { offices, office_staff, roles, staff_channel_reads, staff_messages, users } from '@/db/schema';
 import { composeFullName } from '@/lib/user-name';
 
 export const ALL_STAFF_CHANNEL = 'all';
+export const ALL_STAFF_CHANNEL_NAME = 'All Staff';
+export const ALL_STAFF_CHANNEL_SUBTITLE = 'Every office, plus admins';
 
 const STAFF_ROLES = ['OfficeStaff', 'OfficeHead'];
+const CHAT_ROLES = [...STAFF_ROLES, 'Admin'];
 const THREAD_LIMIT = 200;
+
+const ROLE_LABELS: Record<string, string> = {
+  OfficeStaff: 'Office Staff',
+  OfficeHead: 'Office Head',
+  Admin: 'Administrator',
+};
+
+export function canUseStaffChat(role: string): boolean {
+  return CHAT_ROLES.includes(role);
+}
 
 export interface StaffMember {
   id: string;
@@ -34,7 +47,21 @@ export interface StaffThreadMessage {
   readAt: Date | null;
 }
 
-const activeStaff = and(inArray(roles.name, STAFF_ROLES), eq(users.status, 'active'));
+const activeStaff = and(
+  eq(users.status, 'active'),
+  or(
+    eq(roles.name, 'Admin'),
+    and(
+      inArray(roles.name, STAFF_ROLES),
+      exists(
+        db
+          .select({ id: office_staff.id })
+          .from(office_staff)
+          .where(eq(office_staff.user_id, users.id)),
+      ),
+    ),
+  ),
+);
 
 async function listActiveStaff(): Promise<StaffMember[]> {
   const rows = await db
@@ -75,7 +102,7 @@ export async function findActiveStaff(userId: string): Promise<StaffMember | nul
 }
 
 export function staffSubtitle(member: StaffMember): string {
-  const role = member.role === 'OfficeHead' ? 'Office Head' : 'Office Staff';
+  const role = ROLE_LABELS[member.role] ?? member.role;
   return member.officeName ? `${role} · ${member.officeName}` : role;
 }
 
@@ -220,8 +247,8 @@ export async function listStaffConversations(
   const channel: StaffConversation = {
     id: ALL_STAFF_CHANNEL,
     kind: 'channel',
-    name: 'All Staff',
-    subtitle: 'Everyone in every office',
+    name: ALL_STAFF_CHANNEL_NAME,
+    subtitle: ALL_STAFF_CHANNEL_SUBTITLE,
     lastMessage: channelLast,
     unread: channelUnread,
   };
