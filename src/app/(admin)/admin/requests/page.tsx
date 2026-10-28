@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { SlidersHorizontal, Loader2, FileStack, ArrowRight } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { SlidersHorizontal, Loader2, FileStack, ArrowRight, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -33,12 +34,17 @@ type RequestRow = {
   status: string;
   payment_status: string;
   created_at: string;
+  expected_date: string | null;
+  is_overdue: boolean;
   document_type: string;
   requester_name: string;
 };
 
+const ACTIVE_STATUSES = 'Pending + In Process';
+
 const STATUSES = [
   'All Statuses',
+  ACTIVE_STATUSES,
   'Pending',
   'In Process',
   'Action Required',
@@ -61,6 +67,17 @@ const PAYMENT_COLORS: Record<string, string> = {
   Unpaid: 'bg-red-100 text-red-700',
 };
 
+function statusFromParam(param: string | null) {
+  if (param === 'active') return ACTIVE_STATUSES;
+  return param && STATUSES.includes(param) ? param : 'All Statuses';
+}
+
+function matchesStatus(filter: string, status: string) {
+  if (filter === 'All Statuses') return true;
+  if (filter === ACTIVE_STATUSES) return status === 'Pending' || status === 'In Process';
+  return status === filter;
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminRequestsPage() {
@@ -68,8 +85,10 @@ export default function AdminRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
-  const [status, setStatus] = useState('All Statuses');
-  const [documentType, setDocumentType] = useState('All Types');
+  const searchParams = useSearchParams();
+  const [status, setStatus] = useState(() => statusFromParam(searchParams.get('status')));
+  const [documentType, setDocumentType] = useState(() => searchParams.get('type') ?? 'All Types');
+  const [overdueOnly, setOverdueOnly] = useState(() => searchParams.get('overdue') === '1');
 
   useEffect(() => {
     let active = true;
@@ -94,18 +113,20 @@ export default function AdminRequestsPage() {
     };
   }, []);
 
-  const documentTypes = useMemo(
-    () => ['All Types', ...Array.from(new Set(requests.map((r) => r.document_type))).sort()],
-    [requests],
-  );
+  const documentTypes = useMemo(() => {
+    const unique = new Set(requests.map((r) => r.document_type));
+    if (documentType !== 'All Types') unique.add(documentType);
+    return ['All Types', ...Array.from(unique).sort()];
+  }, [requests, documentType]);
 
   const filtered = useMemo(() => {
     return requests.filter((r) => {
-      const matchStatus = status === 'All Statuses' || r.status === status;
+      const matchStatus = matchesStatus(status, r.status);
       const matchDocType = documentType === 'All Types' || r.document_type === documentType;
-      return matchStatus && matchDocType;
+      const matchOverdue = !overdueOnly || r.is_overdue;
+      return matchStatus && matchDocType && matchOverdue;
     });
-  }, [requests, status, documentType]);
+  }, [requests, status, documentType, overdueOnly]);
 
   return (
     <div className='space-y-6 p-6 lg:p-8'>
@@ -153,6 +174,21 @@ export default function AdminRequestsPage() {
               ))}
             </SelectContent>
           </Select>
+
+          <Button
+            type='button'
+            variant={overdueOnly ? 'destructive' : 'outline'}
+            onClick={() => setOverdueOnly((v) => !v)}
+            aria-pressed={overdueOnly}
+            className='font-sans gap-1.5'
+          >
+            <AlertTriangle className='h-3.5 w-3.5' />
+            Overdue only
+          </Button>
+
+          <p className='font-sans text-xs text-muted-foreground sm:ml-auto'>
+            {filtered.length} of {requests.length} requests
+          </p>
         </CardContent>
       </Card>
 
@@ -216,12 +252,23 @@ export default function AdminRequestsPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant='secondary'
-                        className={cn('rounded-full text-xs', STATUS_COLORS[req.status] ?? '')}
-                      >
-                        {req.status}
-                      </Badge>
+                      <div className='flex flex-wrap items-center gap-1.5'>
+                        <Badge
+                          variant='secondary'
+                          className={cn('rounded-full text-xs', STATUS_COLORS[req.status] ?? '')}
+                        >
+                          {req.status}
+                        </Badge>
+                        {req.is_overdue && (
+                          <Badge
+                            variant='secondary'
+                            className='rounded-full bg-red-100 text-xs text-red-700'
+                            title={req.expected_date ? `Expected ${formatDate(req.expected_date)}` : undefined}
+                          >
+                            Overdue
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge

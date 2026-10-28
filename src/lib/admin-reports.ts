@@ -169,6 +169,7 @@ export async function getRecentActivity(limit = 12): Promise<
     type: 'info' | 'success' | 'danger';
     actor: string | null;
     detail: string | null;
+    trackingNumber: string | null;
     at: Date;
   }>
 > {
@@ -231,6 +232,7 @@ export async function getRecentActivity(limit = 12): Promise<
       type: config.type,
       actor: actor || null,
       detail: tracking ? `${tracking.document_type} — #${tracking.tracking_number}` : null,
+      trackingNumber: tracking?.tracking_number ?? null,
       at: row.timestamp,
     };
   });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Search,
   SlidersHorizontal,
@@ -69,6 +70,10 @@ const ROLES = ['All Roles', 'Student', 'OfficeStaff', 'OfficeHead', 'Admin'];
 const STATUSES = ['All', 'active', 'inactive'];
 const VERIFICATIONS = ['All', 'pending', 'approved', 'rejected'];
 
+function optionFromParam(options: string[], param: string | null) {
+  return param && options.includes(param) ? param : options[0];
+}
+
 const VERIFICATION_STYLES: Record<string, { icon: React.ElementType; className: string }> = {
   pending: { icon: Clock, className: 'text-amber-600' },
   approved: { icon: ShieldCheck, className: 'text-emerald-600' },
@@ -82,10 +87,13 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
-  const [role, setRole] = useState('All Roles');
-  const [status, setStatus] = useState('All');
-  const [verification, setVerification] = useState('All');
+  const [role, setRole] = useState(() => optionFromParam(ROLES, searchParams.get('role')));
+  const [status, setStatus] = useState(() => optionFromParam(STATUSES, searchParams.get('status')));
+  const [verification, setVerification] = useState(() =>
+    optionFromParam(VERIFICATIONS, searchParams.get('verification')),
+  );
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailUserId, setDetailUserId] = useState<string | null>(null);

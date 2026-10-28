@@ -9,6 +9,16 @@ import { db } from '@/db';
 import { document_requests, document_types, users } from '@/db/schema';
 import { getAccessTokenPayload } from '@/lib/auth';
 import { composeFullName } from '@/lib/user-name';
+import { getParticipatingOffices } from '@/lib/admin-reports';
+import { calculateExpectedDatesForOffice } from '@/lib/expected-date';
+
+async function getExpectedDates(): Promise<Map<string, Date>> {
+  const participatingOffices = await getParticipatingOffices();
+  const perOffice = await Promise.all(
+    participatingOffices.map((office) => calculateExpectedDatesForOffice(office.id)),
+  );
+  return new Map(perOffice.flatMap((dates) => [...dates]));
+}
 
 export async function GET(request: Request) {
   try {
@@ -19,6 +29,9 @@ export async function GET(request: Request) {
     if (session.role !== 'Admin') {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
+
+    const expectedDates = await getExpectedDates();
+    const now = Date.now();
 
     const rows = await db
       .select({
@@ -38,20 +51,25 @@ export async function GET(request: Request) {
       .innerJoin(users, eq(document_requests.user_id, users.id))
       .orderBy(desc(document_requests.created_at));
 
-    const requests = rows.map((row) => ({
-      id: row.id,
-      tracking_number: row.tracking_number,
-      status: row.status,
-      payment_status: row.payment_status,
-      created_at: row.created_at,
-      document_type: row.document_type_name,
-      requester_name: composeFullName({
-        given_name: row.requestor_given_name,
-        middle_name: row.requestor_middle_name,
-        last_name: row.requestor_last_name,
-        name_suffix: row.requestor_name_suffix,
-      }),
-    }));
+    const requests = rows.map((row) => {
+      const expectedDate = expectedDates.get(row.id) ?? null;
+      return {
+        id: row.id,
+        tracking_number: row.tracking_number,
+        status: row.status,
+        payment_status: row.payment_status,
+        created_at: row.created_at,
+        expected_date: expectedDate,
+        is_overdue: expectedDate !== null && expectedDate.getTime() < now,
+        document_type: row.document_type_name,
+        requester_name: composeFullName({
+          given_name: row.requestor_given_name,
+          middle_name: row.requestor_middle_name,
+          last_name: row.requestor_last_name,
+          name_suffix: row.requestor_name_suffix,
+        }),
+      };
+    });
 
     return NextResponse.json({ requests }, { status: 200 });
   } catch (err: unknown) {

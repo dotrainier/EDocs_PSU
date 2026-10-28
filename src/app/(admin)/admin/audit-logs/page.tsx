@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   SlidersHorizontal,
   ScrollText,
@@ -68,12 +69,20 @@ const ACTION_COLORS: Record<string, string> = {
 
 const PAGE_SIZE = 20;
 
+function dateFromParam(param: string | null) {
+  return param && /^\d{4}-\d{2}-\d{2}$/.test(param) ? param : '';
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminAuditLogsPage() {
-  const [action, setAction] = useState('all');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const searchParams = useSearchParams();
+  const [action, setAction] = useState(() => {
+    const param = searchParams.get('action');
+    return param && (KNOWN_AUDIT_ACTIONS as readonly string[]).includes(param) ? param : 'all';
+  });
+  const [from, setFrom] = useState(() => dateFromParam(searchParams.get('from')));
+  const [to, setTo] = useState(() => dateFromParam(searchParams.get('to')));
   const [page, setPage] = useState(1);
 
   const queryUrl = useMemo(() => {
