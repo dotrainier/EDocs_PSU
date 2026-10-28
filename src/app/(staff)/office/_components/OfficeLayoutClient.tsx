@@ -14,6 +14,7 @@ import {
   FolderKanban,
   PanelLeftClose,
   PanelLeftOpen,
+  MessagesSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -23,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn, formatRole } from '@/lib/utils';
 import { api } from '@/lib/axios';
 import { NotificationBell } from '@/components/shared/NotificationBell';
+import { useStaffUnreadCount } from '@/hooks/useStaffUnreadCount';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,10 +47,15 @@ const QUEUE_ITEMS = [
   { href: '/office/cleared', label: 'Action History', icon: CheckSquare },
 ];
 
+const MESSAGES_HREF = '/office/messages';
+
+const COMMUNICATION_ITEMS = [{ href: MESSAGES_HREF, label: 'Messages', icon: MessagesSquare }];
+
 const PAGE_TITLES: Record<string, string> = {
   '/office/dashboard': 'Dashboard',
   '/office/queue': 'Pending Queue',
   '/office/cleared': 'Action History',
+  '/office/messages': 'Messages',
 };
 
 function resolvePageTitle(pathname: string): string {
@@ -63,6 +70,7 @@ function NavLink({
   icon: Icon,
   active,
   indent,
+  badge,
   onClick,
 }: {
   href: string;
@@ -70,6 +78,7 @@ function NavLink({
   icon: React.ElementType;
   active: boolean;
   indent?: boolean;
+  badge?: number;
   onClick?: () => void;
 }) {
   return (
@@ -92,7 +101,19 @@ function NavLink({
         )}
       />
       <span className='flex-1 truncate'>{label}</span>
-      {active && !indent && <span className='h-1.5 w-1.5 rounded-full bg-primary-foreground/50' />}
+      {!!badge && (
+        <span
+          className={cn(
+            'flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1 text-[10px] font-semibold',
+            active ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-amber-500 text-white',
+          )}
+        >
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
+      {active && !indent && !badge && (
+        <span className='h-1.5 w-1.5 rounded-full bg-primary-foreground/50' />
+      )}
     </Link>
   );
 }
@@ -104,12 +125,14 @@ function RailItem({
   label,
   icon: Icon,
   active,
+  badge,
   onClick,
 }: {
   href: string;
   label: string;
   icon: React.ElementType;
   active: boolean;
+  badge?: number;
   onClick?: () => void;
 }) {
   return (
@@ -119,18 +142,24 @@ function RailItem({
           href={href}
           onClick={onClick}
           className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150',
+            'relative flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-150',
             active
               ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
               : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           )}
         >
           <Icon className='h-4 w-4' />
+          {!!badge && (
+            <span className='absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-semibold text-white'>
+              {badge > 9 ? '9+' : badge}
+            </span>
+          )}
           <span className='sr-only'>{label}</span>
         </Link>
       </TooltipTrigger>
       <TooltipContent side='right' sideOffset={8} className='text-xs'>
         {label}
+        {!!badge && ` (${badge})`}
       </TooltipContent>
     </Tooltip>
   );
@@ -138,7 +167,15 @@ function RailItem({
 
 // ─── Expanded sidebar content ─────────────────────────────────────────────────
 
-function ExpandedSidebar({ user, onNavClick }: { user: User; onNavClick?: () => void }) {
+function ExpandedSidebar({
+  user,
+  unreadMessages,
+  onNavClick,
+}: {
+  user: User;
+  unreadMessages: number;
+  onNavClick?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const onQueueRoute = QUEUE_ITEMS.some((i) => pathname === i.href);
@@ -244,6 +281,28 @@ function ExpandedSidebar({ user, onNavClick }: { user: User; onNavClick?: () => 
             </div>
           )}
         </div>
+
+        <Separator className='mx-1 w-auto' />
+
+        {/* Communication */}
+        <div>
+          <p className='mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60'>
+            Communication
+          </p>
+          <div className='space-y-0.5'>
+            {COMMUNICATION_ITEMS.map(({ href, label, icon }) => (
+              <NavLink
+                key={href}
+                href={href}
+                label={label}
+                icon={icon}
+                active={pathname === href}
+                badge={href === MESSAGES_HREF ? unreadMessages : undefined}
+                onClick={onNavClick}
+              />
+            ))}
+          </div>
+        </div>
       </nav>
 
       <Separator className='mx-4 mb-3 w-auto' />
@@ -284,7 +343,7 @@ function ExpandedSidebar({ user, onNavClick }: { user: User; onNavClick?: () => 
 
 // ─── Collapsed rail content ───────────────────────────────────────────────────
 
-function CollapsedRail({ user }: { user: User }) {
+function CollapsedRail({ user, unreadMessages }: { user: User; unreadMessages: number }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -294,7 +353,7 @@ function CollapsedRail({ user }: { user: User }) {
     router.refresh();
   }
 
-  const allItems = [...OVERVIEW_ITEMS, ...QUEUE_ITEMS];
+  const allItems = [...OVERVIEW_ITEMS, ...QUEUE_ITEMS, ...COMMUNICATION_ITEMS];
 
   return (
     <TooltipProvider delayDuration={80}>
@@ -307,7 +366,14 @@ function CollapsedRail({ user }: { user: User }) {
         <Separator className='mb-2 w-9' />
 
         {allItems.map(({ href, label, icon }) => (
-          <RailItem key={href} href={href} label={label} icon={icon} active={pathname === href} />
+          <RailItem
+            key={href}
+            href={href}
+            label={label}
+            icon={icon}
+            active={pathname === href}
+            badge={href === MESSAGES_HREF ? unreadMessages : undefined}
+          />
         ))}
 
         <div className='flex-1' />
@@ -347,7 +413,7 @@ function CollapsedRail({ user }: { user: User }) {
 
 // ─── Mobile nav sheet ─────────────────────────────────────────────────────────
 
-function MobileNav({ user }: { user: User }) {
+function MobileNav({ user, unreadMessages }: { user: User; unreadMessages: number }) {
   const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -358,7 +424,11 @@ function MobileNav({ user }: { user: User }) {
         </Button>
       </SheetTrigger>
       <SheetContent side='left' className='w-64 p-0'>
-        <ExpandedSidebar user={user} onNavClick={() => setOpen(false)} />
+        <ExpandedSidebar
+          user={user}
+          unreadMessages={unreadMessages}
+          onNavClick={() => setOpen(false)}
+        />
       </SheetContent>
     </Sheet>
   );
@@ -375,6 +445,7 @@ export default function OfficeLayoutClient({
 }) {
   const pathname = usePathname();
   const pageTitle = resolvePageTitle(pathname);
+  const unreadMessages = useStaffUnreadCount(pathname);
 
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -408,9 +479,9 @@ export default function OfficeLayoutClient({
         )}
       >
         {isCollapsed ? (
-          <CollapsedRail user={user} />
+          <CollapsedRail user={user} unreadMessages={unreadMessages} />
         ) : (
-          <ExpandedSidebar user={user} />
+          <ExpandedSidebar user={user} unreadMessages={unreadMessages} />
         )}
 
         {/* Toggle button */}
@@ -434,7 +505,7 @@ export default function OfficeLayoutClient({
       {/* Main content */}
       <div className='flex flex-1 flex-col overflow-hidden'>
         <header className='sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-sm lg:px-5'>
-          <MobileNav user={user} />
+          <MobileNav user={user} unreadMessages={unreadMessages} />
 
           {/* Mobile logo */}
           <div className='flex items-center gap-2 lg:hidden'>
