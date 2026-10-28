@@ -23,7 +23,6 @@ import {
   ClipboardCheck,
   Gauge,
   Wallet,
-  Sparkles,
   MessagesSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,6 +33,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/axios';
 import { NotificationBell } from '@/components/shared/NotificationBell';
+import AssistantWidget from '@/components/shared/AssistantWidget';
 import { useStaffUnreadCount } from '@/hooks/useStaffUnreadCount';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -50,7 +50,6 @@ interface User {
 const OVERVIEW_ITEMS = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/verification', label: 'Pending Registrations', icon: ClipboardCheck },
-  { href: '/admin/assistant', label: 'Assistant', icon: Sparkles },
 ];
 
 const CONFIG_ITEMS = [
@@ -73,10 +72,16 @@ const COMMUNICATION_ITEMS = [{ href: MESSAGES_HREF, label: 'Messages', icon: Mes
 
 const ALL_ITEMS = [...OVERVIEW_ITEMS, ...CONFIG_ITEMS, ...MONITOR_ITEMS, ...COMMUNICATION_ITEMS];
 
+const ASSISTANT_SUGGESTIONS = [
+  'How many requests are pending right now?',
+  "What's the current backlog?",
+  'How much have we collected, and how much is still outstanding?',
+  'How many registrations are waiting for review?',
+];
+
 const PAGE_TITLES: Record<string, string> = {
   '/admin/dashboard': 'Dashboard',
   '/admin/verification': 'Pending Registrations',
-  '/admin/assistant': 'Assistant',
   '/admin/users': 'Users',
   '/admin/offices': 'Offices',
   '/admin/document-types': 'Document Types',
@@ -683,6 +688,13 @@ export default function AdminLayoutClient({
 
         <main className='flex-1 overflow-y-auto'>{children}</main>
       </div>
+
+      <AssistantWidget
+        endpoint='/admin/assistant'
+        subtitle='Read-only · answers from live system data'
+        intro='Ask about requests, backlog, payments or registrations.'
+        suggestions={ASSISTANT_SUGGESTIONS}
+      />
     </div>
   );
 }

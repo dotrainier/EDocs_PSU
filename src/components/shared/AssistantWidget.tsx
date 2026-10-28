@@ -7,12 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useAssistantChat, type AssistantChatMessage } from '@/hooks/useAssistantChat';
 
-const SUGGESTIONS = [
-  "What's waiting on my office right now?",
-  'Which requests are overdue?',
-  'How do I reject a request?',
-  'Which offices must clear a Transcript of Records?',
-];
+interface AssistantWidgetProps {
+  endpoint: '/admin/assistant' | '/office/assistant';
+  subtitle: string;
+  intro: string;
+  suggestions: string[];
+}
 
 function MessageBubble({ message }: { message: AssistantChatMessage }) {
   const isUser = message.role === 'user';
@@ -39,10 +39,10 @@ function MessageBubble({ message }: { message: AssistantChatMessage }) {
   );
 }
 
-function StaffAssistantWidget() {
+function AssistantWidget({ endpoint, subtitle, intro, suggestions }: AssistantWidgetProps) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const { messages, sending, send: sendMessage, reset } = useAssistantChat('/office/assistant');
+  const { messages, sending, send: sendMessage, reset } = useAssistantChat(endpoint);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,7 +75,7 @@ function StaffAssistantWidget() {
             <div className='min-w-0 flex-1'>
               <p className='font-heading text-sm font-semibold text-foreground'>e-Docs Assistant</p>
               <p className='font-sans truncate text-[11px] text-muted-foreground'>
-                Read-only · answers from your office&apos;s live data
+                {subtitle}
               </p>
             </div>
             {messages.length > 0 && (
@@ -108,10 +108,10 @@ function StaffAssistantWidget() {
                   How can I help?
                 </p>
                 <p className='font-sans mt-1 text-xs text-muted-foreground'>
-                  Ask about your queue, a specific request, or how to do something in e-Docs.
+                  {intro}
                 </p>
                 <div className='mt-4 grid w-full gap-2'>
-                  {SUGGESTIONS.map((s) => (
+                  {suggestions.map((s) => (
                     <button
                       key={s}
                       type='button'
@@ -190,4 +190,4 @@ function StaffAssistantWidget() {
   );
 }
 
-export default StaffAssistantWidget;
+export default AssistantWidget;

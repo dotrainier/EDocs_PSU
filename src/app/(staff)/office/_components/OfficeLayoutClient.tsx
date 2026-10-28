@@ -25,7 +25,7 @@ import { cn, formatRole } from '@/lib/utils';
 import { api } from '@/lib/axios';
 import { NotificationBell } from '@/components/shared/NotificationBell';
 import { useStaffUnreadCount } from '@/hooks/useStaffUnreadCount';
-import StaffAssistantWidget from './StaffAssistantWidget';
+import AssistantWidget from '@/components/shared/AssistantWidget';
 
 interface User {
   fullName: string;
@@ -47,6 +47,13 @@ const QUEUE_ITEMS = [
 const MESSAGES_HREF = '/office/messages';
 
 const COMMUNICATION_ITEMS = [{ href: MESSAGES_HREF, label: 'Messages', icon: MessagesSquare }];
+
+const ASSISTANT_SUGGESTIONS = [
+  "What's waiting on my office right now?",
+  'Which requests are overdue?',
+  'How do I reject a request?',
+  'Which offices must clear a Transcript of Records?',
+];
 
 const PAGE_TITLES: Record<string, string> = {
   '/office/dashboard': 'Dashboard',
@@ -505,7 +512,12 @@ export default function OfficeLayoutClient({
         <main className='flex-1 overflow-y-auto'>{children}</main>
       </div>
 
-      <StaffAssistantWidget />
+      <AssistantWidget
+        endpoint='/office/assistant'
+        subtitle="Read-only · answers from your office's live data"
+        intro='Ask about your queue, a specific request, or how to do something in e-Docs.'
+        suggestions={ASSISTANT_SUGGESTIONS}
+      />
     </div>
   );
 }
