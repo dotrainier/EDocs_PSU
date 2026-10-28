@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   FilePlus2,
   Clock,
@@ -93,6 +94,15 @@ const CHART_COLORS = {
   blue: '#3B82F6',
   violet: '#8B5CF6',
 };
+
+const DONUT_STATUSES = ['Pending', 'In Process', 'Ready for Release', 'Released'];
+
+const CLICKABLE_CHART =
+  '[&_.apexcharts-bar-area]:cursor-pointer [&_.apexcharts-pie-area]:cursor-pointer';
+
+function requestsUrl(params: Record<string, string>) {
+  return `/requests?${new URLSearchParams(params).toString()}`;
+}
 
 const STATUS_CONFIG: Record<
   RequestStatus,
@@ -224,6 +234,7 @@ function EmptyChart({ message }: { message: string }) {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export default function DashboardClient({ user }: DashboardClientProps) {
+  const router = useRouter();
   const greeting = getGreeting();
   const base = baseOptions();
 
@@ -278,7 +289,17 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   const donutOptions: ApexOptions = useMemo(
     () => ({
       ...base,
-      chart: { ...base.chart, type: 'donut', id: 'status' },
+      chart: {
+        ...base.chart,
+        type: 'donut',
+        id: 'status',
+        events: {
+          dataPointSelection: (_event, _chart, options?: { dataPointIndex?: number }) => {
+            const status = DONUT_STATUSES[options?.dataPointIndex ?? -1];
+            if (status) router.push(requestsUrl({ status }));
+          },
+        },
+      },
       colors: [CHART_COLORS.amber, CHART_COLORS.blue, CHART_COLORS.emerald, CHART_COLORS.violet],
       labels: ['Pending', 'In Process', 'Ready', 'Completed'],
       plotOptions: {
@@ -303,7 +324,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
       legend: { position: 'bottom', fontSize: '12px', itemMargin: { horizontal: 8 } },
       stroke: { width: 0 },
     }),
-    [base, stats.total],
+    [base, stats.total, router],
   );
 
   const donutSeries = useMemo(
@@ -314,7 +335,17 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   const docTypeOptions: ApexOptions = useMemo(
     () => ({
       ...base,
-      chart: { ...base.chart, type: 'bar', id: 'doctype' },
+      chart: {
+        ...base.chart,
+        type: 'bar',
+        id: 'doctype',
+        events: {
+          dataPointSelection: (_event, _chart, options?: { dataPointIndex?: number }) => {
+            const doc = data?.documentTypeBreakdown?.[options?.dataPointIndex ?? -1];
+            if (doc) router.push(requestsUrl({ q: doc.name }));
+          },
+        },
+      },
       colors: [
         CHART_COLORS.primary,
         CHART_COLORS.emerald,
@@ -338,7 +369,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
       dataLabels: { enabled: false },
       legend: { show: false },
     }),
-    [base, data?.documentTypeBreakdown],
+    [base, data?.documentTypeBreakdown, router],
   );
 
   const docTypeSeries = useMemo(
@@ -349,7 +380,17 @@ export default function DashboardClient({ user }: DashboardClientProps) {
   const avgTimeOptions: ApexOptions = useMemo(
     () => ({
       ...base,
-      chart: { ...base.chart, type: 'bar', id: 'avgtime' },
+      chart: {
+        ...base.chart,
+        type: 'bar',
+        id: 'avgtime',
+        events: {
+          dataPointSelection: (_event, _chart, options?: { dataPointIndex?: number }) => {
+            const row = data?.avgProcessingTime?.[options?.dataPointIndex ?? -1];
+            if (row) router.push(requestsUrl({ status: 'Released', q: row.docType }));
+          },
+        },
+      },
       colors: [CHART_COLORS.violet],
       plotOptions: {
         bar: { borderRadius: 5, columnWidth: '50%' },
@@ -366,7 +407,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
       dataLabels: { enabled: false },
       legend: { show: false },
     }),
-    [base, data?.avgProcessingTime],
+    [base, data?.avgProcessingTime, router],
   );
 
   const avgTimeSeries = useMemo(
@@ -493,7 +534,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 </p>
               </div>
               <Link
-                href='/requests'
+                href={requestsUrl({ status: 'Action Required' })}
                 className='shrink-0 text-xs font-semibold text-red-700 underline-offset-2 hover:underline'
               >
                 View →
@@ -513,7 +554,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 </p>
               </div>
               <Link
-                href='/requests'
+                href={requestsUrl({ status: 'Ready for Release' })}
                 className='shrink-0 text-xs font-semibold text-emerald-700 underline-offset-2 hover:underline'
               >
                 View →
@@ -533,10 +574,10 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 </p>
               </div>
               <Link
-                href='/requests'
+                href={requestsUrl({ payment: 'Unpaid' })}
                 className='shrink-0 text-xs font-semibold text-amber-700 underline-offset-2 hover:underline'
               >
-                Pay now →
+                View →
               </Link>
             </div>
           )}
@@ -571,10 +612,10 @@ export default function DashboardClient({ user }: DashboardClientProps) {
               Your Requests Status
             </CardTitle>
             <p className='font-sans mt-1 text-xs text-muted-foreground'>
-              Current breakdown of all {stats.total} requests
+              Current breakdown of all {stats.total} requests · click a slice to view them
             </p>
           </CardHeader>
-          <CardContent className='pt-0'>
+          <CardContent className={cn('pt-0', CLICKABLE_CHART)}>
             {stats.total > 0 ? (
               <ReactApexChart
                 type='donut'
@@ -595,10 +636,10 @@ export default function DashboardClient({ user }: DashboardClientProps) {
           <CardHeader className='pb-3'>
             <CardTitle className='font-sans text-base font-semibold'>Documents Requested</CardTitle>
             <p className='font-sans mt-1 text-xs text-muted-foreground'>
-              Your document request distribution
+              Your document request distribution · click a bar to view them
             </p>
           </CardHeader>
-          <CardContent className='pt-0'>
+          <CardContent className={cn('pt-0', CLICKABLE_CHART)}>
             {(data?.documentTypeBreakdown?.length ?? 0) > 0 ? (
               <ReactApexChart
                 type='bar'
@@ -618,10 +659,10 @@ export default function DashboardClient({ user }: DashboardClientProps) {
               Avg. Processing Time
             </CardTitle>
             <p className='font-sans mt-1 text-xs text-muted-foreground'>
-              By document type (working days)
+              By document type (working days) · click a bar to view completed ones
             </p>
           </CardHeader>
-          <CardContent className='pt-0'>
+          <CardContent className={cn('pt-0', CLICKABLE_CHART)}>
             {(data?.avgProcessingTime?.length ?? 0) > 0 ? (
               <ReactApexChart
                 type='bar'
@@ -684,14 +725,22 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 });
 
                 return (
-                  <TableRow key={req.request_id} className='hover:bg-muted/50'>
+                  <TableRow
+                    key={req.request_id}
+                    onClick={(e) => {
+                      if (!(e.target as HTMLElement).closest('a')) {
+                        router.push(`/requests/${req.tracking_number}`);
+                      }
+                    }}
+                    className='cursor-pointer hover:bg-muted/50'
+                  >
                     <TableCell className='font-mono text-sm font-medium'>
-                      <a
-                        href={`/request/${req.request_id}`}
+                      <Link
+                        href={`/requests/${req.tracking_number}`}
                         className='text-primary hover:underline'
                       >
                         {req.tracking_number}
-                      </a>
+                      </Link>
                     </TableCell>
                     <TableCell className='text-sm'>{req.document_type}</TableCell>
                     <TableCell className='text-sm text-muted-foreground'>{dateStr}</TableCell>
@@ -724,17 +773,15 @@ export default function DashboardClient({ user }: DashboardClientProps) {
             });
 
             return (
-              <div
+              <Link
                 key={req.request_id}
-                className='flex flex-col gap-2 rounded-lg border border-border p-3'
+                href={`/requests/${req.tracking_number}`}
+                className='flex flex-col gap-2 rounded-lg border border-border p-3 transition-colors hover:border-primary/40 hover:bg-muted/30'
               >
                 <div className='flex items-start justify-between gap-2'>
-                  <a
-                    href={`/request/${req.request_id}`}
-                    className='font-mono text-sm font-medium text-primary hover:underline'
-                  >
+                  <span className='font-mono text-sm font-medium text-primary'>
                     {req.tracking_number}
-                  </a>
+                  </span>
                   <span
                     className={cn(
                       'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium shrink-0',
@@ -747,7 +794,7 @@ export default function DashboardClient({ user }: DashboardClientProps) {
                 </div>
                 <p className='text-xs text-muted-foreground'>{req.document_type}</p>
                 <p className='text-xs text-muted-foreground'>{dateStr}</p>
-              </div>
+              </Link>
             );
           })}
         </div>

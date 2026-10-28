@@ -48,6 +48,7 @@ interface RequestRecord {
   updated_at: string;
   purpose: string;
   status: string;
+  payment_status: string;
   has_download: boolean;
 }
 
@@ -249,10 +250,13 @@ export default function RequestPage() {
   // The single-select dropdown can only reflect a single status; multi-status
   // filters from a deep link show as "All Statuses" there while still filtering.
   const statusParam = statusList.length === 1 ? statusList[0] : 'all';
+  const rawPaymentParam = searchParams.get('payment');
+  const paymentParam = rawPaymentParam === 'Paid' || rawPaymentParam === 'Unpaid' ? rawPaymentParam : null;
 
   function handleStatusChange(value: string) {
     const params = new URLSearchParams();
     if (value !== 'all') params.set('status', value);
+    if (paymentParam) params.set('payment', paymentParam);
     const qs = params.toString();
     router.replace(qs ? `/requests?${qs}` : '/requests', { scroll: false });
   }
@@ -289,11 +293,12 @@ export default function RequestPage() {
         r.purpose.toLowerCase().includes(search.toLowerCase());
       const matchesStatus =
         statusList.length === 0 || statusList.includes(normalizeStatus(r.status) ?? '');
-      return matchesSearch && matchesStatus;
+      const matchesPayment = !paymentParam || r.payment_status === paymentParam;
+      return matchesSearch && matchesStatus && matchesPayment;
     });
-  }, [requests, search, statusList]);
+  }, [requests, search, statusList, paymentParam]);
 
-  const hasActiveFilters = search !== '' || statusList.length > 0;
+  const hasActiveFilters = search !== '' || statusList.length > 0 || paymentParam !== null;
 
   function clearFilters() {
     setSearch('');
@@ -363,6 +368,18 @@ export default function RequestPage() {
         <p className='text-xs text-muted-foreground'>
           Showing <span className='font-medium text-foreground'>{filtered.length}</span> of{' '}
           <span className='font-medium text-foreground'>{requests.length}</span> requests
+          {paymentParam && (
+            <>
+              {' '}
+              · <span className='font-medium text-foreground'>{paymentParam.toLowerCase()} only</span>
+            </>
+          )}
+          {statusList.length > 1 && (
+            <>
+              {' '}
+              · <span className='font-medium text-foreground'>{statusList.join(' + ')}</span>
+            </>
+          )}
         </p>
       )}
 
