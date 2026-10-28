@@ -51,10 +51,6 @@ interface QueueApiResponse {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
 const PAYMENT_CONFIG: Record<PaymentStatus, { classes: string }> = {
   Paid: { classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
   Unpaid: { classes: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' },
@@ -79,10 +75,6 @@ function PaymentBadge({ status }: { status: PaymentStatus }) {
     </Badge>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 export default function OfficeQueuePage() {
   const searchParams = useSearchParams();
@@ -115,7 +107,6 @@ export default function OfficeQueuePage() {
 
   return (
     <div className='space-y-6 p-6 lg:p-8'>
-      {/* Header */}
       <div>
         <h1 className='font-heading text-2xl font-bold tracking-tight text-foreground'>
           Request Queue
@@ -125,7 +116,6 @@ export default function OfficeQueuePage() {
         </p>
       </div>
 
-      {/* Filter bar */}
       <Card>
         <CardContent className='flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center'>
           <div className='relative flex-1'>
@@ -168,7 +158,6 @@ export default function OfficeQueuePage() {
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card>
         <CardContent className='p-0'>
           {loading ? (

@@ -1,10 +1,3 @@
-// src/lib/admin-reports.ts
-//
-// Read-only, system-wide reporting queries shared by the Admin Dashboard
-// (/api/admin/dashboard), the Admin Payments page (/api/admin/payments) and
-// the Admin Assistant's toolset (src/lib/admin-assistant.ts). Every number is
-// a genuine live query — no fabricated trends or counts. Nothing in this file
-// writes to the database.
 import { and, eq, gte, sql, inArray, desc } from 'drizzle-orm';
 import { db } from '@/db';
 import { users, document_requests, document_types, offices, audit_log } from '@/db/schema';
@@ -55,11 +48,6 @@ export async function getRegistrationFunnel(): Promise<{
   return { totalUsers: Number(totalUsersRow[0]?.count ?? 0), registrationFunnel };
 }
 
-/**
- * Request counts: all-time total, by status (every status in STATUS_ORDER,
- * zero-filled), and by document type (every type with at least one request,
- * sorted by volume descending — callers slice if they only want the top N).
- */
 export async function getRequestVolume(): Promise<{
   totalRequests: number;
   pendingRequests: number;
@@ -96,7 +84,6 @@ export async function getRequestVolume(): Promise<{
   };
 }
 
-/** Requests released since local midnight (REQUEST_RELEASED audit events). */
 export async function getCompletedToday(): Promise<number> {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
@@ -108,12 +95,6 @@ export async function getCompletedToday(): Promise<number> {
   return Number(row[0]?.count ?? 0);
 }
 
-/**
- * Offices actually issuing at least one active document type. Currently just
- * OUR (see seed.document.ts), but this derives it live rather than
- * hardcoding the office code, so it stays correct once other offices are
- * wired up.
- */
 export async function getParticipatingOffices(): Promise<Array<{ id: number; name: string }>> {
   return db
     .selectDistinct({ id: offices.id, name: offices.name })
@@ -123,11 +104,6 @@ export async function getParticipatingOffices(): Promise<Array<{ id: number; nam
     .orderBy(offices.name);
 }
 
-/**
- * On-track/overdue counts and live backlog for each participating office —
- * the same calculateExpectedDatesForOffice / getOfficeBacklogSummary used by
- * the office dashboard, aggregated across offices.
- */
 export async function getCapacitySnapshot(participatingOffices: Array<{ id: number; name: string }>): Promise<{
   onTrack: number;
   overdue: number;
@@ -238,13 +214,6 @@ export async function getRecentActivity(limit = 12): Promise<
   });
 }
 
-/**
- * Live payment snapshot — collected vs outstanding, overall and per document
- * type. Sums use document_requests.fee_amount (the fee snapshotted onto the
- * request at submission time), not document_types.fee_amount — so a later
- * fee change on a document type never retroactively changes what an old
- * paid/unpaid request is reported as owing.
- */
 export async function getPaymentReport(): Promise<{
   totals: { collected: number; outstanding: number; paidCount: number; unpaidCount: number };
   byDocumentType: Array<{

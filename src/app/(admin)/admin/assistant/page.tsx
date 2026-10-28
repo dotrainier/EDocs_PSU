@@ -14,8 +14,6 @@ const SUGGESTIONS = [
   'How many registrations are waiting for review?',
 ];
 
-// ─── Message bubble ───────────────────────────────────────────────────────────
-
 function MessageBubble({ message }: { message: AssistantChatMessage }) {
   const isUser = message.role === 'user';
   return (
@@ -49,10 +47,7 @@ function MessageBubble({ message }: { message: AssistantChatMessage }) {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function AdminAssistantPage() {
-  // Conversation lives only in component state: it resets on every visit.
   const { messages, sending, send: sendMessage, reset } = useAssistantChat('/admin/assistant');
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -67,7 +62,6 @@ export default function AdminAssistantPage() {
 
   return (
     <div className='flex h-full flex-col'>
-      {/* Header */}
       <div className='flex items-start justify-between gap-4 border-b border-border px-6 py-5 lg:px-8'>
         <div>
           <h1 className='font-heading text-2xl font-bold tracking-tight text-foreground'>Assistant</h1>
@@ -84,7 +78,6 @@ export default function AdminAssistantPage() {
         )}
       </div>
 
-      {/* Conversation */}
       <div className='flex-1 overflow-y-auto px-6 py-6 lg:px-8'>
         {messages.length === 0 ? (
           <div className='mx-auto flex max-w-xl flex-col items-center pt-10 text-center'>
@@ -120,7 +113,6 @@ export default function AdminAssistantPage() {
         )}
       </div>
 
-      {/* Input */}
       <form
         onSubmit={(e) => {
           e.preventDefault();

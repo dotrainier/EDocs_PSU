@@ -28,8 +28,6 @@ import ClassificationWarningDialog from './ClassificationWarningDialog';
 import PurposeQualityDialog from './PurposeQualityDialog';
 import RequestQrCode from '@/components/shared/RequestQrCode';
 
-// ── Types ────────────────────────────────────────────────────────────────────
-
 export interface DocumentType {
   id: string;
   name: string;
@@ -83,12 +81,8 @@ const PREDEFINED_PURPOSES = [
   'Visa / Travel Abroad',
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 const STEP_LABELS = ['Document Type', 'Request Details', 'Data Privacy', 'Review & Confirm'];
 const AI_CONFIDENCE_THRESHOLD = 0.8;
-
-// ── Loading skeleton ──────────────────────────────────────────────────────────
 
 function DocumentTypesSkeleton() {
   return (
@@ -117,8 +111,6 @@ function DocumentTypesSkeleton() {
   );
 }
 
-// ── Error state ───────────────────────────────────────────────────────────────
-
 function DocumentTypesError({ onRetry }: { onRetry: () => void }) {
   return (
     <div className='flex flex-col items-center justify-center rounded-xl border border-destructive/20 bg-destructive/5 px-6 py-14 text-center'>
@@ -136,8 +128,6 @@ function DocumentTypesError({ onRetry }: { onRetry: () => void }) {
     </div>
   );
 }
-
-// ── Success modal ─────────────────────────────────────────────────────────────
 
 interface SuccessModalProps {
   open: boolean;
@@ -198,8 +188,6 @@ function SuccessModal({
     </AlertDialog>
   );
 }
-
-// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function NewRequestClient() {
   const router = useRouter();
@@ -329,11 +317,6 @@ export default function NewRequestClient() {
         if (formData.semester) body.append('semester', formData.semester);
         body.append('clearanceForm', clearanceFile);
 
-        // The axios instance defaults to Content-Type: application/json, which
-        // makes axios JSON-stringify FormData bodies instead of sending them as
-        // multipart (silently dropping the file). Clearing it here lets axios
-        // pass the FormData through untouched so the browser sets the correct
-        // multipart boundary itself.
         res = await api.post<SubmitResult>('/portal/requests', body, {
           headers: { 'Content-Type': undefined },
         });
@@ -375,13 +358,11 @@ export default function NewRequestClient() {
   return (
     <>
       <div className='flex flex-col min-h-screen'>
-        {/* Top progress */}
         <div className='sticky top-0 z-10 bg-background border-b'>
           <Progress value={progressValue} className='h-1 rounded-none' />
         </div>
 
         <div className='flex-1 mx-auto w-full max-w-3xl px-4 py-8 pb-32'>
-          {/* Page header */}
           <div className='mb-8'>
             <h1 className='text-2xl font-bold tracking-tight text-foreground'>
               Request a Document
@@ -391,7 +372,6 @@ export default function NewRequestClient() {
             </p>
           </div>
 
-          {/* Step indicator */}
           <div className='flex items-center gap-2 mb-8'>
             {STEP_LABELS.map((label, i) => {
               const step = i + 1;
@@ -429,7 +409,6 @@ export default function NewRequestClient() {
             })}
           </div>
 
-          {/* Step content */}
           {currentStep === 1 && (
             <>
               {loading && <DocumentTypesSkeleton />}
@@ -497,7 +476,6 @@ export default function NewRequestClient() {
           )}
         </div>
 
-        {/* Sticky bottom navigation */}
         <div className='sticky bottom-0 z-20 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80'>
           <div className='mx-auto flex max-w-3xl items-center justify-between px-4 py-3'>
             <div className='flex items-center gap-3'>
@@ -569,7 +547,6 @@ export default function NewRequestClient() {
         </div>
       </div>
 
-      {/* Success modal */}
       <SuccessModal
         open={showSuccess}
         trackingNumber={submittedTracking}

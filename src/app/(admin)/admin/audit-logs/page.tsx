@@ -35,8 +35,6 @@ import { cn, formatDateTime } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
 import { KNOWN_AUDIT_ACTIONS, humanizeAction } from '@/lib/audit-labels';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type AuditLogRow = {
   id: string;
   action: string;
@@ -73,8 +71,6 @@ function dateFromParam(param: string | null) {
   return param && /^\d{4}-\d{2}-\d{2}$/.test(param) ? param : '';
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function AdminAuditLogsPage() {
   const searchParams = useSearchParams();
   const [action, setAction] = useState(() => {
@@ -88,9 +84,6 @@ export default function AdminAuditLogsPage() {
   const queryUrl = useMemo(() => {
     const params = new URLSearchParams();
     if (action !== 'all') params.set('action', action);
-    // Sent as full instants (not bare YYYY-MM-DD) so "today" means the
-    // browser's local calendar day, matching what the Timestamp column
-    // already shows in local time — not the server's UTC day.
     if (from) params.set('from', new Date(`${from}T00:00:00`).toISOString());
     if (to) params.set('to', new Date(`${to}T23:59:59.999`).toISOString());
     params.set('page', String(page));
@@ -148,7 +141,6 @@ export default function AdminAuditLogsPage() {
         </Alert>
       )}
 
-      {/* Filters */}
       <Card>
         <CardContent className='flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center'>
           <Select value={action} onValueChange={handleActionChange}>
@@ -203,7 +195,6 @@ export default function AdminAuditLogsPage() {
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card>
         <CardContent className='p-0'>
           {loading ? (
@@ -289,7 +280,6 @@ export default function AdminAuditLogsPage() {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
       {!loading && total > 0 && (
         <div className='flex flex-col items-center justify-between gap-3 sm:flex-row'>
           <p className='font-sans text-xs text-muted-foreground'>

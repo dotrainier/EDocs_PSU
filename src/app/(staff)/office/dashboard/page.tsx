@@ -27,14 +27,9 @@ import { cn } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
 import { AiInsights } from './_components/AiInsights';
 
-// On Track / Overdue is a live comparison of each request's calculated
-// expected date against today (see src/lib/expected-date.ts) — no status is
-// stored, so this always reflects the current queue and capacity.
 type ExpectedStatus = 'On Track' | 'Overdue';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface QueuePreviewItem {
   request_id: string;
@@ -61,8 +56,6 @@ interface DashboardResponse {
   }>;
   myStats: { my_cleared: number; my_rejected: number; my_pending: number };
 }
-
-// ─── Colors ───────────────────────────────────────────────────────────────────
 
 const C = {
   emerald: '#10B981',
@@ -101,8 +94,6 @@ type ChartSelection = { dataPointIndex?: number; seriesIndex?: number };
 function withParams(path: string, params: Record<string, string>) {
   return `${path}?${new URLSearchParams(params).toString()}`;
 }
-
-// ─── Subcomponents ────────────────────────────────────────────────────────────
 
 function StatCard({ title, value, icon: Icon, iconClass, bgClass, description, href }: {
   title: string; value: number; icon: React.ElementType;
@@ -156,8 +147,6 @@ function EmptyChart({ message = 'No data available' }: { message?: string }) {
     </div>
   );
 }
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OfficeDashboardPage() {
   const router = useRouter();

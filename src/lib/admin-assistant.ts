@@ -1,13 +1,3 @@
-// src/lib/admin-assistant.ts
-//
-// Admin-facing chat assistant backed by genuine Gemini function calling
-// (@google/generative-ai 0.24.1). Unlike the other AI features in src/lib/ai.ts
-// — which format pre-computed data into a single prompt — here the model
-// decides which lookups to run.
-//
-// Every tool is strictly read-only and wraps the same functions that power
-// the Admin Dashboard and Payments page (src/lib/admin-reports.ts) — nothing
-// here queries or writes the database directly.
 import { SchemaType } from '@google/generative-ai';
 import {
   runAssistantChat,
@@ -24,8 +14,6 @@ import {
   getRecentActivity,
   getPaymentReport,
 } from '@/lib/admin-reports';
-
-// ─── Toolset ──────────────────────────────────────────────────────────────────
 
 const OFFICE_SCOPE_NOTE =
   'On-track/overdue and backlog figures cover only the offices listed in participatingOffices (offices that currently issue at least one active document type). No other office contributes to them.';
@@ -187,13 +175,6 @@ export function toolLabel(name: string): string {
   return TOOLS[name]?.label ?? name;
 }
 
-// ─── Honesty guard ────────────────────────────────────────────────────────────
-
-// Forecasting is explicitly unsupported: there isn't enough historical data
-// (every seeded request shares one created_at day — the same constraint that
-// blocks the dashboard and payment trend charts). The system instruction
-// tells the model to decline these too, but a confidently wrong prediction is
-// worse than a refusal, so obvious forecast questions never reach the model.
 const PREDICTION_PATTERNS = [
   /\b(forecast|predict|projection|project(ed)? (volume|demand|requests|revenue|collections?))\w*/i,
   /\bextrapolat\w*/i,
@@ -227,14 +208,6 @@ Rules. Follow them strictly:
 `.trim();
 }
 
-// ─── Chat loop ────────────────────────────────────────────────────────────────
-
-/**
- * Answers one Admin message. `history` is the text-only conversation so far
- * (held by the client for the current page visit). It carries enough context
- * for follow-up questions. Tool results aren't replayed. The model re-runs a
- * lookup when it needs fresh figures, and the lookups are cheap and live.
- */
 export async function askAdminAssistant(
   history: AssistantTurn[],
   message: string,

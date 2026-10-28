@@ -34,10 +34,6 @@ import { Button } from '@/components/ui/button';
 import { cn, formatDateOptional, formatDateTime } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 type ActionTaken = 'Cleared' | 'Rejected';
 
 interface ClearedTask {
@@ -60,10 +56,6 @@ interface ClearedApiResponse {
   tasks: ClearedTask[];
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
 function ActionBadge({ action }: { action: ActionTaken }) {
   return (
     <span
@@ -83,10 +75,6 @@ function ActionBadge({ action }: { action: ActionTaken }) {
     </span>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 export default function OfficeClearedPage() {
   const searchParams = useSearchParams();
@@ -119,7 +107,6 @@ export default function OfficeClearedPage() {
 
   return (
     <div className='space-y-6 p-6 lg:p-8'>
-      {/* Header */}
       <div>
         <h1 className='font-heading text-2xl font-bold tracking-tight text-foreground'>
           Cleared Tasks
@@ -129,7 +116,6 @@ export default function OfficeClearedPage() {
         </p>
       </div>
 
-      {/* Filter bar */}
       <Card>
         <CardContent className='flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center'>
           <div className='relative flex-1'>
@@ -171,7 +157,6 @@ export default function OfficeClearedPage() {
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card>
         <CardContent className='p-0'>
           {loading ? (

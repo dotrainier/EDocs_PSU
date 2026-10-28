@@ -61,8 +61,6 @@ const ALL_STATUSES: RequestStatus[] = [
   'Cancelled',
 ];
 
-// ── Status config ─────────────────────────────────────────────────────────────
-
 const STATUS_CONFIG = {
   Pending: {
     icon: Hourglass,
@@ -137,8 +135,6 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
-
-// ── Empty state ───────────────────────────────────────────────────────────────
 
 function EmptyState({ hasFilters, onClear }: { hasFilters: boolean; onClear: () => void }) {
   return (
@@ -226,8 +222,6 @@ function CardSkeleton() {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export default function RequestPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -235,8 +229,6 @@ export default function RequestPage() {
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
 
   const rawStatusParam = searchParams.get('status') ?? 'all';
-  // Supports a comma-separated list (e.g. `?status=Pending,In Process`) so dashboard
-  // cards that represent more than one status — "Active" — can deep-link here too.
   const statusList = useMemo(
     () =>
       rawStatusParam === 'all'
@@ -247,8 +239,6 @@ export default function RequestPage() {
             .filter(Boolean),
     [rawStatusParam],
   );
-  // The single-select dropdown can only reflect a single status; multi-status
-  // filters from a deep link show as "All Statuses" there while still filtering.
   const statusParam = statusList.length === 1 ? statusList[0] : 'all';
   const rawPaymentParam = searchParams.get('payment');
   const paymentParam = rawPaymentParam === 'Paid' || rawPaymentParam === 'Unpaid' ? rawPaymentParam : null;
@@ -307,7 +297,6 @@ export default function RequestPage() {
 
   return (
     <div className='space-y-5 px-4 py-6 sm:px-6 lg:px-8'>
-      {/* Page header */}
       <div className='flex items-center justify-between'>
         <div>
           <h1 className='text-2xl font-bold tracking-tight text-foreground'>My Requests</h1>
@@ -320,7 +309,6 @@ export default function RequestPage() {
         </Button>
       </div>
 
-      {/* Filters */}
       <div className='flex flex-col gap-2.5 sm:flex-row sm:items-center'>
         <div className='relative flex-1'>
           <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none' />
@@ -363,7 +351,6 @@ export default function RequestPage() {
         </div>
       </div>
 
-      {/* Results count */}
       {!loading && !error && requests.length > 0 && (
         <p className='text-xs text-muted-foreground'>
           Showing <span className='font-medium text-foreground'>{filtered.length}</span> of{' '}
@@ -383,7 +370,6 @@ export default function RequestPage() {
         </p>
       )}
 
-      {/* Table — desktop */}
       <div className='hidden md:block rounded-xl border overflow-hidden'>
         <Table>
           <TableHeader>
@@ -431,7 +417,6 @@ export default function RequestPage() {
                   <TableCell>
                     <StatusBadge status={req.status} />
                   </TableCell>
-                  {/* Actions — always visible */}
                   <TableCell>
                     <div className='flex items-center gap-1'>
                       <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' asChild>
@@ -461,7 +446,6 @@ export default function RequestPage() {
         </Table>
       </div>
 
-      {/* Card list — mobile */}
       <div className='space-y-3 md:hidden'>
         {loading ? (
           <CardSkeleton />
@@ -483,7 +467,6 @@ export default function RequestPage() {
                   </p>
                   <StatusBadge status={req.status} />
                 </div>
-                {/* Actions — always visible on mobile */}
                 <div className='flex shrink-0 flex-col items-end gap-1.5'>
                   <Button variant='outline' size='sm' className='h-8 gap-1.5 text-xs' asChild>
                     <Link href={`/requests/${req.tracking_number}`}>

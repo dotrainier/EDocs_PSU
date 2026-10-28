@@ -22,8 +22,6 @@ import { cn } from '@/lib/utils';
 import { useFetch } from '@/hooks/useFetch';
 import { AiInsights } from './_components/AiInsights';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface DashboardResponse {
   stats: {
     totalUsers: number;
@@ -62,8 +60,6 @@ const ACTIVITY_COLORS: Record<string, string> = {
   danger: 'bg-red-100 text-red-700',
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function formatTimeAgo(value: string) {
   const date = new Date(value);
   const diffMs = Date.now() - date.getTime();
@@ -99,8 +95,6 @@ function officeScopeNote(offices: Array<{ id: number; name: string }>) {
   return `Across ${offices.length} offices: ${offices.map((o) => o.name).join(', ')}`;
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
-
 function StatCard({ title, value, icon: Icon, iconClass, bgClass, description, href }: {
   title: string; value: number; icon: React.ElementType;
   iconClass: string; bgClass: string; description?: string; href?: string;
@@ -130,8 +124,6 @@ function StatCard({ title, value, icon: Icon, iconClass, bgClass, description, h
     </Link>
   );
 }
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminDashboardPage() {
   const { data, loading, error, refetch } = useFetch<DashboardResponse>('/admin/dashboard');
@@ -172,7 +164,6 @@ export default function AdminDashboardPage() {
         <p className='font-sans mt-1 text-sm text-muted-foreground'>System-wide overview of e-Docs activity</p>
       </div>
 
-      {/* Stats grid */}
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'>
         <StatCard title='Total Users' value={stats.totalUsers} icon={Users} iconClass='text-blue-600' bgClass='bg-blue-100' description='Students, faculty & staff' href='/admin/users' />
         <StatCard title='Total Requests' value={stats.totalRequests} icon={ClipboardList} iconClass='text-indigo-600' bgClass='bg-indigo-100' description='All-time submissions' href='/admin/requests' />
@@ -185,7 +176,6 @@ export default function AdminDashboardPage() {
       <AiInsights data={data} />
 
       <div className='grid gap-6 lg:grid-cols-2'>
-        {/* Recent activity */}
         <Card>
           <CardHeader className='pb-3'>
             <div className='flex items-center justify-between gap-2'>
@@ -224,7 +214,6 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Request volume by document type */}
         <Card>
           <CardHeader className='pb-3'>
             <CardTitle className='font-sans flex items-center gap-2 text-base font-semibold'>
@@ -260,7 +249,6 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className='grid gap-6 lg:grid-cols-2'>
-        {/* Requests by status */}
         <Card>
           <CardHeader className='pb-3'>
             <CardTitle className='font-sans flex items-center gap-2 text-base font-semibold'>
@@ -291,7 +279,6 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Registration funnel */}
         <Card>
           <CardHeader className='pb-3'>
             <CardTitle className='font-sans flex items-center gap-2 text-base font-semibold'>
@@ -322,7 +309,6 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Live backlog per participating office */}
       <Card>
         <CardHeader className='pb-3'>
           <CardTitle className='font-sans flex items-center gap-2 text-base font-semibold'>

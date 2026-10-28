@@ -45,8 +45,6 @@ import { cn, formatDate } from '@/lib/utils';
 import { api } from '@/lib/axios';
 import { UserDetailSheet, type VerificationStatus } from '../_components/UserDetailSheet';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type UserRow = {
   id: string;
   full_name: string;
@@ -79,8 +77,6 @@ const VERIFICATION_STYLES: Record<string, { icon: React.ElementType; className: 
   approved: { icon: ShieldCheck, className: 'text-emerald-600' },
   rejected: { icon: ShieldX, className: 'text-destructive' },
 };
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -184,7 +180,6 @@ export default function AdminUsersPage() {
         </Alert>
       )}
 
-      {/* Filters */}
       <Card>
         <CardContent className='flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center'>
           <div className='relative flex-1'>
@@ -240,7 +235,6 @@ export default function AdminUsersPage() {
         </CardContent> 
       </Card>
 
-      {/* Table */}
       <Card>
         <CardContent className='p-0'>
           <Table>

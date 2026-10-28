@@ -1,8 +1,3 @@
-// src/app/api/admin/requests/route.ts
-//
-// Real, system-wide list of document requests for the admin "All Requests"
-// page (Admin only). Read-only — no status-changing actions live here; the
-// real release action stays on the staff-side request-detail page.
 import { NextResponse } from 'next/server';
 import { desc, eq } from 'drizzle-orm';
 import { db } from '@/db';

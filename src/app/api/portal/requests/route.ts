@@ -138,7 +138,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Validate period fields driven by period_type on the document type record
     if (docType.period_type === 'semester_past_only') {
       if (!schoolYear || !semester) {
         return NextResponse.json(
@@ -148,8 +147,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // TOR requires an uploaded clearance form — validate server-side even
-    // though the client already enforces this, since the client can't be trusted.
     let clearanceFormPublicId: string | null = null;
     if (docType.code === 'TOR') {
       if (!clearanceFormFile) {
@@ -210,10 +207,8 @@ export async function POST(request: Request) {
       ipAddress: request.headers.get('x-forwarded-for') ?? 'unknown',
     });
 
-    // Fire-and-forget: notifications don't block the response
     void (async () => {
       try {
-        // Notify portal user
         const userNotif = {
           title: `Request submitted: ${docType.name}`,
           message: `Your request has been submitted successfully. Tracking number: ${trackingNumber}.`,
@@ -236,7 +231,6 @@ export async function POST(request: Request) {
           }),
         }).catch(() => {});
 
-        // Notify all staff in involved offices (issuing + clearance)
         const involvedOfficeIds = new Set<number>([docType.issuing_office_id]);
         if (docType.requires_clearance) {
           const tasks = await db
@@ -252,10 +246,6 @@ export async function POST(request: Request) {
           .innerJoin(users, eq(office_staff.user_id, users.id))
           .where(inArray(office_staff.office_id, [...involvedOfficeIds]));
 
-        // A staff member can legitimately be linked to more than one involved
-        // office (e.g. a multi-office document) — dedupe by user_id so each
-        // person is notified/emailed exactly once, regardless of how many
-        // office rows matched.
         const uniqueStaffRows = Array.from(
           new Map(staffRows.map((r) => [r.user_id, r])).values(),
         );
@@ -303,7 +293,6 @@ export async function POST(request: Request) {
           }),
         );
       } catch {
-        // notification errors are non-critical
       }
     })();
 

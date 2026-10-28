@@ -48,8 +48,6 @@ import {
 } from '@/lib/utils';
 import { RequestStatus, ClearanceStatus } from '@/types/document.type';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 interface ClearanceOffice {
   name: string;
   status: ClearanceStatus;
@@ -123,8 +121,6 @@ interface RequestResponse {
   };
 }
 
-// ── Loading & error UI ───────────────────────────────────────────────────────
-
 function RequestSkeleton() {
   return (
     <div className='space-y-6'>
@@ -185,8 +181,6 @@ function RequestError({ message, onRetry }: { message: string; onRetry: () => vo
   );
 }
 
-// ── Status helpers ────────────────────────────────────────────────────────────
-
 function StatusBadge({ status }: { status: RequestStatus }) {
   const variants: Record<RequestStatus, string> = {
     Pending: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -211,9 +205,6 @@ function ClearanceIcon({ status }: { status: ClearanceStatus }) {
   return <Clock className='h-4 w-4 text-muted-foreground' />;
 }
 
-
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export default function TrackRequestPage() {
   const params = useParams();
   const router = useRouter();
@@ -228,8 +219,6 @@ export default function TrackRequestPage() {
 
     const apiRequest = data.request;
     const status = normalizeRequestStatus(apiRequest.status);
-    // Each rejecting office's remark is the reason shown on the Action
-    // Required banner — one line per office.
     const rejectedTasks = apiRequest.clearance_tasks.filter(
       (task) => normalizeClearanceStatus(task.status) === 'Rejected',
     );
@@ -305,7 +294,6 @@ export default function TrackRequestPage() {
 
   return (
     <div className='mx-auto max-w-3xl px-4 py-8 space-y-6'>
-      {/* Breadcrumb */}
       <nav className='flex items-center gap-1.5 text-sm text-muted-foreground'>
         <button
           type='button'
@@ -318,7 +306,6 @@ export default function TrackRequestPage() {
         <span className='text-foreground font-medium'>{request.trackingNumber}</span>
       </nav>
 
-      {/* Action Required banner — top of page */}
       {isActionRequired && request.actionRequiredReason && (
         <Alert variant='destructive'>
           <AlertTriangle className='h-4 w-4' />
@@ -332,7 +319,6 @@ export default function TrackRequestPage() {
         </Alert>
       )}
 
-      {/* Payment — unpaid: pay onsite at the Registrar's Office */}
       {request.status !== 'Cancelled' && request.status !== 'Released' && request.paymentStatus === 'Unpaid' && (
         <div className='flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800'>
           <CreditCard className='h-4 w-4 mt-0.5 shrink-0' />
@@ -346,7 +332,6 @@ export default function TrackRequestPage() {
         </div>
       )}
 
-      {/* Page header */}
       <div className='flex flex-wrap items-start justify-between gap-3'>
         <div>
           <div className='flex items-center gap-2.5 flex-wrap'>
@@ -379,11 +364,9 @@ export default function TrackRequestPage() {
         </AlertDialog>
       </div>
 
-      {/* Top summary card */}
       <Card>
         <CardContent className='pt-5 pb-5'>
           <div className='grid gap-6 sm:grid-cols-2'>
-            {/* Left: request details */}
             <div className='space-y-3'>
               {[
                 { icon: FileText, label: 'Document Type', value: request.documentType },
@@ -403,7 +386,6 @@ export default function TrackRequestPage() {
               ))}
             </div>
 
-            {/* Right: Expected completion */}
             <div className='flex flex-col justify-center gap-3 rounded-lg bg-muted/40 p-4'>
               <div className='flex items-center justify-between'>
                 <p className='text-xs font-medium text-muted-foreground uppercase tracking-wide'>
@@ -424,7 +406,6 @@ export default function TrackRequestPage() {
         </CardContent>
       </Card>
 
-      {/* Clearance progress */}
       {hasClearance && (
         <Card>
           <CardHeader className='pb-3'>
@@ -467,7 +448,6 @@ export default function TrackRequestPage() {
         </Card>
       )}
 
-      {/* Way out of Action Required — resubmit once the issue is fixed */}
       {isActionRequired && (
         <ResubmitRequestPanel
           trackingNumber={request.trackingNumber}
@@ -476,7 +456,6 @@ export default function TrackRequestPage() {
         />
       )}
 
-      {/* Document ready for pickup */}
       {isReadyForRelease && (
         <Card className='border-emerald-200 bg-emerald-50/50'>
           <CardHeader className='pb-3'>
@@ -516,7 +495,6 @@ export default function TrackRequestPage() {
         </Card>
       )}
 
-      {/* Document already picked up — final state, nothing left to do */}
       {isReleased && (
         <Card className='border-purple-200 bg-purple-50/50'>
           <CardHeader className='pb-3'>
@@ -535,7 +513,6 @@ export default function TrackRequestPage() {
         </Card>
       )}
 
-      {/* Status timeline */}
       <Card>
         <CardHeader className='pb-3'>
           <CardTitle className='text-sm font-medium'>Status Timeline</CardTitle>
@@ -567,14 +544,12 @@ export default function TrackRequestPage() {
         </CardContent>
       </Card>
 
-      {/* Message thread with the handling office(s) */}
       <MessageThreadPanel
         apiBase='/portal/requests'
         trackingNumber={request.trackingNumber}
         viewerIsStaff={false}
       />
 
-      {/* Cancel button */}
       {request.isCancellable && (
         <div className='flex justify-end pt-2'>
           <AlertDialog>

@@ -27,8 +27,6 @@ import { NotificationBell } from '@/components/shared/NotificationBell';
 import { useStaffUnreadCount } from '@/hooks/useStaffUnreadCount';
 import StaffAssistantWidget from './StaffAssistantWidget';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface User {
   fullName: string;
   schoolId: string | null;
@@ -36,8 +34,6 @@ interface User {
   initials: string;
   officeCode: string;
 }
-
-// ─── Nav config ───────────────────────────────────────────────────────────────
 
 const OVERVIEW_ITEMS = [
   { href: '/office/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -62,8 +58,6 @@ const PAGE_TITLES: Record<string, string> = {
 function resolvePageTitle(pathname: string): string {
   return PAGE_TITLES[pathname] ?? 'Office';
 }
-
-// ─── Nav link (expanded) ──────────────────────────────────────────────────────
 
 function NavLink({
   href,
@@ -119,8 +113,6 @@ function NavLink({
   );
 }
 
-// ─── Nav icon (collapsed rail) ────────────────────────────────────────────────
-
 function RailItem({
   href,
   label,
@@ -166,8 +158,6 @@ function RailItem({
   );
 }
 
-// ─── Expanded sidebar content ─────────────────────────────────────────────────
-
 function ExpandedSidebar({
   user,
   unreadMessages,
@@ -191,7 +181,6 @@ function ExpandedSidebar({
 
   return (
     <div className='flex h-full min-w-0 flex-col'>
-      {/* Logo */}
       <div className='flex items-center gap-3 px-5 py-5'>
         <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/30'>
           <GraduationCap className='h-5 w-5 text-primary-foreground' />
@@ -213,9 +202,7 @@ function ExpandedSidebar({
 
       <Separator className='mx-4 mb-1 w-auto' />
 
-      {/* Nav */}
       <nav className='scrollbar-sidebar flex-1 min-h-0 space-y-4 overflow-y-auto px-3 py-3'>
-        {/* Overview */}
         <div>
           <p className='mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60'>
             Overview
@@ -236,7 +223,6 @@ function ExpandedSidebar({
 
         <Separator className='mx-1 w-auto' />
 
-        {/* Request Queue — collapsible */}
         <div>
           <p className='mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60'>
             Request Queue
@@ -285,7 +271,6 @@ function ExpandedSidebar({
 
         <Separator className='mx-1 w-auto' />
 
-        {/* Communication */}
         <div>
           <p className='mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60'>
             Communication
@@ -308,7 +293,6 @@ function ExpandedSidebar({
 
       <Separator className='mx-4 mb-3 w-auto' />
 
-      {/* User card + logout */}
       <div className='px-3 pb-5'>
         <div className='mb-2 flex items-center gap-3 rounded-lg bg-muted/60 px-3 py-2.5'>
           <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow'>
@@ -342,8 +326,6 @@ function ExpandedSidebar({
   );
 }
 
-// ─── Collapsed rail content ───────────────────────────────────────────────────
-
 function CollapsedRail({ user, unreadMessages }: { user: User; unreadMessages: number }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -359,7 +341,6 @@ function CollapsedRail({ user, unreadMessages }: { user: User; unreadMessages: n
   return (
     <TooltipProvider delayDuration={80}>
       <div className='flex h-full flex-col items-center gap-1 py-4'>
-        {/* Logo icon */}
         <div className='mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/30'>
           <GraduationCap className='h-5 w-5 text-primary-foreground' />
         </div>
@@ -379,7 +360,6 @@ function CollapsedRail({ user, unreadMessages }: { user: User; unreadMessages: n
 
         <div className='flex-1' />
 
-        {/* User avatar tooltip */}
         <Tooltip>
           <TooltipTrigger asChild>
             <div className='flex h-9 w-9 cursor-default items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow'>
@@ -392,7 +372,6 @@ function CollapsedRail({ user, unreadMessages }: { user: User; unreadMessages: n
           </TooltipContent>
         </Tooltip>
 
-        {/* Sign out */}
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -411,8 +390,6 @@ function CollapsedRail({ user, unreadMessages }: { user: User; unreadMessages: n
     </TooltipProvider>
   );
 }
-
-// ─── Mobile nav sheet ─────────────────────────────────────────────────────────
 
 function MobileNav({ user, unreadMessages }: { user: User; unreadMessages: number }) {
   const [open, setOpen] = useState(false);
@@ -434,8 +411,6 @@ function MobileNav({ user, unreadMessages }: { user: User; unreadMessages: numbe
     </Sheet>
   );
 }
-
-// ─── Layout ───────────────────────────────────────────────────────────────────
 
 export default function OfficeLayoutClient({
   children,
@@ -471,7 +446,6 @@ export default function OfficeLayoutClient({
 
   return (
     <div className='flex h-screen overflow-hidden bg-background'>
-      {/* Desktop sidebar */}
       <aside
         className={cn(
           'relative hidden shrink-0 border-r border-border bg-card lg:flex lg:flex-col',
@@ -485,7 +459,6 @@ export default function OfficeLayoutClient({
           <ExpandedSidebar user={user} unreadMessages={unreadMessages} />
         )}
 
-        {/* Toggle button */}
         <button
           onClick={toggleCollapsed}
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -503,12 +476,10 @@ export default function OfficeLayoutClient({
         </button>
       </aside>
 
-      {/* Main content */}
       <div className='flex flex-1 flex-col overflow-hidden'>
         <header className='sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-sm lg:px-5'>
           <MobileNav user={user} unreadMessages={unreadMessages} />
 
-          {/* Mobile logo */}
           <div className='flex items-center gap-2 lg:hidden'>
             <div className='flex h-7 w-7 items-center justify-center rounded-lg bg-primary'>
               <GraduationCap className='h-4 w-4 text-primary-foreground' />
@@ -518,7 +489,6 @@ export default function OfficeLayoutClient({
             </span>
           </div>
 
-          {/* Desktop page title */}
           <h1 className='font-heading hidden flex-1 text-base font-semibold text-foreground lg:block'>
             {pageTitle}
           </h1>

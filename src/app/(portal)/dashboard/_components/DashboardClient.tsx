@@ -85,8 +85,6 @@ interface PortalDashboardResponse {
   }>;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const CHART_COLORS = {
   primary: '#6366F1',
   emerald: '#10B981',
@@ -146,8 +144,6 @@ const STATUS_CONFIG: Record<
   },
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function baseOptions(): ApexOptions {
   return {
     chart: {
@@ -164,8 +160,6 @@ function baseOptions(): ApexOptions {
     tooltip: { theme: 'light' },
   };
 }
-
-// ─── Stat Card ────────────────────────────────────────────────────────────────
 
 interface StatCardProps {
   title: string;
@@ -221,8 +215,6 @@ function StatCard({ title, value, icon: Icon, accent, description, href }: StatC
   );
 }
 
-// ─── Chart placeholder ────────────────────────────────────────────────────────
-
 function EmptyChart({ message }: { message: string }) {
   return (
     <div className='flex h-[220px] items-center justify-center text-sm text-muted-foreground'>
@@ -230,8 +222,6 @@ function EmptyChart({ message }: { message: string }) {
     </div>
   );
 }
-
-// ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export default function DashboardClient({ user }: DashboardClientProps) {
   const router = useRouter();
@@ -450,7 +440,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
 
   return (
     <div className='mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8'>
-      {/* Hero Banner */}
       <div className='relative overflow-hidden rounded-2xl bg-primary px-6 py-7 shadow-lg shadow-primary/20 sm:px-8 sm:py-10'>
         <div className='pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/5' />
         <div className='pointer-events-none absolute -bottom-6 right-12 h-24 w-24 rounded-full bg-white/5' />
@@ -486,7 +475,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         </div>
       </div>
 
-      {/* Stat Cards */}
       <div className='grid grid-cols-2 gap-3 sm:grid-cols-4'>
         <StatCard
           title='Total Requests'
@@ -519,7 +507,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         />
       </div>
 
-      {/* Smart Alert Banners */}
       {(stats.actionRequired > 0 || stats.readyForRelease > 0 || stats.unpaidCount > 0) && (
         <div className='space-y-2.5'>
           {stats.actionRequired > 0 && (
@@ -584,7 +571,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         </div>
       )}
 
-      {/* Charts Row 1 */}
       <div className='grid gap-6 lg:grid-cols-2'>
         <Card>
           <CardHeader className='pb-3'>
@@ -630,7 +616,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         </Card>
       </div>
 
-      {/* Charts Row 2 */}
       <div className='grid gap-6 lg:grid-cols-2'>
         <Card>
           <CardHeader className='pb-3'>
@@ -677,7 +662,6 @@ export default function DashboardClient({ user }: DashboardClientProps) {
         </Card>
       </div>
 
-      {/* Recent Requests */}
       <Card>
         <CardHeader className='flex flex-row items-center justify-between pb-3 pt-5 px-5 sm:pb-4'>
           <CardTitle className='text-base font-semibold text-foreground'>Recent Requests</CardTitle>

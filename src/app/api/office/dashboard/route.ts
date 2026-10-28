@@ -1,4 +1,3 @@
-// src/app/api/office/dashboard/route.ts
 import { NextResponse } from 'next/server';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { db } from '@/db';
@@ -59,9 +58,6 @@ export async function GET(request: Request) {
       payment_status: task.payment_status,
     }));
 
-    // On Track vs Overdue: a live comparison of each request's calculated
-    // expected date (see src/lib/expected-date.ts) against today — no status
-    // is stored, so this always reflects the current queue and capacity.
     const expectedDates = await calculateExpectedDatesForOffice(officeId);
     const now = Date.now();
     const tasksWithStatus = pendingTasks.map((t) => {
@@ -76,11 +72,6 @@ export async function GET(request: Request) {
       overdue: tasksWithStatus.filter((t) => t.status_vs_expected === 'Overdue').length,
     };
 
-    // Current backlog, in days — a live snapshot rather than a fabricated
-    // multi-week trend. audit_log only spans a few days of (partly seed-
-    // duplicated) history in this deployment, so a genuine historical
-    // queue-depth trend can't be reconstructed with confidence yet. This can
-    // be revisited once real usage accumulates weeks of clean audit history.
     const backlog = await getOfficeBacklogSummary(officeId);
 
     const docTypeVolume = await db
@@ -193,7 +184,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       {
-        // Role (used by AI insights to tailor prompt)
         role: session.role,
 
         stats,
@@ -203,7 +193,6 @@ export async function GET(request: Request) {
         clearancePerformance,
         tasks: queuePreview,
 
-        // Personal stats for role-aware AI insights
         myStats,
       },
       { status: 200 },

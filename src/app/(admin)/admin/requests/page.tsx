@@ -26,8 +26,6 @@ import {
 import { cn, formatDate } from '@/lib/utils';
 import { api } from '@/lib/axios';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type RequestRow = {
   id: string;
   tracking_number: string;
@@ -77,8 +75,6 @@ function matchesStatus(filter: string, status: string) {
   if (filter === ACTIVE_STATUSES) return status === 'Pending' || status === 'In Process';
   return status === filter;
 }
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminRequestsPage() {
   const [requests, setRequests] = useState<RequestRow[]>([]);
@@ -145,7 +141,6 @@ export default function AdminRequestsPage() {
         </Alert>
       )}
 
-      {/* Filters */}
       <Card>
         <CardContent className='flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center'>
           <Select value={status} onValueChange={setStatus}>
@@ -192,7 +187,6 @@ export default function AdminRequestsPage() {
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card>
         <CardContent className='p-0'>
           <Table>
